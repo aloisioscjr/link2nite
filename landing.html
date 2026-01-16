@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Link2Nite — Match. Meet. Tonight.</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Veja onde vai bombar, veja quem vai, dê match e encontre lá — sem conversa infinita." />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0b12">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" sizes="192x192" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Link2Nite">
+  <div id="ios-install-modal" class="install-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="install-modal-card">
+      <h3>Install Link2Nite</h3>
+      <p class="sub">No iPhone, siga estes passos:</p>
+      <div class="install-steps">
+        <div class="install-step">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v10"></path>
+            <path d="M8 7l4-4 4 4"></path>
+            <rect x="5" y="11" width="14" height="10" rx="2" ry="2"></rect>
+          </svg>
+          <span>1) Tap Share (ícone de quadrado com seta)</span>
+        </div>
+        <div class="install-step">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+            <path d="M12 8v8"></path>
+            <path d="M8 12h8"></path>
+          </svg>
+          <span>2) Tap “Add to Home Screen”</span>
+        </div>
+      </div>
+      <button id="ios-install-close" class="btn btn-primary" style="margin-top:16px; width:100%;">Ok, got it</button>
+    </div>
+  </div>
+
+  <style>
+    :root{
+      --bg0:#020617;
+      --bg1:#0b1220;
+      --card:rgba(15,23,42,.78);
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --accent:#7c3aed;
+      --accent2:#a78bfa;
+      --good:#22c55e;
+      --danger:#ef4444;
+    }
+    
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    
+    html,body{
+      height:100%;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:var(--bg0);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+      overflow-x:hidden;
+    }
+    
+    body{
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(124,58,237,.26), transparent 55%),
+        radial-gradient(900px 650px at 100% 20%, rgba(59,130,246,.18), transparent 60%),
+        radial-gradient(900px 650px at 60% 120%, rgba(34,197,94,.12), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
+    
+    .container{
+      max-width:600px;
+      margin:0 auto;
+      padding:20px;
+    }
+    
+    /* Header */
+    .header{
+      padding:20px 0;
+      text-align:center;
+    }
+    
+    .logo{
+      font-size:28px;
+      font-weight:700;
+      letter-spacing:-0.5px;
+      color:var(--text);
+      margin-bottom:8px;
+    }
+    
+    .logo span{ color:var(--accent); }
+    
+    .header-cta{
+      margin-top:12px;
+    }
+    
+    .btn{
+      display:inline-block;
+      padding:12px 24px;
+      border-radius:12px;
+      font-size:16px;
+      font-weight:600;
+      text-decoration:none;
+      border:none;
+      cursor:pointer;
+      transition:all 0.2s;
+      text-align:center;
+    }
+    
+    .btn-primary{
+      background:var(--accent);
+      color:white;
+    }
+    
+    .btn-primary:hover{ background:var(--accent2); transform:translateY(-2px); }
+    
+    .btn-secondary{
+      background:rgba(148,163,184,.15);
+      color:var(--text);
+      border:1px solid rgba(148,163,184,.2);
+    }
+    
+    .btn-secondary:hover{ background:rgba(148,163,184,.25); }
+    
+    .btn-small{
+      padding:8px 16px;
+      font-size:14px;
+    }
+    
+    /* Hero */
+    .hero{
+      text-align:center;
+      padding:60px 0 80px;
+      animation:fadeUp 0.6s ease;
+      position:relative;
+    }
+    
+    .hero-image{
+      width:100%;
+      max-width:600px;
+      height:300px;
+      border-radius:20px;
+      object-fit:cover;
+      margin:0 auto 40px;
+      box-shadow:0 8px 40px rgba(0,0,0,.3);
+      display:block;
+    }
+    
+    .hero h1{
+      font-size:48px;
+      font-weight:800;
+      line-height:1.1;
+      margin-bottom:16px;
+      letter-spacing:-1px;
+    }
+    
+    .hero .sub{
+      font-size:20px;
+      color:var(--muted);
+      margin-bottom:32px;
+      line-height:1.5;
+      max-width:500px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    
+    .hero-ctas{
+      display:flex;
+      gap:12px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    .install-bar{
+      position:fixed;
+      top:12px;
+      left:50%;
+      transform:translateX(-50%);
+      width:calc(100% - 32px);
+      max-width:600px;
+      z-index:120;
+      background:rgba(2,6,23,.82);
+      border:1px solid rgba(148,163,184,.2);
+      border-radius:16px;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      backdrop-filter:blur(10px);
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+
+    .install-spacer{
+      height:68px;
+      display:none;
+    }
+
+    .install-title{
+      font-size:14px;
+      font-weight:600;
+      color:var(--text);
+    }
+
+    .install-btn{
+      padding:8px 14px;
+      border-radius:12px;
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .install-btn-large{
+      padding:14px 28px;
+      font-size:18px;
+      border-radius:14px;
+    }
+
+    .installed-badge{
+      background:rgba(34,197,94,.18);
+      color:#86efac;
+      border:1px solid rgba(34,197,94,.35);
+      padding:6px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .install-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,.7);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:200;
+      padding:20px;
+    }
+
+    .install-modal.active{ display:flex; }
+
+    .install-modal-card{
+      width:100%;
+      max-width:420px;
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.2);
+      border-radius:20px;
+      padding:22px;
+      box-shadow:0 16px 44px rgba(0,0,0,.4);
+    }
+
+    .install-modal-card h3{
+      font-size:20px;
+      margin-bottom:6px;
+    }
+
+    .install-steps{
+      margin-top:16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .install-step{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px;
+      border-radius:14px;
+      background:rgba(15,23,42,.55);
+      border:1px solid rgba(148,163,184,.15);
+    }
+
+    .install-step svg{
+      width:34px;
+      height:34px;
+      flex:0 0 auto;
+    }
+
+    .install-step span{
+      color:var(--text);
+      font-size:14px;
+      line-height:1.4;
+    }
+
+    .hidden{ display:none !important; }
+    
+    /* Section */
+    .section{
+      padding:60px 0;
+      animation:fadeUp 0.6s ease;
+    }
+    
+    .section-title{
+      font-size:32px;
+      font-weight:700;
+      text-align:center;
+      margin-bottom:40px;
+      letter-spacing:-0.5px;
+    }
+    
+    /* How it works */
+    .steps{
+      display:grid;
+      gap:32px;
+      margin-top:40px;
+    }
+    
+    .step{
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.1);
+      border-radius:20px;
+      padding:32px;
+      text-align:center;
+    }
+    
+    .step-number{
+      width:60px;
+      height:60px;
+      border-radius:50%;
+      background:var(--accent);
+      color:white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      font-weight:700;
+      margin:0 auto 20px;
+    }
+    
+    .step h3{
+      font-size:24px;
+      font-weight:600;
+      margin-bottom:12px;
+    }
+    
+    .step p{
+      color:var(--muted);
+      line-height:1.6;
+    }
+    
+    .step-mock{
+      margin-top:24px;
+      height:200px;
+      background:rgba(124,58,237,.1);
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--muted);
+      font-size:14px;
+      overflow:hidden;
+      position:relative;
+    }
+    
+    .step-image{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:12px;
+    }
+    
+    .step-mock-overlay{
+      position:absolute;
+      inset:0;
+      background:linear-gradient(to top, rgba(0,0,0,.7), transparent);
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      padding:16px;
+      color:white;
+      font-weight:500;
+    }
+    
+    /* Social proof */
+    .proof{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+      gap:16px;
+      margin-top:32px;
+    }
+    
+    .proof-item{
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.1);
+      border-radius:12px;
+      padding:20px;
+      text-align:center;
+    }
+    
+    .proof-item .emoji{
+      font-size:32px;
+      margin-bottom:8px;
+    }
+    
+    .proof-item .text{
+      font-size:14px;
+      color:var(--muted);
+    }
+    
+    /* Waitlist form */
+    .waitlist-form{
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.1);
+      border-radius:20px;
+      padding:40px;
+      max-width:500px;
+      margin:0 auto;
+    }
+    
+    .form-group{
+      margin-bottom:20px;
+    }
+    
+    .form-group label{
+      display:block;
+      margin-bottom:8px;
+      font-weight:500;
+      color:var(--text);
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group select{
+      width:100%;
+      padding:12px 16px;
+      background:rgba(2,6,23,.5);
+      border:1px solid rgba(148,163,184,.2);
+      border-radius:10px;
+      color:var(--text);
+      font-size:16px;
+      font-family:inherit;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus{
+      outline:none;
+      border-color:var(--accent);
+    }
+    
+    .checkbox-group{
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+      margin-top:16px;
+    }
+    
+    .checkbox-group input[type="checkbox"]{
+      margin-top:4px;
+      width:18px;
+      height:18px;
+      cursor:pointer;
+    }
+    
+    .checkbox-group label{
+      font-size:14px;
+      color:var(--muted);
+      margin:0;
+      cursor:pointer;
+    }
+    
+    .form-submit{
+      width:100%;
+      margin-top:24px;
+    }
+    
+    /* Success screen */
+    .success{
+      background:var(--card);
+      border:1px solid rgba(34,197,94,.3);
+      border-radius:20px;
+      padding:40px;
+      text-align:center;
+      max-width:500px;
+      margin:0 auto;
+      display:none;
+    }
+    
+    .success.show{ display:block; }
+    
+    .success .emoji{ font-size:48px; margin-bottom:16px; }
+    
+    .success h2{
+      font-size:28px;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+    
+    .success p{
+      color:var(--muted);
+      margin-bottom:24px;
+      line-height:1.6;
+    }
+    
+    .invite-link{
+      background:rgba(2,6,23,.5);
+      border:1px solid rgba(148,163,184,.2);
+      border-radius:10px;
+      padding:12px 16px;
+      margin:16px 0;
+      word-break:break-all;
+      color:var(--accent);
+      font-family:monospace;
+      font-size:14px;
+    }
+    
+    .copy-btn{
+      width:100%;
+      margin-top:12px;
+    }
+    
+    /* FAQ */
+    .faq{
+      max-width:600px;
+      margin:0 auto;
+    }
+    
+    .faq-item{
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.1);
+      border-radius:12px;
+      padding:24px;
+      margin-bottom:16px;
+    }
+    
+    .faq-item h3{
+      font-size:18px;
+      font-weight:600;
+      margin-bottom:8px;
+    }
+    
+    .faq-item p{
+      color:var(--muted);
+      line-height:1.6;
+    }
+    
+    /* Footer */
+    .footer{
+      text-align:center;
+      padding:60px 0 40px;
+      border-top:1px solid rgba(148,163,184,.1);
+      margin-top:80px;
+    }
+    
+    .footer-links{
+      display:flex;
+      gap:24px;
+      justify-content:center;
+      margin-top:20px;
+      flex-wrap:wrap;
+    }
+    
+    .footer-links a{
+      color:var(--muted);
+      text-decoration:none;
+      font-size:14px;
+    }
+    
+    .footer-links a:hover{ color:var(--text); }
+    
+    /* Animations */
+    @keyframes fadeUp{
+      from{ opacity:0; transform:translateY(20px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    
+    /* Perks section */
+    .perks{
+      display:grid;
+      gap:20px;
+      margin-top:40px;
+    }
+    
+    .perk-card{
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.1);
+      border-radius:16px;
+      padding:24px;
+      box-shadow:0 4px 20px rgba(0,0,0,.2);
+      transition:all 0.3s;
+      position:relative;
+      overflow:hidden;
+    }
+    
+    .perk-card::before{
+      content:'';
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      height:4px;
+      background:linear-gradient(90deg, var(--accent), var(--accent2));
+      opacity:0;
+      transition:opacity 0.3s;
+    }
+    
+    .perk-card:hover::before{
+      opacity:1;
+    }
+    
+    .perk-card:hover{
+      transform:translateY(-4px);
+      box-shadow:0 8px 30px rgba(124,58,237,.2);
+      border-color:rgba(124,58,237,.3);
+    }
+    
+    .perk-header{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      margin-bottom:12px;
+    }
+    
+    .perk-icon{
+      font-size:32px;
+      width:50px;
+      height:50px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(124,58,237,.15);
+      border-radius:12px;
+    }
+    
+    .perk-title{
+      font-size:20px;
+      font-weight:600;
+      color:var(--text);
+    }
+    
+    .perk-desc{
+      color:var(--muted);
+      line-height:1.6;
+      font-size:15px;
+    }
+    
+    .perks-disclaimer{
+      margin-top:24px;
+      padding:16px;
+      background:rgba(148,163,184,.08);
+      border:1px solid rgba(148,163,184,.15);
+      border-radius:12px;
+      text-align:center;
+      color:var(--muted);
+      font-size:14px;
+    }
+    
+    /* Waitlist CTA bullets */
+    .waitlist-bullets{
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.1);
+      border-radius:12px;
+      padding:24px;
+      margin-bottom:24px;
+      max-width:500px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    
+    .waitlist-bullet{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+      color:var(--text);
+      font-size:16px;
+    }
+    
+    .waitlist-bullet:last-child{
+      margin-bottom:0;
+    }
+    
+    .waitlist-bullet-icon{
+      color:var(--good);
+      font-size:20px;
+      font-weight:bold;
+    }
+    
+    /* Referral incentive */
+    .referral-incentive{
+      margin-top:32px;
+      padding:24px;
+      background:rgba(124,58,237,.1);
+      border:1px solid rgba(124,58,237,.3);
+      border-radius:16px;
+      text-align:center;
+    }
+    
+    .referral-incentive h3{
+      font-size:22px;
+      font-weight:600;
+      margin-bottom:12px;
+      color:var(--text);
+    }
+    
+    .referral-incentive p{
+      color:var(--muted);
+      margin-bottom:20px;
+      font-size:15px;
+    }
+    
+    /* Visual section */
+    .visual-section{
+      margin:60px 0;
+      border-radius:20px;
+      overflow:hidden;
+      box-shadow:0 8px 40px rgba(0,0,0,.3);
+      max-width:800px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    
+    .visual-image{
+      width:100%;
+      height:400px;
+      object-fit:cover;
+      display:block;
+    }
+    
+    @media (max-width:600px){
+      .visual-image{ height:250px; }
+    }
+    
+    /* Mobile */
+    @media (max-width:600px){
+      .hero h1{ font-size:36px; }
+      .hero .sub{ font-size:18px; }
+      .section-title{ font-size:28px; }
+      .waitlist-form{ padding:24px; }
+      .hero-ctas{ flex-direction:column; }
+      .hero-ctas .btn{ width:100%; }
+      .perk-card{ padding:20px; }
+      .hero-image{ height:200px; margin-bottom:32px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="install-spacer" class="install-spacer"></div>
+  <div id="install-bar" class="install-bar hidden">
+    <div class="install-title">Install Link2Nite</div>
+    <div class="install-actions">
+      <button id="install-btn-top" class="btn btn-primary install-btn">Install Link2Nite</button>
+      <div id="install-badge-top" class="installed-badge hidden">Installed ✓</div>
+    </div>
+  </div>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">L2<span>N</span> Link2Nite</div>
+      <div class="header-cta">
+        <a href="index.html" class="btn btn-secondary btn-small">Open the app</a>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <img src="rooftop.png" 
+           alt="Elegant rooftop lounge with Manhattan skyline view" 
+           class="hero-image"
+           loading="eager" />
+      <h1>Match. Meet. Tonight.</h1>
+      <p class="sub">Veja onde vai bombar, veja quem vai, dê match e encontre lá — sem conversa infinita.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-primary install-btn install-btn-large" id="install-btn-hero">Install Link2Nite</button>
+        <div id="install-badge-hero" class="installed-badge hidden">Installed ✓</div>
+        <button class="btn btn-primary" onclick="scrollToWaitlist()">Get early access</button>
+        <button class="btn btn-secondary" onclick="scrollToHow()">See how it works</button>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how-it-works">
+      <h2 class="section-title">Como funciona</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Pick a spot</h3>
+          <p>Escolha o lugar que você quer ir hoje: rooftops, bares, lounges, festas.</p>
+          <div class="step-mock">
+            <img src="https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=600&h=300&fit=crop&q=80" 
+                 alt="Modern bar venue" 
+                 class="step-image"
+                 loading="lazy" />
+            <div class="step-mock-overlay">📍 Place cards</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>See who's going</h3>
+          <p>Veja quem marcou que vai estar lá hoje. Perfis reais, verificação em beta.</p>
+          <div class="step-mock">
+            <img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=300&fit=crop&q=80" 
+                 alt="Social group" 
+                 class="step-image"
+                 loading="lazy" />
+            <div class="step-mock-overlay">👥 Who's going list</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Match & meet IRL</h3>
+          <p>Dê match com quem te interessar e combine de se encontrar lá — sem enrolação.</p>
+          <div class="step-mock">
+            <img src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600&h=300&fit=crop&q=80" 
+                 alt="People connecting" 
+                 class="step-image"
+                 loading="lazy" />
+            <div class="step-mock-overlay">💖 Match & chat</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guestlist Perks -->
+    <section class="section" id="perks">
+      <h2 class="section-title">Link2Nite Guestlist Perks</h2>
+      <p style="text-align:center; color:var(--muted); margin-bottom:40px; font-size:18px;">
+        Ganhe benefícios reais em rooftops, lounges e bars parceiros.
+      </p>
+      <div class="perks">
+        <div class="perk-card">
+          <div class="perk-header">
+            <div class="perk-icon">🎫</div>
+            <div class="perk-title">Free entry</div>
+          </div>
+          <div class="perk-desc">
+            Entrada grátis (ou reduzida) com RSVP até X horas.
+          </div>
+        </div>
+        <div class="perk-card">
+          <div class="perk-header">
+            <div class="perk-icon">🍸</div>
+            <div class="perk-title">1 drink special</div>
+          </div>
+          <div class="perk-desc">
+            Drink especial até 10PM / 11PM (varia por venue).
+          </div>
+        </div>
+        <div class="perk-card">
+          <div class="perk-header">
+            <div class="perk-icon">💰</div>
+            <div class="perk-title">Exclusive discounts</div>
+          </div>
+          <div class="perk-desc">
+            Descontos em mesas/garrafas e combos em noites selecionadas.
+          </div>
+        </div>
+        <div class="perk-card">
+          <div class="perk-header">
+            <div class="perk-icon">🚀</div>
+            <div class="perk-title">Skip the line</div>
+          </div>
+          <div class="perk-desc">
+            Fila preferencial (quando disponível).
+          </div>
+        </div>
+        <div class="perk-card">
+          <div class="perk-header">
+            <div class="perk-icon">👯</div>
+            <div class="perk-title">Friends perks</div>
+          </div>
+          <div class="perk-desc">
+            Convide amigas e desbloqueie perks extras.
+          </div>
+        </div>
+      </div>
+      <div class="perks-disclaimer">
+        ℹ️ Perks variam por local e disponibilidade. Beta: perks limitados.
+      </div>
+    </section>
+
+    <!-- Visual Section -->
+    <div class="visual-section">
+      <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800&h=400&fit=crop&q=80" 
+           alt="Manhattan nightlife" 
+           class="visual-image"
+           loading="lazy" />
+    </div>
+
+    <!-- Social proof -->
+    <section class="section">
+      <div class="proof">
+        <div class="proof-item">
+          <div class="emoji">🔥</div>
+          <div class="text">Hot tonight in Manhattan (beta)</div>
+        </div>
+        <div class="proof-item">
+          <div class="emoji">✔</div>
+          <div class="text">Verified profiles</div>
+        </div>
+        <div class="proof-item">
+          <div class="emoji">🛡️</div>
+          <div class="text">No links, no spam</div>
+        </div>
+        <div class="proof-item">
+          <div class="emoji">👩</div>
+          <div class="text">Women-first beta</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Waitlist -->
+    <section class="section" id="waitlist">
+      <h2 class="section-title">Join the waitlist</h2>
+      
+      <!-- CTA Bullets -->
+      <div class="waitlist-bullets">
+        <div class="waitlist-bullet">
+          <span class="waitlist-bullet-icon">✔</span>
+          <span>Get invite + guestlist perks</span>
+        </div>
+        <div class="waitlist-bullet">
+          <span class="waitlist-bullet-icon">✔</span>
+          <span>See who's going before you leave</span>
+        </div>
+        <div class="waitlist-bullet">
+          <span class="waitlist-bullet-icon">✔</span>
+          <span>Match & meet IRL faster</span>
+        </div>
+      </div>
+      
+      <form class="waitlist-form" id="waitlist-form" onsubmit="submitWaitlist(event)">
+        <div class="form-group">
+          <label for="name">Nome</label>
+          <input type="text" id="name" name="name" placeholder="Seu nome" />
+        </div>
+        <div class="form-group">
+          <label for="email">Email <span style="color:var(--danger)">*</span></label>
+          <input type="email" id="email" name="email" placeholder="seu@email.com" required />
+        </div>
+        <div class="form-group">
+          <label for="city">Cidade</label>
+          <select id="city" name="city">
+            <option value="New York">New York</option>
+            <option value="Los Angeles">Los Angeles</option>
+            <option value="Chicago">Chicago</option>
+            <option value="Miami">Miami</option>
+            <option value="Other">Outra</option>
+          </select>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="is-woman" name="isWoman" />
+          <label for="is-woman">I'm a woman</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="is-creator" name="isCreator" />
+          <label for="is-creator">I'm a creator/venue</label>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Get invite + perks</button>
+      </form>
+
+      <!-- Success screen -->
+      <div class="success" id="success-screen">
+        <div class="emoji">✅</div>
+        <h2>You're in!</h2>
+        <p>We'll send you an invite soon. Share your referral link to get priority access:</p>
+        
+        <!-- Referral Incentive -->
+        <div class="referral-incentive">
+          <h3>🎁 Invite 3 friends → unlock Link2Nite+ (7 days)</h3>
+          <p>Share your invite link below and unlock premium features when 3 friends join.</p>
+        </div>
+        
+        <div class="invite-link" id="invite-link">—</div>
+        <button class="btn btn-secondary copy-btn" onclick="copyInviteLink()">Copy invite link</button>
+        <p style="margin-top:24px; font-size:14px; color:var(--muted);">
+          <a href="index.html" class="btn btn-primary btn-small" style="text-decoration:none;">Open the app (beta)</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="section">
+      <div style="text-align:center;">
+        <h2 class="section-title">Ready to match tonight?</h2>
+        <p style="color:var(--muted); margin-bottom:24px; font-size:18px;">Join the waitlist and get early access.</p>
+        <button class="btn btn-primary" onclick="scrollToWaitlist()">Get the invite</button>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section">
+      <h2 class="section-title" style="margin-bottom:32px;">FAQ</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <h3>Is it free?</h3>
+          <p>Yes, the app is free to use. Premium features (unlimited swipes, see who liked you) are optional.</p>
+        </div>
+        <div class="faq-item">
+          <h3>When will it launch?</h3>
+          <p>We're in beta now for Manhattan. Join the waitlist to get early access and updates on expansion.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Is it safe?</h3>
+          <p>Yes. We verify profiles, block spam/links, and have reporting tools. We prioritize safety and a women-first experience.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div style="color:var(--muted); margin-bottom:20px;">© 2026 Link2Nite</div>
+      <div class="footer-links">
+        <a href="#" onclick="openModal('terms'); return false;">Terms</a>
+        <a href="#" onclick="openModal('privacy'); return false;">Privacy</a>
+        <a href="index.html">Open the app (beta)</a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modals -->
+  <div id="terms-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>Terms of Service</h3>
+      <p>Terms placeholder. To be updated.</p>
+      <button class="btn btn-secondary" onclick="closeModal('terms')">Close</button>
+    </div>
+  </div>
+
+  <div id="privacy-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>Privacy Policy</h3>
+      <p>Privacy policy placeholder. To be updated.</p>
+      <button class="btn btn-secondary" onclick="closeModal('privacy')">Close</button>
+    </div>
+  </div>
+
+  <style>
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.8);
+      z-index:10000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .modal-content{
+      background:var(--card);
+      border:1px solid rgba(148,163,184,.2);
+      border-radius:20px;
+      padding:32px;
+      max-width:500px;
+      width:100%;
+    }
+    .modal-content h3{
+      font-size:24px;
+      margin-bottom:16px;
+    }
+    .modal-content p{
+      color:var(--muted);
+      line-height:1.6;
+      margin-bottom:24px;
+    }
+  </style>
+
+  <script>
+    // App URL (configurable)
+    const APP_URL = "index.html";
+    
+    // Get URL parameters
+    function getURLParams(){
+      const params = new URLSearchParams(window.location.search);
+      return {
+        ref: params.get("ref") || "",
+        utm_source: params.get("utm_source") || ""
+      };
+    }
+    
+    // Scroll functions
+    function scrollToWaitlist(){
+      document.getElementById("waitlist").scrollIntoView({ behavior:"smooth", block:"start" });
+    }
+    
+    function scrollToHow(){
+      document.getElementById("how-it-works").scrollIntoView({ behavior:"smooth", block:"start" });
+    }
+    
+    // Waitlist submission
+    function submitWaitlist(event){
+      event.preventDefault();
+      
+      const form = event.target;
+      const name = form.name.value.trim();
+      const email = form.email.value.trim();
+      const city = form.city.value;
+      const isWoman = form.isWoman.checked;
+      const isCreator = form.isCreator.checked;
+      
+      if(!email){
+        alert("Email é obrigatório");
+        return;
+      }
+      
+      const params = getURLParams();
+      const entry = {
+        name: name || "Anonymous",
+        email: email,
+        city: city || "New York",
+        isWoman: isWoman,
+        isCreator: isCreator,
+        ref: params.ref || "",
+        utm_source: params.utm_source || "",
+        ts: Date.now()
+      };
+      
+      // Save to localStorage
+      try{
+        const existing = JSON.parse(localStorage.getItem("l2n_waitlist") || "[]");
+        // Check if email already exists
+        const existingIndex = existing.findIndex(e => e.email === email);
+        if(existingIndex >= 0){
+          existing[existingIndex] = entry; // Update
+        } else {
+          existing.push(entry); // Add new
+        }
+        localStorage.setItem("l2n_waitlist", JSON.stringify(existing));
+        
+        // Generate referral code
+        const referralCode = generateReferralCode(email);
+        
+        // Show success screen
+        form.style.display = "none";
+        const success = document.getElementById("success-screen");
+        const inviteLink = document.getElementById("invite-link");
+        const fullUrl = window.location.origin + window.location.pathname + "?ref=" + referralCode;
+        inviteLink.textContent = fullUrl;
+        success.classList.add("show");
+        
+        // Save referral code for later use
+        const userReferrals = JSON.parse(localStorage.getItem("l2n_user_referrals") || "{}");
+        userReferrals[email] = referralCode;
+        localStorage.setItem("l2n_user_referrals", JSON.stringify(userReferrals));
+        
+      } catch(e){
+        alert("Erro ao salvar. Tente novamente.");
+        console.error(e);
+      }
+    }
+    
+    // Generate referral code from email
+    function generateReferralCode(email){
+      // Simple hash-based code
+      let hash = 0;
+      for(let i = 0; i < email.length; i++){
+        const char = email.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      // Convert to base36 and take first 8 chars
+      return Math.abs(hash).toString(36).substring(0, 8).toUpperCase();
+    }
+    
+    // Copy invite link
+    function copyInviteLink(){
+      const link = document.getElementById("invite-link").textContent;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(link).then(() => {
+          alert("Link copiado!");
+        }).catch(() => {
+          fallbackCopy(link);
+        });
+      } else {
+        fallbackCopy(link);
+      }
+    }
+    
+    function fallbackCopy(text){
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        alert("Link copiado!");
+      } catch(e){
+        alert("Erro ao copiar. Copie manualmente: " + text);
+      }
+      document.body.removeChild(textarea);
+    }
+    
+    // Modal functions
+    function openModal(id){
+      document.getElementById(id + "-modal").style.display = "flex";
+    }
+    
+    function closeModal(id){
+      document.getElementById(id + "-modal").style.display = "none";
+    }
+    
+    // Close modal on click outside
+    document.addEventListener("click", function(e){
+      if(e.target.classList.contains("modal")){
+        e.target.style.display = "none";
+      }
+    });
+    
+    // Detect mobile and update CTA if needed
+    function updateMobileCTA(){
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if(isMobile){
+        // Could update CTA text here if needed
+      }
+    }
+    
+    updateMobileCTA();
+
+    // PWA install CTA + Service Worker
+    let deferredPrompt = null;
+    const installBar = document.getElementById("install-bar");
+    const installSpacer = document.getElementById("install-spacer");
+    const installBtnTop = document.getElementById("install-btn-top");
+    const installBtnHero = document.getElementById("install-btn-hero");
+    const installBadgeTop = document.getElementById("install-badge-top");
+    const installBadgeHero = document.getElementById("install-badge-hero");
+    const iosModal = document.getElementById("ios-install-modal");
+    const iosClose = document.getElementById("ios-install-close");
+
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isStandalone = () =>
+      window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+    function showInstallUI(){
+      installBar.classList.remove("hidden");
+      installSpacer.style.display = "block";
+      installBtnTop.classList.remove("hidden");
+      installBtnHero.classList.remove("hidden");
+      installBadgeTop.classList.add("hidden");
+      installBadgeHero.classList.add("hidden");
+    }
+
+    function hideInstallUI(){
+      installBar.classList.add("hidden");
+      installSpacer.style.display = "none";
+      installBtnTop.classList.add("hidden");
+      installBtnHero.classList.add("hidden");
+      installBadgeTop.classList.add("hidden");
+      installBadgeHero.classList.add("hidden");
+    }
+
+    function setInstalledUI(){
+      installBar.classList.remove("hidden");
+      installSpacer.style.display = "block";
+      installBtnTop.classList.add("hidden");
+      installBtnHero.classList.add("hidden");
+      installBadgeTop.classList.remove("hidden");
+      installBadgeHero.classList.add("hidden");
+    }
+
+    function openIOSModal(){
+      iosModal.classList.add("active");
+      iosModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeIOSModal(){
+      iosModal.classList.remove("active");
+      iosModal.setAttribute("aria-hidden", "true");
+    }
+
+    function handleInstallClick(){
+      if(isStandalone()){
+        setInstalledUI();
+        return;
+      }
+      if(isIOS){
+        openIOSModal();
+        return;
+      }
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choice) => {
+          if(choice.outcome === "accepted"){
+            setInstalledUI();
+          }
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    if(installBtnTop) installBtnTop.addEventListener("click", handleInstallClick);
+    if(installBtnHero) installBtnHero.addEventListener("click", handleInstallClick);
+    if(iosClose) iosClose.addEventListener("click", closeIOSModal);
+    if(iosModal){
+      iosModal.addEventListener("click", (e) => {
+        if(e.target === iosModal) closeIOSModal();
+      });
+    }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if(!isStandalone()){
+        showInstallUI();
+      }
+    });
+
+    window.addEventListener("appinstalled", () => {
+      setInstalledUI();
+    });
+
+    if(isStandalone()){
+      setInstalledUI();
+    } else if(isIOS){
+      showInstallUI();
+    } else {
+      hideInstallUI();
+    }
+
+    if("serviceWorker" in navigator){
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
