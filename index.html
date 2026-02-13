@@ -6253,6 +6253,7 @@ function initApp(){
       }
       loadCustomPlaces();
       seedDemoCrowd();
+      ensureDemoBots(); // always run on load so "who's going" has bots per venue
       const onboardingDone=localStorage.getItem("tonightly_onboarding_done");
       if(!onboardingDone){
         onboardingStep=0;
