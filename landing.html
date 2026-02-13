@@ -1988,7 +1988,7 @@
         // Endpoint not configured - silent skip
         submitBtn.disabled = false;
         submitBtn.textContent = originalBtnText;
-        } else {
+      } else {
         // Failed - show warning but allow to proceed
         const warning = document.createElement("div");
         warning.style.cssText = "background:rgba(255,193,7,.15); border:1px solid rgba(255,193,7,.3); border-radius:8px; padding:12px; margin:16px 0; color:var(--text); font-size:14px;";
@@ -2005,8 +2005,7 @@
       // When neighborhood drop opens, send invite link via SMS (using phoneE164) or email
       // Integration point: Twilio for SMS, SendGrid/Mailgun for email
       // Trigger: based on priorityTag, neighborhood, and drop schedule
-        
-        // Show success screen
+      // Show success screen
       showSuccessScreen(entry);
     }
     
