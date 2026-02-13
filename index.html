@@ -5377,7 +5377,7 @@ function renderGoingForPlace(placeId){
     // DEMO BOTS SYSTEM (500 bots)
     // ===========================
     const DEMO_BOTS_SEED = "L2N_SEED_2026";
-    const DEMO_BOTS_VERSION = "3"; // More bots per venue (rest: 10-25 each)
+    const DEMO_BOTS_VERSION = "4"; // Real names (FirstName LastName), no place suffixes
     
     // Simple deterministic hash function
     function hashString(str){
@@ -5415,17 +5415,20 @@ function renderGoingForPlace(placeId){
         "Serenity", "Autumn", "Adeline", "Hailey", "Gianna", "Valentina", "Isla", "Brielle", "Claire", "Vivian"
       ];
       
-      const suffixes = ["", "NYC", "NY", "Manhattan", "BK", "QNS", "BX"];
+      const lastNames = [
+        "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+        "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+        "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+        "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+        "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts"
+      ];
       
-      // Generate unique bot names
+      // Generate unique bot names: FirstName LastName (no place suffixes)
       const botNames = [];
       for(let i = 0; i < 500; i++){
         const firstName = firstNames[i % firstNames.length];
-        const suffix = suffixes[Math.floor(i / firstNames.length) % suffixes.length];
-        const number = Math.floor(i / (firstNames.length * suffixes.length));
-        let name = firstName;
-        if(number > 0) name += number;
-        if(suffix) name += "_" + suffix;
+        const lastName = lastNames[Math.floor(i / firstNames.length) % lastNames.length];
+        const name = firstName + " " + lastName;
         botNames.push(name);
       }
       
@@ -5479,7 +5482,7 @@ function renderGoingForPlace(placeId){
         const job = jobs[Math.floor(r * jobs.length)];
         const company = companies[Math.floor(r * companies.length)];
         const school = schools[Math.floor(r * schools.length)];
-        const instagram = name.toLowerCase() + "_nyc";
+        const instagram = name.toLowerCase().replace(/\s+/g, "_");
         const distance = 1 + Math.floor(r * 10); // 1-10 mi
         const numPhotos = 1 + Math.floor(r * 3); // 1-3 photos
         
