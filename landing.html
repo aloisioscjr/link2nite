@@ -1047,6 +1047,11 @@
         </div>
         
         <div class="form-group">
+          <label for="lastName">Last name</label>
+          <input type="text" id="lastName" name="lastName" placeholder="Silva" />
+        </div>
+        
+        <div class="form-group">
           <label for="email">Email <span style="color:var(--danger)">*</span></label>
           <input type="email" id="email" name="email" placeholder="you@email.com" required />
           <div class="form-error" id="email-error"></div>
@@ -1644,10 +1649,11 @@
     
     function exportCSV(){
       const waitlist = getWaitlist();
-      const headers = ["ID", "First Name", "Email", "Phone (Digits)", "Phone (E.164)", "Phone (Raw)", "City", "Neighborhood", "Nights", "Intent", "Gender", "Priority Tag", "Referrer", "Ref Code", "UTM Source", "UTM Campaign", "UTM Content", "Created At"];
+      const headers = ["ID", "First Name", "Last Name", "Email", "Phone (Digits)", "Phone (E.164)", "Phone (Raw)", "City", "Neighborhood", "Nights", "Intent", "Gender", "Priority Tag", "Referrer", "Ref Code", "UTM Source", "UTM Campaign", "UTM Content", "Created At"];
       const rows = waitlist.map(e => [
         e.id,
         e.firstName || "",
+        e.lastName || "",
         e.email || "",
         e.phone || "",
         e.phoneE164 || "",
@@ -1821,6 +1827,7 @@
       
       const form = event.target;
       const firstName = form.firstName.value.trim();
+      const lastName = (form.lastName && form.lastName.value) ? form.lastName.value.trim() : "";
       const email = form.email.value.trim().toLowerCase();
       const phoneRaw = form.phone.value.trim();
       const city = form.city.value;
@@ -1934,6 +1941,7 @@
       const entry = {
         id: Date.now().toString(),
         firstName,
+        lastName: lastName || null,
         email,
         phoneRaw: phoneRaw, // Original input
         phone: phoneData ? phoneData.digits : null, // Digits (10-15 digits)
