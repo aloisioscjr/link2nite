@@ -5377,7 +5377,7 @@ function renderGoingForPlace(placeId){
     // DEMO BOTS SYSTEM (500 bots)
     // ===========================
     const DEMO_BOTS_SEED = "L2N_SEED_2026";
-    const DEMO_BOTS_VERSION = "2"; // Updated for 500 bots
+    const DEMO_BOTS_VERSION = "3"; // More bots per venue (rest: 10-25 each)
     
     // Simple deterministic hash function
     function hashString(str){
@@ -5561,21 +5561,19 @@ function renderGoingForPlace(placeId){
         if(assigned.length > 0) attendance[place.id] = assigned;
       });
       
-      // Rest get 0-10 bots (scaled for 500 bots)
+      // Rest get 10-25 bots each so every venue shows a decent "who's going" count
       const otherPlaces = placeScores.slice(15);
       otherPlaces.forEach(({ place }, otherIdx) => {
-        const numBots = Math.floor(seededRandom(seed + "_other_" + otherIdx, 0) * 11); // 0-10
-        if(numBots > 0){
-          const assigned = [];
-          for(let i = 0; i < numBots && i < bots.length; i++){
-            const botIdx = Math.floor(seededRandom(seed + "_other_" + otherIdx + "_bot", i) * bots.length);
-            const bot = bots[botIdx];
-            if(bot && !assigned.includes(bot.name) && !isBotInAttendance(bot.name, attendance)){
-              assigned.push(bot.name);
-            }
+        const numBots = 10 + Math.floor(seededRandom(seed + "_other_" + otherIdx, 0) * 16); // 10-25
+        const assigned = [];
+        for(let i = 0; i < numBots && i < bots.length; i++){
+          const botIdx = Math.floor(seededRandom(seed + "_other_" + otherIdx + "_bot", i) * bots.length);
+          const bot = bots[botIdx];
+          if(bot && !assigned.includes(bot.name) && !isBotInAttendance(bot.name, attendance)){
+            assigned.push(bot.name);
           }
-          if(assigned.length > 0) attendance[place.id] = assigned;
         }
+        if(assigned.length > 0) attendance[place.id] = assigned;
       });
       
       return attendance;
