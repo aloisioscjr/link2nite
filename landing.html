@@ -423,22 +423,6 @@
       line-height:1.6;
     }
     
-    .queue-position{
-      background:rgba(124,58,237,.15);
-      border:1px solid rgba(124,58,237,.3);
-      border-radius:12px;
-      padding:16px;
-      margin:20px 0;
-      font-size:16px;
-    }
-    
-    .queue-position strong{
-      color:var(--accent);
-      font-size:24px;
-      display:block;
-      margin-top:4px;
-    }
-    
     .invite-link{
       background:rgba(2,6,23,.5);
       border:1px solid rgba(148,163,184,.2);
@@ -1157,11 +1141,6 @@
         <h2>You're on the list!</h2>
         <p style="margin-bottom:8px;">We'll text your invite link when your neighborhood drop opens.</p>
         <p style="margin-bottom:24px; font-size:14px; color:var(--muted);">Invite friends to move up:</p>
-        
-        <div class="queue-position" id="queue-position">
-          <div>Your approximate position:</div>
-          <strong id="position-number">—</strong>
-        </div>
         
         <div class="referral-incentive">
           <h3>🎁 Invite 3 friends → unlock early access + 7 days of Link2Nite+ (at launch)</h3>
@@ -2149,12 +2128,6 @@
       const form = document.getElementById("waitlist-form");
       const success = document.getElementById("success-screen");
       const inviteLink = document.getElementById("invite-link");
-      const positionNumber = document.getElementById("position-number");
-      
-      // Calculate position
-      const waitlist = getWaitlist();
-      const position = waitlist.findIndex(e => e.email === entry.email) + 1;
-      positionNumber.textContent = `#${position}`;
       
       // Generate invite link
       const fullUrl = window.location.origin + window.location.pathname + "?ref=" + entry.refCode;
