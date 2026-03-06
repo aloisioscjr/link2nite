@@ -654,6 +654,95 @@
       margin-top:4px;
     }
 
+    /* Photo slots grid (6 slots) */
+    .photo-slots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .photo-slot {
+      aspect-ratio: 3/4;
+      border-radius: 16px;
+      border: 2px dashed rgba(148,163,184,0.4);
+      background: rgba(2,6,23,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .photo-slot:hover {
+      border-color: rgba(124,58,237,0.6);
+      background: rgba(124,58,237,0.08);
+    }
+    .photo-slot.filled {
+      border: 2px solid rgba(124,58,237,0.5);
+      background: transparent;
+    }
+    .photo-slot.filled:hover {
+      border-color: rgba(239,68,68,0.6);
+    }
+    .photo-slot .slot-icon {
+      font-size: 28px;
+      color: rgba(148,163,184,0.5);
+      margin-bottom: 4px;
+    }
+    .photo-slot .slot-label {
+      font-size: 11px;
+      color: rgba(148,163,184,0.6);
+    }
+    .photo-slot .slot-required {
+      font-size: 9px;
+      color: #a78bfa;
+      margin-top: 2px;
+    }
+    .photo-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
+    }
+    .photo-slot .remove-photo {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(239,68,68,0.9);
+      color: white;
+      border: none;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .photo-slot.filled:hover .remove-photo {
+      display: flex;
+    }
+    .photo-slot.main-photo::after {
+      content: "MAIN";
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      color: white;
+      background: rgba(124,58,237,0.85);
+      padding: 3px 8px;
+      border-radius: 6px;
+      z-index: 2;
+    }
+
     /* Profile preview card */
     .profile-preview {
       padding: 0;
@@ -1634,13 +1723,39 @@
             <span>Now pick your photos.</span>
           </div>
           <p class="section-sub">
-            Add at least one profile photo. You can add more to show your style.
+            Add at least one profile photo. You can add up to 6 to show your style.
           </p>
-          <div class="input-group">
-            <label>Profile photos</label>
-            <input type="file" id="photos-onboarding-input" accept="image/*" multiple onchange="handleOnboardingPhotoChange(this)" />
+          
+          <input type="file" id="photos-onboarding-input" accept="image/*" style="display:none;" onchange="handleSlotPhotoSelect(this)" />
+          
+          <div class="photo-slots-grid" id="photo-slots-container">
+            <div class="photo-slot main-photo" data-slot="0" onclick="triggerPhotoSlot(0)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+              <span class="slot-required">Required</span>
+            </div>
+            <div class="photo-slot" data-slot="1" onclick="triggerPhotoSlot(1)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="2" onclick="triggerPhotoSlot(2)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="3" onclick="triggerPhotoSlot(3)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="4" onclick="triggerPhotoSlot(4)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="5" onclick="triggerPhotoSlot(5)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
           </div>
-          <div id="photos-onboarding-preview" class="photo-grid"></div>
+          
           <p class="photo-hint">
             Tip: use clear photos, face visible, and if you want, one from a rooftop, bar, or trip.
           </p>
@@ -4084,6 +4199,66 @@ function showScreen(id){
       showScreen("screen-photos-onboarding");
     }
 
+    // Photo slots state
+    let photoSlots = [null, null, null, null, null, null];
+    let currentSlotIndex = 0;
+
+    function triggerPhotoSlot(slotIndex) {
+      const slot = document.querySelector(`.photo-slot[data-slot="${slotIndex}"]`);
+      if (slot && slot.classList.contains('filled')) {
+        return;
+      }
+      currentSlotIndex = slotIndex;
+      const input = $("photos-onboarding-input");
+      if (input) input.click();
+    }
+
+    function handleSlotPhotoSelect(input) {
+      if (!input.files || !input.files.length) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        photoSlots[currentSlotIndex] = e.target.result;
+        renderPhotoSlots();
+      };
+      reader.readAsDataURL(file);
+      input.value = "";
+    }
+
+    function removeSlotPhoto(slotIndex, event) {
+      event.stopPropagation();
+      photoSlots[slotIndex] = null;
+      renderPhotoSlots();
+    }
+
+    function renderPhotoSlots() {
+      const container = $("photo-slots-container");
+      if (!container) return;
+      
+      const slots = container.querySelectorAll('.photo-slot');
+      slots.forEach((slot, idx) => {
+        const photoUrl = photoSlots[idx];
+        if (photoUrl) {
+          slot.classList.add('filled');
+          slot.innerHTML = `
+            <img src="${photoUrl}" alt="Photo ${idx + 1}" />
+            <button class="remove-photo" onclick="removeSlotPhoto(${idx}, event)">×</button>
+          `;
+        } else {
+          slot.classList.remove('filled');
+          const isMain = idx === 0;
+          slot.innerHTML = `
+            <span class="slot-icon">+</span>
+            <span class="slot-label">Add photo</span>
+            ${isMain ? '<span class="slot-required">Required</span>' : ''}
+          `;
+        }
+      });
+      
+      // Update tempPhotos array for compatibility
+      tempPhotos = photoSlots.filter(p => p !== null);
+    }
+
     function handleOnboardingPhotoChange(input){
       if(!input.files || !input.files.length) return;
       const files=Array.from(input.files);
@@ -4099,13 +4274,24 @@ function showScreen(id){
     }
     function renderOnboardingPhotosPreview(){
       const c=$("photos-onboarding-preview");
+      if(!c) return;
       if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">No photos yet</div>`; return; }
       c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="photo"/></div>`).join("");
     }
     function finishPhotosOnboarding(){
       if(!currentUserName){ alert("Fill out the mini profile first."); showScreen("screen-username"); return; }
-      if(!tempPhotos.length){ alert("Add at least one profile photo."); return; }
-      saveProfile(currentUserName,{photos: tempPhotos});
+      // Check if at least the first slot (required) has a photo
+      if(!photoSlots[0] && !tempPhotos.length){ 
+        toast("Please add at least one profile photo."); 
+        return; 
+      }
+      // Use photoSlots if available, otherwise fallback to tempPhotos
+      const photosToSave = photoSlots.filter(p => p !== null);
+      if(photosToSave.length === 0 && tempPhotos.length > 0) {
+        saveProfile(currentUserName,{photos: tempPhotos});
+      } else {
+        saveProfile(currentUserName,{photos: photosToSave});
+      }
       showScreen("screen-home");
       renderPlacesList();
       renderTonightPlan();
