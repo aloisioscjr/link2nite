@@ -654,7 +654,7 @@
       margin-top:4px;
     }
 
-    /* Tinder-like profile preview */
+    /* Profile preview card */
     .profile-preview {
       padding: 0;
       overflow: hidden;
@@ -768,7 +768,7 @@
       color: #94a3b8;
     }
 
-    /* Swipe deck (Tinder-like) */
+    /* Swipe deck */
     .swipe-deck {
       position: relative;
       height: 420px;
@@ -922,7 +922,7 @@
     }
 
 
-    /* Tinder-like icon pills (work/school/IG) */
+    /* Icon pills (work/school/IG) */
     .icon-row {
       display:flex;
       flex-wrap:wrap;
@@ -1576,7 +1576,7 @@
         <div class="card">
           <div class="top-banner">
             <span class="emoji">✨</span>
-            <span>Let’s set up your mini profile (Tinder-style).</span>
+            <span>Let’s set up your mini profile .</span>
           </div>
           <div class="input-group">
             <label>Name you want to show</label>
@@ -1617,7 +1617,7 @@
           </div>
           <div class="checkbox-row">
             <input type="checkbox" id="show-age-input" checked />
-            <span>Show my age on my profile (like Tinder).</span>
+            <span>Show my age on my profile.</span>
           </div>
           <button class="pill-button" onclick="saveUsername()">Continue</button>
           <p class="footer-hint">
@@ -1631,7 +1631,7 @@
         <div class="card">
           <div class="top-banner">
             <span class="emoji">📷</span>
-            <span>Now pick your photos (Tinder-style).</span>
+            <span>Now pick your photos.</span>
           </div>
           <p class="section-sub">
             Add at least one profile photo. You can add more to show your style.
@@ -1986,7 +1986,7 @@
             <div class="input-group">
               <label>Bio</label>
               <textarea id="profile-bio" placeholder="Tell a bit about you, your vibe, what you're looking for..."></textarea>
-              <div class="small-muted">Tinder tip: short, specific, fun.</div>
+              <div class="small-muted">Tip: short, specific, fun.</div>
             </div>
 
             <div class="input-group">
@@ -2025,7 +2025,7 @@
           </div>
 
           <p class="footer-hint">
-            The top area is your Tinder-style card that people see at venues.
+            The top area is your profile card that people see at venues.
           </p>
         </div>
 
@@ -3052,7 +3052,7 @@
       keys.forEach(key => {
         if(key.startsWith("l2n_")) localStorage.removeItem(key);
       });
-      toast("✅ Demo resetado. Todas as chaves l2n_* foram removidas.");
+      toast("✅ Demo reset. All l2n_* keys removed.");
       try{ renderAnalyticsPanel(); }catch(e){}
     }
     
@@ -4429,7 +4429,7 @@ function renderPlacesList(){
       const interestedData=getInterestedData();
       const list=Array.isArray(interestedData[placeId])?interestedData[placeId]:[];
       const idx=list.indexOf(currentUserName);
-      if(idx===-1){ list.push(currentUserName); toast("Salvo ✅"); }
+      if(idx===-1){ list.push(currentUserName); toast("Saved ✅"); }
       else { list.splice(idx,1); toast("Removido"); }
       interestedData[placeId]=list;
       setInterestedData(interestedData);
@@ -4680,17 +4680,17 @@ let extraHtml=extraParts.join(" · ");
                 track("bot_match_simulated", {botName: targetName, user: currentUserName});
                 toast("✨ Match! You both liked each other.");
               } else {
-                toast("Curtido ❤️");
+                toast("Liked ❤️");
               }
             } else {
               track("bot_like", {botName: targetName, user: currentUserName});
-              toast("Curtido ❤️");
+              toast("Liked ❤️");
             }
       } else {
-        toast(likedNow ? "Curtido ❤️" : "Curtida removida");
+        toast(likedNow ? "Liked ❤️" : "Like removed");
           }
         } else {
-          toast(likedNow ? "Curtido ❤️" : "Curtida removida");
+          toast(likedNow ? "Liked ❤️" : "Like removed");
         }
       }
       try{ renderMatchesList(); }catch(e){}
@@ -4745,7 +4745,7 @@ function renderGoingForPlace(placeId){
           if(isMatch) rightHtml=`<span style="font-size:12px;color:#f9a8d4;">💖 Match</span>`;
           else{
             const encoded=encodeURIComponent(name);
-            const label=likedByCurrent ? "💗 Curtido" : "🤍 Curtir";
+            const label=likedByCurrent ? "💗 Liked" : "🤍 Like";
             rightHtml=`<button class="pill-button small secondary" onclick="toggleLike('${placeId}','${encoded}')">${label}</button>`;
           }
         }
@@ -5342,7 +5342,7 @@ function renderGoingForPlace(placeId){
         placeId: currentPlaceId
       });
       
-      toast("Report enviado. Obrigado!");
+      toast("Report sent. Thank you!");
       
       if(confirm("Also block this user?")){
         blockUser(currentReportTarget);
@@ -6145,7 +6145,7 @@ function renderGoingForPlace(placeId){
         <div style="margin-top:12px;">
           <div class="section-title" style="font-size:14px;">Paywall por motivo</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-            ${reasonRows || `<div class="pay-note">Ainda sem dados.</div>`}
+            ${reasonRows || `<div class="pay-note">No data yet.</div>`}
           </div>
         </div>
       `);
@@ -6176,7 +6176,7 @@ function renderGoingForPlace(placeId){
           <div class="section-title" style="font-size:14px;">Conversion (Paywall → PRO)</div>
           <div class="section-sub" style="margin-top:6px;">Geral: <b>${overallRate}%</b> (${totalPro}/${totalPay}) • por motivo abaixo</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-            ${convRows || `<div class="pay-note">Ainda sem dados.</div>`}
+            ${convRows || `<div class="pay-note">No data yet.</div>`}
           </div>
         </div>
       `);
@@ -6185,7 +6185,7 @@ lines.push(`
         <div style="margin-top:12px;">
           <div class="section-title" style="font-size:14px;">Selected plans</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-            ${planRows || `<div class="pay-note">Ainda sem dados.</div>`}
+            ${planRows || `<div class="pay-note">No data yet.</div>`}
           </div>
         </div>
       `);
@@ -6275,7 +6275,7 @@ function initApp(){
     }
 
 
-    // --- Swipe (Tinder-like cards) ---
+    // --- Swipe cards ---
     let swipePlaceId = null;
     let swipeQueue = [];
     let swipeTop = null; // {el, profileName}
@@ -6557,7 +6557,7 @@ function initApp(){
         // atualiza lista de matches
         renderMatches();
       } else {
-        toast("Curtido ❤️");
+        toast("Liked ❤️");
       }
 
       // se estiver com place aberto, atualiza UI também
@@ -6849,7 +6849,7 @@ function initApp(){
           const byPlace=likesData[pid]||{};
           const fromCurrent=byPlace[currentUserName]||[];
           const liked = Array.isArray(fromCurrent) && fromCurrent.includes(publicProfileName);
-          likeBtn.textContent = liked ? "Curtido ✅" : "Curtir";
+          likeBtn.textContent = liked ? "Liked ✅" : "Like";
         }
       }
     }
@@ -6963,12 +6963,12 @@ function initApp(){
         toggleEl.textContent = pro ? "Deactivate" : "Activate";
         toggleEl.style.display = pro ? "block" : "none";
       }
-      if(planEl) planEl.textContent = plan === "weekly" ? "Weekly ($4.99/semana)" : "Monthly ($14.99/mês)";
+      if(planEl) planEl.textContent = plan === "weekly" ? "Weekly ($4.99/week)" : "Monthly ($14.99/month)";
     }
     function toggleProStatus(){
       if(isPro()){
         setPro(false);
-        toast("✅ PRO desativado. Você voltou para o plano FREE.");
+        toast("✅ PRO deactivated. You're back on the FREE plan.");
       } else {
         openPaywall("settings");
       }
@@ -7288,7 +7288,7 @@ function resetDemoData(){
               <div style="flex:1; min-width:0;">
                 <div style="font-weight:500; color:#f1f5f9; margin-bottom:4px;">${placeName}</div>
                 <div style="font-size:12px; color:#94a3b8;">
-                  ${hasPhoto ? "✓ Foto manual" : "Sem foto manual"}
+                  ${hasPhoto ? "✓ Manual photo" : "No manual photo"}
                 </div>
               </div>
             </div>
@@ -7323,7 +7323,7 @@ function resetDemoData(){
           
           const success = setManualPlacePhoto(placeId, dataUrl);
           if(success){
-            showToast(`Foto salva para ${placeName}`, 2000);
+            showToast(`Photo saved for ${placeName}`, 2000);
             renderPlacePhotosList();
             // Refresh places list if on home screen
             try {
@@ -7343,9 +7343,9 @@ function resetDemoData(){
     }
     
     function removePlacePhotoConfirm(placeId, placeName){
-      if(confirm(`Remover foto manual de "${placeName}"?`)){
+      if(confirm(`Remove manual photo from "${placeName}"?`)){
         removeManualPlacePhoto(placeId);
-        showToast(`Foto removida de ${placeName}`, 2000);
+        showToast(`Photo removed from ${placeName}`, 2000);
         renderPlacePhotosList();
         // Refresh places list if on home screen
         try {
@@ -7377,7 +7377,7 @@ function resetDemoData(){
         a.click();
         URL.revokeObjectURL(url);
         
-        showToast(`Exportado ${exportData.photos.length} foto(s)`, 2000);
+        showToast(`Exported ${exportData.photos.length} photo(s)`, 2000);
       } catch(err) {
         console.error("[Place Photos] Export error", err);
         showToast("Error exporting photos", 2000);
@@ -7413,7 +7413,7 @@ function resetDemoData(){
               }
             });
             
-            showToast(`Importado ${imported} foto(s)${errors > 0 ? `, ${errors} erro(s)` : ""}`, 3000);
+            showToast(`Imported ${imported} photo(s)${errors > 0 ? `, ${errors} error(s)` : ""}`, 3000);
             renderPlacePhotosList();
             // Refresh places list if on home screen
             try {
@@ -7443,7 +7443,7 @@ function resetDemoData(){
       
       if(confirm(`Remove all ${count} manual photo(s)? This action cannot be undone.`)){
         const removed = removeAllManualPlacePhotos();
-        showToast(`${removed} foto(s) removida(s)`, 2000);
+        showToast(`${removed} photo(s) removed`, 2000);
         renderPlacePhotosList();
         // Refresh places list if on home screen
         try {
