@@ -1,0 +1,6 @@
+Coloque aqui os clipes de video para o Reel 1 (POV).
+
+Nome dos arquivos (na ordem): 01.mp4, 02.mp4, 03.mp4, 04.mp4 ...
+Baixe videos em: Pexels, Pixabay ou Mixkit (veja INSTAGRAM-REELS-VIDEO-ELABORADOS.md).
+
+Depois execute na pasta do projeto: .\gerar-reels-video.ps1
