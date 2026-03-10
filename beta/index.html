@@ -2507,47 +2507,47 @@
       failed: []
     };
     
-    // Direct image URLs mapped to local Link2Nite assets
-    // This makes venue cards use consistent, fast-loading images instead of random Unsplash results.
+    // Direct image URLs using venue-specific Unsplash searches (or similar)
+    // These aim to show real photos / vibes of each place.
     const PLACE_IMAGE_DIRECT_MAP = {
-      // Rooftops / skyline vibes
-      "230fifth": "/instagram-assets/instagram-post-1-rooftop.png",
-      "lebain": "/instagram-assets/reels/reels-cover-7-rooftop-nyc.png",
-      "skylark": "/instagram-assets/reels/reels-cover-6-rooftop-meet.png",
-      "mrpurple": "/instagram-assets/reels/reels-cover-6-what-if-you-knew.png",
-      "phdterrace": "/instagram-assets/reels/reels-cover-3-stop-scrolling-new.png",
-      "refinery": "/instagram-assets/reels/reels-cover-5-coming-soon.png",
-      "the_ned": "/instagram-assets/reels/reels-cover-2-what-if.png",
-      "harriet": "/instagram-assets/reels/reels-cover-6-rooftop-meet.png",
-      "westlight": "/instagram-assets/reels/reels-cover-1-pov-met-tonight.png",
-      "bar_sixtyfive": "/instagram-assets/reels/reels-cover-13-friday-10-seconds.png",
-      "penn_top": "/instagram-assets/reels/reels-cover-11-saturday-roulette.png",
-      "magic_hour": "/instagram-assets/reels/reels-cover-3-stop-scrolling.png",
+      // Rooftops / skyline
+      "230fifth": "https://source.unsplash.com/800x450/?230%20fifth%20rooftop,nyc",
+      "lebain": "https://source.unsplash.com/800x450/?le%20bain%20rooftop,nyc",
+      "skylark": "https://source.unsplash.com/800x450/?the%20skylark%20rooftop,nyc",
+      "mrpurple": "https://source.unsplash.com/800x450/?mr%20purple%20rooftop,nyc",
+      "phdterrace": "https://source.unsplash.com/800x450/?phd%20terrace%20rooftop,nyc",
+      "refinery": "https://source.unsplash.com/800x450/?refinery%20rooftop,nyc",
+      "the_ned": "https://source.unsplash.com/800x450/?the%20ned%20nomad%20rooftop,nyc",
+      "harriet": "https://source.unsplash.com/800x450/?harriet's%20rooftop,brooklyn",
+      "westlight": "https://source.unsplash.com/800x450/?westlight%20rooftop,nyc",
+      "bar_sixtyfive": "https://source.unsplash.com/800x450/?bar%20sixtyfive%20rockefeller,nyc",
+      "penn_top": "https://source.unsplash.com/800x450/?public%20hotel%20rooftop,nyc",
+      "magic_hour": "https://source.unsplash.com/800x450/?magic%20hour%20rooftop,nyc",
       
       // Cocktail bars / lounges
-      "employeesonly": "/instagram-assets/reels/reels-cover-7-cocktail-bar-chat.png",
-      "ziggy": "/instagram-assets/reels/reels-cover-8-chat-to-date.png",
-      "beautique": "/instagram-assets/reels/reels-cover-4-one-question.png",
-      "paul_baby": "/instagram-assets/reels/reels-cover-15-main-character.png",
-      "little_sister": "/instagram-assets/reels/reels-cover-8-chat-to-date.png",
-      "the_blond": "/instagram-assets/reels/reels-cover-9-two-people-laughing.png",
+      "employeesonly": "https://source.unsplash.com/800x450/?employees%20only%20bar,nyc",
+      "ziggy": "https://source.unsplash.com/800x450/?west%20village%20cocktail%20bar,nyc",
+      "beautique": "https://source.unsplash.com/800x450/?beauty%20and%20essex%20nyc",
+      "paul_baby": "https://source.unsplash.com/800x450/?paul's%20baby%20grand%20bar,nyc",
+      "little_sister": "https://source.unsplash.com/800x450/?little%20sister%20lounge%20nyc",
+      "the_blond": "https://source.unsplash.com/800x450/?the%20blond%20soho,nyc",
       
       // Live music / jazz
-      "bluenote": "/instagram-assets/reels/reels-cover-10-when-it-clicks.png",
-      "django": "/instagram-assets/reels/reels-cover-12-pen-pal-over.png",
+      "bluenote": "https://source.unsplash.com/800x450/?blue%20note%20jazz%20club,nyc",
+      "django": "https://source.unsplash.com/800x450/?the%20django%20jazz%20club,nyc",
       
       // Party / clubs
-      "house_yes": "/instagram-assets/reels/reels-cover-14-empty-bar.png",
-      "somewhere_nowhere": "/instagram-assets/reels/reels-cover-2-dating-apps-vs.png",
-      "phd_downtown": "/instagram-assets/reels/reels-cover-5-somethings-coming.png",
-      "lavo": "/instagram-assets/reels/reels-cover-9-walk-in-together.png",
-      "tao": "/instagram-assets/reels/reels-cover-4-dating-apps-vs.png",
-      "analog": "/instagram-assets/reels/reels-cover-10-when-it-clicks.png",
-      "paradise": "/instagram-assets/reels/reels-cover-1-pov.png",
-      "the_box": "/instagram-assets/reels/reels-cover-3-stop-scrolling.png",
+      "house_yes": "https://source.unsplash.com/800x450/?house%20of%20yes%20club,brooklyn",
+      "somewhere_nowhere": "https://source.unsplash.com/800x450/?somewhere%20nowhere%20rooftop,nyc",
+      "phd_downtown": "https://source.unsplash.com/800x450/?phd%20downtown%20rooftop,nyc",
+      "lavo": "https://source.unsplash.com/800x450/?lavo%20nightclub,nyc",
+      "tao": "https://source.unsplash.com/800x450/?tao%20downtown%20restaurant%20club,nyc",
+      "analog": "https://source.unsplash.com/800x450/?lower%20east%20side%20club,nyc",
+      "paradise": "https://source.unsplash.com/800x450/?paradise%20club%20nyc",
+      "the_box": "https://source.unsplash.com/800x450/?the%20box%20nightclub%20nyc",
       
       // Ballroom / classic date spots
-      "jane_ballroom": "/instagram-assets/instagram-post-3-carousel-cover.png"
+      "jane_ballroom": "https://source.unsplash.com/800x450/?jane%20ballroom,nyc"
     };
     
     // Additional URLs from the list (remaining 15 URLs)
