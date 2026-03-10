@@ -2507,22 +2507,47 @@
       failed: []
     };
     
-    // Direct image URLs via proxy (working images) - all 28 URLs mapped
+    // Direct image URLs mapped to local Link2Nite assets
+    // This makes venue cards use consistent, fast-loading images instead of random Unsplash results.
     const PLACE_IMAGE_DIRECT_MAP = {
-      "230fifth": "/images/230%20rooftop.jpg",
-      "jane_ballroom": "/images/Jane%20Ballroom.jpg",
-      "lebain": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Crooftop%2Ccocktails&w=1200&h=750&fit=cover&output=webp",
-      "skylark": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Cskyline%2Cbar&w=1200&h=750&fit=cover&output=webp",
-      "mrpurple": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Crooftop%2Cpool&w=1200&h=750&fit=cover&output=webp",
-      "refinery": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Crooftop%2Cnight&w=1200&h=750&fit=cover&output=webp",
-      "westlight": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Cskyline%2Crooftop&w=1200&h=750&fit=cover&output=webp",
-      "lavo": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnightclub%2Clights%2Cnew-york&w=1200&h=750&fit=cover&output=webp",
-      "house_yes": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fdance%2Cparty%2Cneon&w=1200&h=750&fit=cover&output=webp",
-      "bluenote": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fjazz%2Cclub%2Cnew-york&w=1200&h=750&fit=cover&output=webp",
-      "employeesonly": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fcocktail%2Cbar%2Cnyc&w=1200&h=750&fit=cover&output=webp",
-      "somewhere_nowhere": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Frooftop%2Cdj%2Cnyc&w=1200&h=750&fit=cover&output=webp",
-      "magic_hour": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Frooftop%2Ctimes-square%2Cbar&w=1200&h=750&fit=cover&output=webp",
-      "little_sister": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Flounge%2Ccocktail%2Cnyc&w=1200&h=750&fit=cover&output=webp"
+      // Rooftops / skyline vibes
+      "230fifth": "/instagram-assets/instagram-post-1-rooftop.png",
+      "lebain": "/instagram-assets/reels/reels-cover-7-rooftop-nyc.png",
+      "skylark": "/instagram-assets/reels/reels-cover-6-rooftop-meet.png",
+      "mrpurple": "/instagram-assets/reels/reels-cover-6-what-if-you-knew.png",
+      "phdterrace": "/instagram-assets/reels/reels-cover-3-stop-scrolling-new.png",
+      "refinery": "/instagram-assets/reels/reels-cover-5-coming-soon.png",
+      "the_ned": "/instagram-assets/reels/reels-cover-2-what-if.png",
+      "harriet": "/instagram-assets/reels/reels-cover-6-rooftop-meet.png",
+      "westlight": "/instagram-assets/reels/reels-cover-1-pov-met-tonight.png",
+      "bar_sixtyfive": "/instagram-assets/reels/reels-cover-13-friday-10-seconds.png",
+      "penn_top": "/instagram-assets/reels/reels-cover-11-saturday-roulette.png",
+      "magic_hour": "/instagram-assets/reels/reels-cover-3-stop-scrolling.png",
+      
+      // Cocktail bars / lounges
+      "employeesonly": "/instagram-assets/reels/reels-cover-7-cocktail-bar-chat.png",
+      "ziggy": "/instagram-assets/reels/reels-cover-8-chat-to-date.png",
+      "beautique": "/instagram-assets/reels/reels-cover-4-one-question.png",
+      "paul_baby": "/instagram-assets/reels/reels-cover-15-main-character.png",
+      "little_sister": "/instagram-assets/reels/reels-cover-8-chat-to-date.png",
+      "the_blond": "/instagram-assets/reels/reels-cover-9-two-people-laughing.png",
+      
+      // Live music / jazz
+      "bluenote": "/instagram-assets/reels/reels-cover-10-when-it-clicks.png",
+      "django": "/instagram-assets/reels/reels-cover-12-pen-pal-over.png",
+      
+      // Party / clubs
+      "house_yes": "/instagram-assets/reels/reels-cover-14-empty-bar.png",
+      "somewhere_nowhere": "/instagram-assets/reels/reels-cover-2-dating-apps-vs.png",
+      "phd_downtown": "/instagram-assets/reels/reels-cover-5-somethings-coming.png",
+      "lavo": "/instagram-assets/reels/reels-cover-9-walk-in-together.png",
+      "tao": "/instagram-assets/reels/reels-cover-4-dating-apps-vs.png",
+      "analog": "/instagram-assets/reels/reels-cover-10-when-it-clicks.png",
+      "paradise": "/instagram-assets/reels/reels-cover-1-pov.png",
+      "the_box": "/instagram-assets/reels/reels-cover-3-stop-scrolling.png",
+      
+      // Ballroom / classic date spots
+      "jane_ballroom": "/instagram-assets/instagram-post-3-carousel-cover.png"
     };
     
     // Additional URLs from the list (remaining 15 URLs)
