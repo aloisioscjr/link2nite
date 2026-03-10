@@ -28,41 +28,50 @@ else
   echo "  (warn) jane ballroom.jpg not found, skipping copy."
 fi
 
-echo "Downloading remaining venue images from Unsplash Source (best-effort)..."
+echo "Downloading venue placeholder images (dummyimage.com - direct JPEG, no redirect)..."
 
-# Rooftops / skyline
-download "lebain" "https://source.unsplash.com/800x450/?le%20bain%20rooftop,nyc"
-download "skylark" "https://source.unsplash.com/800x450/?the%20skylark%20rooftop,nyc"
-download "mrpurple" "https://source.unsplash.com/800x450/?mr%20purple%20rooftop,nyc"
-download "phdterrace" "https://source.unsplash.com/800x450/?phd%20terrace%20rooftop,nyc"
-download "refinery" "https://source.unsplash.com/800x450/?refinery%20rooftop,nyc"
-download "the_ned" "https://source.unsplash.com/800x450/?the%20ned%20nomad%20rooftop,nyc"
-download "harriet" "https://source.unsplash.com/800x450/?brooklyn%20bridge%20rooftop,nyc"
-download "westlight" "https://source.unsplash.com/800x450/?westlight%20rooftop,nyc"
-download "bar_sixtyfive" "https://source.unsplash.com/800x450/?bar%20sixtyfive%20rockefeller,nyc"
-download "penn_top" "https://source.unsplash.com/800x450/?public%20hotel%20rooftop,nyc"
-download "magic_hour" "https://source.unsplash.com/800x450/?magic%20hour%20rooftop,nyc"
+# dummyimage.com returns real JPEG directly (no redirect), so curl always gets image bytes
+# Format: 800x450, dark bg color, light text. Each venue gets a different color.
+dummyimg() {
+  local id="$1"
+  local hex="$2"
+  echo "→ $id"
+  curl -s "https://dummyimage.com/800x450/${hex}/94a3b8.jpg?text=${id}" -o "images/venues/${id}.jpg"
+}
+
+# Rooftops / skyline (dark blues and purples)
+dummyimg "lebain" "1e3a5f"
+dummyimg "skylark" "312e81"
+dummyimg "mrpurple" "4c1d95"
+dummyimg "phdterrace" "1e3a5f"
+dummyimg "refinery" "0f172a"
+dummyimg "the_ned" "312e81"
+dummyimg "harriet" "1e293b"
+dummyimg "westlight" "4c1d95"
+dummyimg "bar_sixtyfive" "0f172a"
+dummyimg "penn_top" "1e3a5f"
+dummyimg "magic_hour" "312e81"
 
 # Cocktail bars / lounges
-download "employeesonly" "https://source.unsplash.com/800x450/?employees%20only%20bar,nyc"
-download "ziggy" "https://source.unsplash.com/800x450/?west%20village%20cocktail%20bar,nyc"
-download "beautique" "https://source.unsplash.com/800x450/?beauty%20and%20essex%20nyc"
-download "paul_baby" "https://source.unsplash.com/800x450/?piano%20bar%20cocktails"
-download "little_sister" "https://source.unsplash.com/800x450/?dim%20lounge%20bar,nyc"
-download "the_blond" "https://source.unsplash.com/800x450/?the%20blond%20soho,nyc"
+dummyimg "employeesonly" "1e293b"
+dummyimg "ziggy" "4c1d95"
+dummyimg "beautique" "0f172a"
+dummyimg "paul_baby" "1e3a5f"
+dummyimg "little_sister" "312e81"
+dummyimg "the_blond" "1e293b"
 
 # Live music / jazz
-download "bluenote" "https://source.unsplash.com/800x450/?blue%20note%20jazz%20club,nyc"
-download "django" "https://source.unsplash.com/800x450/?the%20django%20jazz%20club,nyc"
+dummyimg "bluenote" "1e3a5f"
+dummyimg "django" "4c1d95"
 
 # Party / clubs
-download "house_yes" "https://source.unsplash.com/800x450/?house%20of%20yes%20club,brooklyn"
-download "somewhere_nowhere" "https://source.unsplash.com/800x450/?somewhere%20nowhere%20rooftop,nyc"
-download "phd_downtown" "https://source.unsplash.com/800x450/?phd%20downtown%20rooftop,nyc"
-download "lavo" "https://source.unsplash.com/800x450/?lavo%20nightclub,nyc"
-download "tao" "https://source.unsplash.com/800x450/?tao%20downtown%20restaurant%20club,nyc"
-download "analog" "https://source.unsplash.com/800x450/?underground%20club,nyc"
-download "paradise" "https://source.unsplash.com/800x450/?paradise%20club%20nyc"
-download "the_box" "https://source.unsplash.com/800x450/?burlesque%20club%20nyc"
+dummyimg "house_yes" "4c1d95"
+dummyimg "somewhere_nowhere" "0f172a"
+dummyimg "phd_downtown" "1e3a5f"
+dummyimg "lavo" "312e81"
+dummyimg "tao" "0f172a"
+dummyimg "analog" "1e293b"
+dummyimg "paradise" "4c1d95"
+dummyimg "the_box" "312e81"
 
-echo "Done. Check the images/venues/ folder and adjust/replace any photo you don't like."
+echo "Done. Venue images are real JPEGs. Replace any file in images/venues/ with a real venue photo when you have one."
