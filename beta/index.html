@@ -1504,15 +1504,15 @@
       /* Forçar novo contexto de empilhamento no iOS */
       -webkit-perspective: 1000px;
       perspective: 1000px;
-      /* Garantir que não seja afetado por overflow de pais */
+      /* Ensure not affected by parent overflow */
       overflow: visible !important;
     }
     .modal.hidden{ display:none !important; visibility: hidden !important; }
-    /* Garantir que o modal não seja afetado por transforms de elementos pais */
+    /* Ensure modal not affected by parent transforms */
     body > .modal{
       position: fixed !important;
     }
-    /* Fallback para iOS: garantir que o modal-card também não seja afetado */
+    /* Fallback for iOS: ensure modal-card is also not affected */
     .modal-card{
       transform: none !important;
       -webkit-transform: none !important;
@@ -4541,8 +4541,8 @@ function renderPlacesList(){
         // Recommendation badge (based on your existing recommender)
         let recHtml="";
         if(profile && isRecommendedPlaceForUser(profile, place)){
-          const vibeTxt=profile.vibe||"seu estilo";
-          recHtml=`<div class="std-recommend">⭐ Combina com seu estilo (${escapeHtml(vibeTxt)})</div>`;
+          const vibeTxt=profile.vibe||"your style";
+          recHtml=`<div class="std-recommend">⭐ Matches your style (${escapeHtml(vibeTxt)})</div>`;
         }
 
         const hotBadge = (hotSet.has(place.id) || goingCount>=5)
@@ -4920,7 +4920,7 @@ function renderGoingForPlace(placeId){
           : "";
 
         let rightHtml="";
-        if(currentUserName && name===currentUserName) rightHtml=`<span style="font-size:12px;color:#a5f3fc;">(Você)</span>`;
+        if(currentUserName && name===currentUserName) rightHtml=`<span style="font-size:12px;color:#a5f3fc;">(You)</span>`;
         else if(currentUserName && name!==currentUserName){
           const byPlace=likesData[placeId]||{};
           const fromCurrent=byPlace[currentUserName]||[];
@@ -5317,7 +5317,7 @@ function renderGoingForPlace(placeId){
         reader.onload=e=>{
           tempPhotos.push(e.target.result);
           renderProfilePhotosPreview();
-          // preview instantâneo: salva temporariamente para render
+          // Instant preview: save temporarily for render
           const p=getProfile(currentUserName);
           saveProfile(currentUserName, {...p, photos: tempPhotos});
           renderProfilePreviewCard();
@@ -5426,7 +5426,7 @@ function renderGoingForPlace(placeId){
             <span style="color:#94a3b8;font-size:20px;">○</span>
             <div>
               <div style="color:#94a3b8;font-weight:600;">Not verified</div>
-              <div style="color:#94a3b8;font-size:12px;">Envie uma selfie para verificar</div>
+              <div style="color:#94a3b8;font-size:12px;">Send a selfie to verify</div>
             </div>
           </div>
         `;
@@ -5465,9 +5465,9 @@ function renderGoingForPlace(placeId){
           
           <div id="report-reasons" style="display:none;margin-top:16px;">
             <div class="input-group">
-              <label>Motivo do report</label>
+              <label>Report reason</label>
               <select id="report-reason-select" class="input">
-                <option value="">Selecione um motivo</option>
+                <option value="">Select a reason</option>
                 <option value="spam">Spam</option>
                 <option value="harassment">Harassment</option>
                 <option value="inappropriate">Inappropriate content</option>
@@ -5479,7 +5479,7 @@ function renderGoingForPlace(placeId){
               <label>Detalhes (opcional)</label>
               <textarea id="report-note" class="input" placeholder="Descreva o problema..."></textarea>
             </div>
-            <button class="pill-button" style="width:100%;" onclick="submitReport()">Enviar report</button>
+            <button class="pill-button" style="width:100%;" onclick="submitReport()">Submit report</button>
           </div>
           
           <button class="pill-button secondary" style="width:100%;margin-top:12px;" onclick="closeReportModal()">Cancelar</button>
@@ -5519,7 +5519,7 @@ function renderGoingForPlace(placeId){
       const note = document.getElementById("report-note")?.value || "";
       
       if(!reason){
-        toast("Selecione um motivo");
+        toast("Select a reason");
         return;
       }
       
@@ -6236,7 +6236,7 @@ function renderGoingForPlace(placeId){
             <img src="${escapeAttr(img)}" alt="${escapeAttr(name)}" onerror="this.style.display='none'">
             <div class="person-overlay">
               <div class="person-name">${escapeHtml(name)}${ageText}${verifiedBadge} <span class="mini-pill">📍 ${dist} mi</span></div>
-              <div class="person-mini"><span class="mini-pill">❤️ Curtiu você</span></div>
+              <div class="person-mini"><span class="mini-pill">❤️ Liked you</span></div>
             </div>
           </div>
         `;
@@ -6329,7 +6329,7 @@ function renderGoingForPlace(placeId){
 
       lines.push(`
         <div style="margin-top:12px;">
-          <div class="section-title" style="font-size:14px;">Paywall por motivo</div>
+          <div class="section-title" style="font-size:14px;">Paywall by reason</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
             ${reasonRows || `<div class="pay-note">No data yet.</div>`}
           </div>
@@ -6360,7 +6360,7 @@ function renderGoingForPlace(placeId){
       lines.push(`
         <div style="margin-top:12px;">
           <div class="section-title" style="font-size:14px;">Conversion (Paywall → PRO)</div>
-          <div class="section-sub" style="margin-top:6px;">Geral: <b>${overallRate}%</b> (${totalPro}/${totalPay}) • por motivo abaixo</div>
+          <div class="section-sub" style="margin-top:6px;">Overall: <b>${overallRate}%</b> (${totalPro}/${totalPay}) • by reason below</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
             ${convRows || `<div class="pay-note">No data yet.</div>`}
           </div>
@@ -6435,7 +6435,7 @@ function initApp(){
       // Initialize quotas
       resetDailyQuotasIfNeeded();
       
-      // Mover modal para o body no carregamento para evitar problemas com transforms no iOS/WhatsApp
+      // Move modal to body on load to avoid transform issues on iOS/WhatsApp
       const modal = document.getElementById("paywall-modal");
       if(modal && modal.parentElement !== document.body) {
         document.body.appendChild(modal);
@@ -6496,7 +6496,7 @@ function initApp(){
     }
 
     function backFromSwipe(){
-      // volta para o lugar (se existir) ou home
+      // Go back to place (if exists) or home
       if(swipePlaceId && currentPlaceId===swipePlaceId) showScreen("screen-place");
       else goHome();
     }
@@ -6506,16 +6506,16 @@ function initApp(){
       const list=Array.isArray(goingData[placeId])?goingData[placeId]:[];
       const me=currentUserName;
 
-      // só quem está indo, exclui você
+      // Only people going, exclude current user
       let candidates=list.filter(n=>n && n!==me);
       
       // Filter out blocked/soft-banned users
       candidates=candidates.filter(n=>!shouldFilterUser(n));
 
-      // aplica compatibilidade de preferência (showMe)
+      // Apply preference compatibility (showMe)
       candidates=candidates.filter(other=>areProfilesCompatible(me, other));
 
-      // fallback: se não tiver ninguém, pega bots que combinam e coloca para teste
+      // Fallback: if nobody going, use matching bots for demo
       if(candidates.length===0){
         const profiles=getProfilesData();
         candidates=Object.keys(profiles).filter(n=>n!==me && profiles[n] && profiles[n].isBot===true)
@@ -6689,14 +6689,14 @@ function initApp(){
       const el=swipeTop.el;
       const name=swipeTop.profileName;
 
-      // anima para fora
+      // Animate out
       el.style.transition="transform 0.22s ease, opacity 0.22s ease";
       const outX = direction==="right" ? 460 : -460;
       const rot = direction==="right" ? 16 : -16;
       el.style.transform=`translate3d(${outX}px, -30px, 0) rotate(${rot}deg)`;
       el.style.opacity="0";
 
-      // ação de negócio
+      // Business action
       if(direction==="right"){
         applyLikeFromSwipe(name);
       } else {
@@ -6739,14 +6739,14 @@ function initApp(){
       const isMatch = likedBack && areProfilesCompatible(currentUserName, targetName);
 
       if(isMatch){
-        toast(`💖 Match com ${targetName}!`);
+        toast(`💖 Match with ${targetName}!`);
         // atualiza lista de matches
         renderMatches();
       } else {
         toast("Liked ❤️");
       }
 
-      // se estiver com place aberto, atualiza UI também
+      // If place is open, update UI too
       if(currentPlaceId===swipePlaceId){
         renderGoingForPlace(swipePlaceId);
       }
@@ -6922,7 +6922,7 @@ function initApp(){
                 Reportado: <b>${escapeHtml(report.reportedId)}</b>
               </div>
               <div style="font-size:12px; color:#94a3b8; margin-bottom:4px;">
-                Motivo: ${escapeHtml(reason)} • ${date}
+                Reason: ${escapeHtml(reason)} • ${date}
               </div>
               ${report.note ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; margin-top:4px;">"${escapeHtml(report.note)}"</div>` : ""}
               <div style="font-size:11px; color:#64748b; margin-top:4px;">
@@ -7015,7 +7015,7 @@ function initApp(){
       let ctx = "";
       if(pid){
         const place = places.find(x=>x.id===pid);
-        if(place) ctx = `Contexto: vocês aparecem em <strong>${place.name}</strong>.`;
+        if(place) ctx = `Context: you both appear at <strong>${place.name}</strong>.`;
       }
       $("public-profile-context").innerHTML = ctx || " ";
 
@@ -7078,7 +7078,7 @@ function initApp(){
       const likedBack=Array.isArray(fromOther) && fromOther.includes(currentUserName);
       const isMatch = likedBack && areProfilesCompatible(currentUserName, publicProfileName);
 
-      if(isMatch) toast(`💖 Match com ${publicProfileName}!`);
+      if(isMatch) toast(`💖 Match with ${publicProfileName}!`);
       else toast(nowLiked ? "Liked ❤️" : "Unliked");
 
       renderPublicProfile();
@@ -7206,7 +7206,7 @@ function initApp(){
             <div style="font-weight:700;color:#22c55e;">${loaded}</div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-weight:700;color:#e2e8f0;">Taxa de sucesso</div>
+            <div style="font-weight:700;color:#e2e8f0;">Success rate</div>
             <div style="font-weight:700;color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'};">${successRate}%</div>
           </div>
         </div>
@@ -7223,7 +7223,7 @@ function initApp(){
           html += `
             <div style="padding:10px;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);">
               <div style="font-weight:900;color:#f8fafc;margin-bottom:4px;">${escapeHtml(item.name)}</div>
-              <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;word-break:break-all;">${escapeHtml(item.url || "sem URL")}</div>
+              <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;word-break:break-all;">${escapeHtml(item.url || "no URL")}</div>
               <div style="font-size:11px;color:#fde68a;">Fallback: <b>${escapeHtml(item.fallback)}</b></div>
             </div>
           `;
@@ -7288,7 +7288,7 @@ function initApp(){
     }
 
     function changeName(){
-      const newName = prompt("Novo nome:", currentUserName || "");
+      const newName = prompt("New name:", currentUserName || "");
       if(!newName) return;
 
       const profiles=getProfilesData();
@@ -7304,7 +7304,7 @@ function initApp(){
       localStorage.setItem("tonightly_user", newName);
       currentUserName=newName;
 
-      toast("Nome atualizado ✅");
+      toast("Name updated ✅");
       openSettings();
     }
 
@@ -7344,7 +7344,7 @@ function toggleDemoPanel(){
             <div style="margin-bottom:8px;"><b>Total:</b> ${total} venues</div>
             <div style="margin-bottom:8px;"><b>Loaded:</b> ${loaded}</div>
             <div style="margin-bottom:8px;"><b>Falharam:</b> ${failed}</div>
-            <div><b>Taxa:</b> <span style="color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'}">${successRate}%</span></div>
+            <div><b>Rate:</b> <span style="color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'}">${successRate}%</span></div>
           `;
         }
       }
@@ -7454,7 +7454,7 @@ function resetDemoData(){
       
       container.innerHTML = filtered.map(place => {
         const placeId = place.id;
-        const placeName = escapeHtml(place.name || "Sem nome");
+        const placeName = escapeHtml(place.name || "No name");
         const hasPhoto = !!allPhotos[placeId];
         const photoDataUrl = allPhotos[placeId] || null;
         const thumbnailUrl = photoDataUrl || (place.image || "");
@@ -7771,7 +7771,7 @@ document.addEventListener("DOMContentLoaded", initApp);
         <div class="pay-feat"><div class="ic">👀</div><div class="txt">Full list of "Who's going" (no limit)</div></div>
         <div class="pay-feat"><div class="ic">♾️</div><div class="txt">Unlimited swipes</div></div>
         <div class="pay-feat"><div class="ic">❤️</div><div class="txt">See who liked you (coming soon)</div></div>
-        <div class="pay-feat"><div class="ic">⚡</div><div class="txt">Prioridade nos cards (em breve)</div></div>
+        <div class="pay-feat"><div class="ic">⚡</div><div class="txt">Priority on cards (coming soon)</div></div>
       </div>
 
       <div class="price-pills" id="price-pills">
