@@ -2507,43 +2507,38 @@
       failed: []
     };
     
-    // Direct image URLs using venue-specific Unsplash searches (or similar)
-    // These aim to show real photos / vibes of each place.
+    // Direct image URLs pointing to local venue photos.
+    // Pattern: /images/venues/<placeId>.jpg
     const PLACE_IMAGE_DIRECT_MAP = {
-      // Rooftops / skyline
-      "lebain": "https://source.unsplash.com/800x450/?le%20bain%20rooftop,nyc",
-      "skylark": "https://source.unsplash.com/800x450/?the%20skylark%20rooftop,nyc",
-      "mrpurple": "https://source.unsplash.com/800x450/?mr%20purple%20rooftop,nyc",
-      "phdterrace": "https://source.unsplash.com/800x450/?phd%20terrace%20rooftop,nyc",
-      "refinery": "https://source.unsplash.com/800x450/?refinery%20rooftop,nyc",
-      "the_ned": "https://source.unsplash.com/800x450/?the%20ned%20nomad%20rooftop,nyc",
-      "harriet": "https://source.unsplash.com/800x450/?harriet's%20rooftop,brooklyn",
-      "westlight": "https://source.unsplash.com/800x450/?westlight%20rooftop,nyc",
-      "bar_sixtyfive": "https://source.unsplash.com/800x450/?bar%20sixtyfive%20rockefeller,nyc",
-      "penn_top": "https://source.unsplash.com/800x450/?public%20hotel%20rooftop,nyc",
-      "magic_hour": "https://source.unsplash.com/800x450/?magic%20hour%20rooftop,nyc",
-      
-      // Cocktail bars / lounges
-      "employeesonly": "https://source.unsplash.com/800x450/?employees%20only%20bar,nyc",
-      "ziggy": "https://source.unsplash.com/800x450/?west%20village%20cocktail%20bar,nyc",
-      "beautique": "https://source.unsplash.com/800x450/?beauty%20and%20essex%20nyc",
-      "paul_baby": "https://source.unsplash.com/800x450/?paul's%20baby%20grand%20bar,nyc",
-      "little_sister": "https://source.unsplash.com/800x450/?little%20sister%20lounge%20nyc",
-      "the_blond": "https://source.unsplash.com/800x450/?the%20blond%20soho,nyc",
-      
-      // Live music / jazz
-      "bluenote": "https://source.unsplash.com/800x450/?blue%20note%20jazz%20club,nyc",
-      "django": "https://source.unsplash.com/800x450/?the%20django%20jazz%20club,nyc",
-      
-      // Party / clubs
-      "house_yes": "https://source.unsplash.com/800x450/?house%20of%20yes%20club,brooklyn",
-      "somewhere_nowhere": "https://source.unsplash.com/800x450/?somewhere%20nowhere%20rooftop,nyc",
-      "phd_downtown": "https://source.unsplash.com/800x450/?phd%20downtown%20rooftop,nyc",
-      "lavo": "https://source.unsplash.com/800x450/?lavo%20nightclub,nyc",
-      "tao": "https://source.unsplash.com/800x450/?tao%20downtown%20restaurant%20club,nyc",
-      "analog": "https://source.unsplash.com/800x450/?lower%20east%20side%20club,nyc",
-      "paradise": "https://source.unsplash.com/800x450/?paradise%20club%20nyc",
-      "the_box": "https://source.unsplash.com/800x450/?the%20box%20nightclub%20nyc"
+      "230fifth": "/images/venues/230fifth.jpg",
+      "lebain": "/images/venues/lebain.jpg",
+      "skylark": "/images/venues/skylark.jpg",
+      "mrpurple": "/images/venues/mrpurple.jpg",
+      "phdterrace": "/images/venues/phdterrace.jpg",
+      "refinery": "/images/venues/refinery.jpg",
+      "employeesonly": "/images/venues/employeesonly.jpg",
+      "bluenote": "/images/venues/bluenote.jpg",
+      "django": "/images/venues/django.jpg",
+      "the_ned": "/images/venues/the_ned.jpg",
+      "harriet": "/images/venues/harriet.jpg",
+      "westlight": "/images/venues/westlight.jpg",
+      "beautique": "/images/venues/beautique.jpg",
+      "paul_baby": "/images/venues/paul_baby.jpg",
+      "house_yes": "/images/venues/house_yes.jpg",
+      "little_sister": "/images/venues/little_sister.jpg",
+      "somewhere_nowhere": "/images/venues/somewhere_nowhere.jpg",
+      "phd_downtown": "/images/venues/phd_downtown.jpg",
+      "magic_hour": "/images/venues/magic_hour.jpg",
+      "the_box": "/images/venues/the_box.jpg",
+      "jane_ballroom": "/images/venues/jane_ballroom.jpg",
+      "bar_sixtyfive": "/images/venues/bar_sixtyfive.jpg",
+      "penn_top": "/images/venues/penn_top.jpg",
+      "lavo": "/images/venues/lavo.jpg",
+      "tao": "/images/venues/tao.jpg",
+      "the_blond": "/images/venues/the_blond.jpg",
+      "ziggy": "/images/venues/ziggy.jpg",
+      "analog": "/images/venues/analog.jpg",
+      "paradise": "/images/venues/paradise.jpg"
     };
     
     // Additional URLs from the list (remaining 15 URLs)
