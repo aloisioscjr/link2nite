@@ -32,6 +32,7 @@ Na sessão de 2026-02-10, foram removidas referências a Tinder nos textos de on
 ## Current git state (important)
 - Branch: `main`
 - Recent commits:
+  - `638d870` Docs: sync handoff and log Codex venue-images session
   - `34ff6af` Add venue images under beta/images/venues for production path
   - `ca71586` Fix 230 Fifth venue image path for beta
   - `dc53b19` Fix venue image paths for /beta deployment
@@ -40,11 +41,9 @@ Na sessão de 2026-02-10, foram removidas referências a Tinder nos textos de on
   - `INSTAGRAM-REELS-ROTEIROS.md`
   - `instagram-assets/reels/videos-finais/README.txt`
   - `openclaw-link2nite-reels-workspace/AGENTS.md`
-- Local untracked files/paths (documentation / clone — confirmar com `git status`):
-  - `CODEX-HANDOFF.md`
-  - `CURSOR-CONVERSATION-HISTORY.md`
-  - `CURSOR-OTHER-AGENTS-HISTORY.md`
-  - `link2nite-repo/`
+- Local untracked paths (confirmar com `git status`):
+  - `link2nite-repo/` (clone/cópia local, se ainda existir)
+- Handoff/histórico em repo: `CODEX-HANDOFF.md`, `CURSOR-CONVERSATION-HISTORY.md`, `CURSOR-OTHER-AGENTS-HISTORY.md` foram commitados em `638d870`.
 
 ## Critical deployment detail (images)
 - `beta/index.html` currently maps cards to:
