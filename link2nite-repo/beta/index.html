@@ -2392,22 +2392,38 @@
       failed: []
     };
     
-    // Direct image URLs via proxy (working images) - all 28 URLs mapped
+    // Direct image URLs pointing to local venue photos.
+    // Deployed under /beta/, so pattern is /beta/images/venues/<placeId>.jpg
     const PLACE_IMAGE_DIRECT_MAP = {
-      "230fifth": "/images/230%20rooftop.jpg",
-      "jane_ballroom": "/images/Jane%20Ballroom.jpg",
-      "lebain": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Crooftop%2Ccocktails&w=1200&h=750&fit=cover&output=webp",
-      "skylark": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Cskyline%2Cbar&w=1200&h=750&fit=cover&output=webp",
-      "mrpurple": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Crooftop%2Cpool&w=1200&h=750&fit=cover&output=webp",
-      "refinery": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Crooftop%2Cnight&w=1200&h=750&fit=cover&output=webp",
-      "westlight": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnew-york%2Cskyline%2Crooftop&w=1200&h=750&fit=cover&output=webp",
-      "lavo": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fnightclub%2Clights%2Cnew-york&w=1200&h=750&fit=cover&output=webp",
-      "house_yes": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fdance%2Cparty%2Cneon&w=1200&h=750&fit=cover&output=webp",
-      "bluenote": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fjazz%2Cclub%2Cnew-york&w=1200&h=750&fit=cover&output=webp",
-      "employeesonly": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Fcocktail%2Cbar%2Cnyc&w=1200&h=750&fit=cover&output=webp",
-      "somewhere_nowhere": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Frooftop%2Cdj%2Cnyc&w=1200&h=750&fit=cover&output=webp",
-      "magic_hour": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Frooftop%2Ctimes-square%2Cbar&w=1200&h=750&fit=cover&output=webp",
-      "little_sister": "https://images.weserv.nl/?url=https%3A%2F%2Fsource.unsplash.com%2Ffeatured%2F800x450%2F%3Flounge%2Ccocktail%2Cnyc&w=1200&h=750&fit=cover&output=webp"
+      "230fifth": "/beta/images/venues/230fifth.jpg",
+      "lebain": "/beta/images/venues/lebain.jpg",
+      "skylark": "/beta/images/venues/skylark.jpg",
+      "mrpurple": "/beta/images/venues/mrpurple.jpg",
+      "phdterrace": "/beta/images/venues/phdterrace.jpg",
+      "refinery": "/beta/images/venues/refinery.jpg",
+      "employeesonly": "/beta/images/venues/employeesonly.jpg",
+      "bluenote": "/beta/images/venues/bluenote.jpg",
+      "django": "/beta/images/venues/django.jpg",
+      "the_ned": "/beta/images/venues/the_ned.jpg",
+      "harriet": "/beta/images/venues/harriet.jpg",
+      "westlight": "/beta/images/venues/westlight.jpg",
+      "beautique": "/beta/images/venues/beautique.jpg",
+      "paul_baby": "/beta/images/venues/paul_baby.jpg",
+      "house_yes": "/beta/images/venues/house_yes.jpg",
+      "little_sister": "/beta/images/venues/little_sister.jpg",
+      "somewhere_nowhere": "/beta/images/venues/somewhere_nowhere.jpg",
+      "phd_downtown": "/beta/images/venues/phd_downtown.jpg",
+      "magic_hour": "/beta/images/venues/magic_hour.jpg",
+      "the_box": "/beta/images/venues/the_box.jpg",
+      "jane_ballroom": "/beta/images/venues/jane_ballroom.jpg",
+      "bar_sixtyfive": "/beta/images/venues/bar_sixtyfive.jpg",
+      "penn_top": "/beta/images/venues/penn_top.jpg",
+      "lavo": "/beta/images/venues/lavo.jpg",
+      "tao": "/beta/images/venues/tao.jpg",
+      "the_blond": "/beta/images/venues/the_blond.jpg",
+      "ziggy": "/beta/images/venues/ziggy.jpg",
+      "analog": "/beta/images/venues/analog.jpg",
+      "paradise": "/beta/images/venues/paradise.jpg"
     };
     
     // Additional URLs from the list (remaining 15 URLs)

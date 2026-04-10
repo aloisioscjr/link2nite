@@ -6,7 +6,7 @@ Leu este handoff; trechos decisivos: imagens do site ao vivo em `beta/images/ven
 
 ## Última sessão (Cursor — 2026-04-11)
 
-OpenClaw: workspace `openclaw-link2nite-reels-workspace/` com bootstrap do agente + script de setup para Codespaces; fluxo real usa `openclaw gateway` + `openclaw message send` / `openclaw agent --deliver`. Marketing: Reels 11–15 em `INSTAGRAM-REELS-ROTEIROS.md` e 15 capas PNG novas em `instagram-assets/reels/` (`reels-cover-01-…` … `15`). **Protótipo / deploy:** `beta/index.html` e `link2nite-repo/beta/index.html` foram alinhados para inglês e remoção de menções “Tinder” na UI; antes de publicar, conferir qual árvore alimenta `https://www.link2nite.com/beta/` e fazer commit/push no remoto certo. Detalhe da conversa: `CURSOR-OTHER-AGENTS-HISTORY.md` → seção **2026-04-11**.
+OpenClaw: workspace `openclaw-link2nite-reels-workspace/` com bootstrap do agente + script de setup para Codespaces; fluxo real usa `openclaw gateway` + `openclaw message send` / `openclaw agent --deliver`. Marketing: Reels 11–15 em `INSTAGRAM-REELS-ROTEIROS.md` e 15 capas PNG novas em `instagram-assets/reels/` (`reels-cover-01-…` … `15`). **Protótipo / deploy:** `beta/index.html` e `link2nite-repo/beta/index.html` foram alinhados para inglês e remoção de menções “Tinder” na UI. **Mapa de imagens:** ambos devem usar `/beta/images/venues/<placeId>.jpg` e a pasta `beta/images/venues/` correspondente em cada árvore (ver seção *Duas árvores* abaixo). Detalhe da conversa: `CURSOR-OTHER-AGENTS-HISTORY.md` → seção **2026-04-11**.
 
 ## Sessão anterior (Cursor — 2026-04-10)
 
@@ -20,6 +20,17 @@ Na sessão de 2026-02-10, foram removidas referências a Tinder nos textos de on
 - Local workspace: `C:\Users\aloisio.campos\OneDrive\Documentos\Dating App\web app`
 - Main prototype file: `beta/index.html`
 
+## Duas árvores `beta/` (raiz vs `link2nite-repo/`)
+
+Existem **duas cópias** do protótipo no mesmo monorepo:
+
+| Caminho | Uso típico |
+|--------|------------|
+| `beta/index.html` + `beta/images/venues/` | Árvore principal; costuma ser a que alimenta GitHub Pages em `/beta/`. |
+| `link2nite-repo/beta/index.html` + `link2nite-repo/beta/images/venues/` | Espelho dentro da pasta `link2nite-repo/` (deploy alternativo ou referência). |
+
+**Regra:** manter `PLACE_IMAGE_DIRECT_MAP` e os JPGs **iguais** nas duas árvores, para ninguém publicar uma versão com mapa novo e imagens antigas (ou o contrário). O Codex corretamente apontou divergência antiga: `link2nite-repo/beta/index.html` usava `/images/...` e Unsplash enquanto a raiz já usava `/beta/images/venues/...` — isso foi **alinhado** no mesmo commit que adiciona `link2nite-repo/beta/images/venues/*.jpg`.
+
 ## What was already done
 - Translated major prototype text from Portuguese to English.
 - Removed/reduced Tinder mentions in prototype flows.
@@ -31,19 +42,12 @@ Na sessão de 2026-02-10, foram removidas referências a Tinder nos textos de on
 
 ## Current git state (important)
 - Branch: `main`
-- Recent commits:
-  - `638d870` Docs: sync handoff and log Codex venue-images session
-  - `34ff6af` Add venue images under beta/images/venues for production path
-  - `ca71586` Fix 230 Fifth venue image path for beta
-  - `dc53b19` Fix venue image paths for /beta deployment
-- Local unstaged modified files:
-  - `Code-gs-COMPLETO.js`
-  - `INSTAGRAM-REELS-ROTEIROS.md`
-  - `instagram-assets/reels/videos-finais/README.txt`
-  - `openclaw-link2nite-reels-workspace/AGENTS.md`
-- Local untracked paths (confirmar com `git status`):
-  - `link2nite-repo/` (clone/cópia local, se ainda existir)
-- Handoff/histórico em repo: `CODEX-HANDOFF.md`, `CURSOR-CONVERSATION-HISTORY.md`, `CURSOR-OTHER-AGENTS-HISTORY.md` foram commitados em `638d870`.
+- Sempre confira o estado real com `git status` e `git log --oneline -5`.
+- Commits de referência (ordem pode variar; ver log local):
+  - `acb4a00` — sync de trabalho local + snapshot `link2nite-repo/` no repo pai
+  - `8918651` / `638d870` — docs handoff/histórico
+  - `34ff6af` — imagens em `beta/images/venues/` (raiz)
+- Pasta `link2nite-repo/` está **versionada** no repositório principal (não é mais só untracked local).
 
 ## Critical deployment detail (images)
 - `beta/index.html` currently maps cards to:
@@ -70,7 +74,7 @@ git log --oneline -3
 2. Hard refresh (`Ctrl + F5`)
 3. Confirm cards (especially `230fifth`, `jane_ballroom`) load images.
 4. Optional: commit/push **only** the handoff/history `.md` files in a separate commit (keep marketing/OpenClaw edits unstaged until you intend to ship them).
-5. If the production beta is served from another tree as well, confirm whether `link2nite-repo/beta/index.html` and its assets need the same sync.
+5. Se publicar a partir de `link2nite-repo/`, conferir que `link2nite-repo/beta/index.html` e `link2nite-repo/beta/images/venues/` estão alinhados com a raiz (foi feito; repetir após mudanças futuras em um dos lados).
 
 ## OpenClaw note
 - In many setups, OpenClaw agent cannot directly write files unless gateway/tools are configured with shell and filesystem access.
