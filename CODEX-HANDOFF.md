@@ -31,6 +31,13 @@ Existem **duas cópias** do protótipo no mesmo monorepo:
 
 **Regra:** manter `beta/index.html` **funcionalmente idêntico** entre raiz e `link2nite-repo/beta/` (ou aceitar explicitamente que só uma árvore é usada no deploy). Além do mapa de imagens e dos JPGs, houve um problema grave: `link2nite-repo/beta/index.html` chegou a estar **truncado** (~6268 linhas, `initApp()` sem fechar, sem swipe nem fecho `</html>`). **Correção:** copiar a versão canónica da raiz `beta/index.html` → `link2nite-repo/beta/index.html` quando for preciso paridade total (ver commit que menciona *full parity* ou *restore truncated*).
 
+**Regra operacional fixa recomendada:**
+1. Editar **somente** `beta/index.html` na raiz.
+2. Tratar `link2nite-repo/beta/index.html` como **espelho por cópia/script**, não como ficheiro para edição manual.
+3. Sempre que mudar o beta, sincronizar a partir da raiz e rodar uma verificação rápida de paridade antes de qualquer push/deploy.
+4. Se aparecer um diff muito grande entre as duas árvores, assumir primeiro risco de **truncamento/corrupção** antes de interpretar como mudança funcional legítima.
+5. No estado atual, o escopo dessa paridade é simples: dentro de `beta/` existem apenas `index.html` e `images/venues/*.jpg` em ambas as árvores.
+
 ## What was already done
 - Translated major prototype text from Portuguese to English.
 - Removed/reduced Tinder mentions in prototype flows.
@@ -69,6 +76,9 @@ Existem **duas cópias** do protótipo no mesmo monorepo:
 cd "C:\Users\aloisio.campos\OneDrive\Documentos\Dating App\web app"
 git status --short --branch
 git log --oneline -3
+.\check-beta-parity.ps1
+# Só quando quiser sincronizar o espelho deliberadamente:
+# .\sync-beta-parity.ps1
 ```
 
 ## Next operational checks
