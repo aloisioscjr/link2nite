@@ -29,7 +29,7 @@ Existem **duas cópias** do protótipo no mesmo monorepo:
 | `beta/index.html` + `beta/images/venues/` | Árvore principal; costuma ser a que alimenta GitHub Pages em `/beta/`. |
 | `link2nite-repo/beta/index.html` + `link2nite-repo/beta/images/venues/` | Espelho dentro da pasta `link2nite-repo/` (deploy alternativo ou referência). |
 
-**Regra:** manter `PLACE_IMAGE_DIRECT_MAP` e os JPGs **iguais** nas duas árvores, para ninguém publicar uma versão com mapa novo e imagens antigas (ou o contrário). O Codex corretamente apontou divergência antiga: `link2nite-repo/beta/index.html` usava `/images/...` e Unsplash enquanto a raiz já usava `/beta/images/venues/...` — isso foi **alinhado** no mesmo commit que adiciona `link2nite-repo/beta/images/venues/*.jpg`.
+**Regra:** manter `beta/index.html` **funcionalmente idêntico** entre raiz e `link2nite-repo/beta/` (ou aceitar explicitamente que só uma árvore é usada no deploy). Além do mapa de imagens e dos JPGs, houve um problema grave: `link2nite-repo/beta/index.html` chegou a estar **truncado** (~6268 linhas, `initApp()` sem fechar, sem swipe nem fecho `</html>`). **Correção:** copiar a versão canónica da raiz `beta/index.html` → `link2nite-repo/beta/index.html` quando for preciso paridade total (ver commit que menciona *full parity* ou *restore truncated*).
 
 ## What was already done
 - Translated major prototype text from Portuguese to English.

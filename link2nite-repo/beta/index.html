@@ -654,7 +654,96 @@
       margin-top:4px;
     }
 
-    /* Tinder-like profile preview */
+    /* Photo slots grid (6 slots) */
+    .photo-slots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .photo-slot {
+      aspect-ratio: 3/4;
+      border-radius: 16px;
+      border: 2px dashed rgba(148,163,184,0.4);
+      background: rgba(2,6,23,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .photo-slot:hover {
+      border-color: rgba(124,58,237,0.6);
+      background: rgba(124,58,237,0.08);
+    }
+    .photo-slot.filled {
+      border: 2px solid rgba(124,58,237,0.5);
+      background: transparent;
+    }
+    .photo-slot.filled:hover {
+      border-color: rgba(239,68,68,0.6);
+    }
+    .photo-slot .slot-icon {
+      font-size: 28px;
+      color: rgba(148,163,184,0.5);
+      margin-bottom: 4px;
+    }
+    .photo-slot .slot-label {
+      font-size: 11px;
+      color: rgba(148,163,184,0.6);
+    }
+    .photo-slot .slot-required {
+      font-size: 9px;
+      color: #a78bfa;
+      margin-top: 2px;
+    }
+    .photo-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
+    }
+    .photo-slot .remove-photo {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(239,68,68,0.9);
+      color: white;
+      border: none;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .photo-slot.filled:hover .remove-photo {
+      display: flex;
+    }
+    .photo-slot.main-photo::after {
+      content: "MAIN";
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      color: white;
+      background: rgba(124,58,237,0.85);
+      padding: 3px 8px;
+      border-radius: 6px;
+      z-index: 2;
+    }
+
+    /* Profile preview card */
     .profile-preview {
       padding: 0;
       overflow: hidden;
@@ -768,7 +857,7 @@
       color: #94a3b8;
     }
 
-    /* Swipe deck (Tinder-like) */
+    /* Swipe deck */
     .swipe-deck {
       position: relative;
       height: 420px;
@@ -922,7 +1011,7 @@
     }
 
 
-    /* Tinder-like icon pills (work/school/IG) */
+    /* Icon pills (work/school/IG) */
     .icon-row {
       display:flex;
       flex-wrap:wrap;
@@ -1412,14 +1501,14 @@
       will-change: auto;
       isolation: isolate;
       contain: layout style paint;
-      /* Force new stacking context on iOS */
+      /* Forçar novo contexto de empilhamento no iOS */
       -webkit-perspective: 1000px;
       perspective: 1000px;
       /* Ensure not affected by parent overflow */
       overflow: visible !important;
     }
     .modal.hidden{ display:none !important; visibility: hidden !important; }
-    /* Ensure modal is not affected by parent element transforms */
+    /* Ensure modal not affected by parent transforms */
     body > .modal{
       position: fixed !important;
     }
@@ -1576,7 +1665,7 @@
         <div class="card">
           <div class="top-banner">
             <span class="emoji">✨</span>
-            <span>Let’s set up your mini profile.</span>
+            <span>Let’s set up your mini profile .</span>
           </div>
           <div class="input-group">
             <label>Name you want to show</label>
@@ -1634,13 +1723,39 @@
             <span>Now pick your photos.</span>
           </div>
           <p class="section-sub">
-            Add at least one profile photo. You can add more to show your style.
+            Add at least one profile photo. You can add up to 6 to show your style.
           </p>
-          <div class="input-group">
-            <label>Profile photos</label>
-            <input type="file" id="photos-onboarding-input" accept="image/*" multiple onchange="handleOnboardingPhotoChange(this)" />
+          
+          <input type="file" id="photos-onboarding-input" accept="image/*" style="display:none;" onchange="handleSlotPhotoSelect(this)" />
+          
+          <div class="photo-slots-grid" id="photo-slots-container">
+            <div class="photo-slot main-photo" data-slot="0" onclick="triggerPhotoSlot(0)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+              <span class="slot-required">Required</span>
+            </div>
+            <div class="photo-slot" data-slot="1" onclick="triggerPhotoSlot(1)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="2" onclick="triggerPhotoSlot(2)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="3" onclick="triggerPhotoSlot(3)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="4" onclick="triggerPhotoSlot(4)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
+            <div class="photo-slot" data-slot="5" onclick="triggerPhotoSlot(5)">
+              <span class="slot-icon">+</span>
+              <span class="slot-label">Add photo</span>
+            </div>
           </div>
-          <div id="photos-onboarding-preview" class="photo-grid"></div>
+          
           <p class="photo-hint">
             Tip: use clear photos, face visible, and if you want, one from a rooftop, bar, or trip.
           </p>
@@ -3068,7 +3183,7 @@
       keys.forEach(key => {
         if(key.startsWith("l2n_")) localStorage.removeItem(key);
       });
-      toast("✅ Demo resetado. Todas as chaves l2n_* foram removidas.");
+      toast("✅ Demo reset. All l2n_* keys removed.");
       try{ renderAnalyticsPanel(); }catch(e){}
     }
     
@@ -3343,7 +3458,7 @@ function openPaywall(reason){
       setPro(true);
       track("purchase_demo", {plan, reason});
       closePaywall();
-      toast("✅ Link2Nite PRO (demo) activated! Full list + unlimited swipes unlocked.");
+      toast("✅ Link2Nite PRO (demo) ativado! Lista completa + swipes ilimitados liberados.");
       try{
         if(currentPlaceId && currentScreenId==="screen-goinglist"){
           renderGoingList(currentPlaceId);
@@ -4100,6 +4215,66 @@ function showScreen(id){
       showScreen("screen-photos-onboarding");
     }
 
+    // Photo slots state
+    let photoSlots = [null, null, null, null, null, null];
+    let currentSlotIndex = 0;
+
+    function triggerPhotoSlot(slotIndex) {
+      const slot = document.querySelector(`.photo-slot[data-slot="${slotIndex}"]`);
+      if (slot && slot.classList.contains('filled')) {
+        return;
+      }
+      currentSlotIndex = slotIndex;
+      const input = $("photos-onboarding-input");
+      if (input) input.click();
+    }
+
+    function handleSlotPhotoSelect(input) {
+      if (!input.files || !input.files.length) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        photoSlots[currentSlotIndex] = e.target.result;
+        renderPhotoSlots();
+      };
+      reader.readAsDataURL(file);
+      input.value = "";
+    }
+
+    function removeSlotPhoto(slotIndex, event) {
+      event.stopPropagation();
+      photoSlots[slotIndex] = null;
+      renderPhotoSlots();
+    }
+
+    function renderPhotoSlots() {
+      const container = $("photo-slots-container");
+      if (!container) return;
+      
+      const slots = container.querySelectorAll('.photo-slot');
+      slots.forEach((slot, idx) => {
+        const photoUrl = photoSlots[idx];
+        if (photoUrl) {
+          slot.classList.add('filled');
+          slot.innerHTML = `
+            <img src="${photoUrl}" alt="Photo ${idx + 1}" />
+            <button class="remove-photo" onclick="removeSlotPhoto(${idx}, event)">×</button>
+          `;
+        } else {
+          slot.classList.remove('filled');
+          const isMain = idx === 0;
+          slot.innerHTML = `
+            <span class="slot-icon">+</span>
+            <span class="slot-label">Add photo</span>
+            ${isMain ? '<span class="slot-required">Required</span>' : ''}
+          `;
+        }
+      });
+      
+      // Update tempPhotos array for compatibility
+      tempPhotos = photoSlots.filter(p => p !== null);
+    }
+
     function handleOnboardingPhotoChange(input){
       if(!input.files || !input.files.length) return;
       const files=Array.from(input.files);
@@ -4115,13 +4290,24 @@ function showScreen(id){
     }
     function renderOnboardingPhotosPreview(){
       const c=$("photos-onboarding-preview");
+      if(!c) return;
       if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">No photos yet</div>`; return; }
       c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="photo"/></div>`).join("");
     }
     function finishPhotosOnboarding(){
       if(!currentUserName){ alert("Fill out the mini profile first."); showScreen("screen-username"); return; }
-      if(!tempPhotos.length){ alert("Add at least one profile photo."); return; }
-      saveProfile(currentUserName,{photos: tempPhotos});
+      // Check if at least the first slot (required) has a photo
+      if(!photoSlots[0] && !tempPhotos.length){ 
+        toast("Please add at least one profile photo."); 
+        return; 
+      }
+      // Use photoSlots if available, otherwise fallback to tempPhotos
+      const photosToSave = photoSlots.filter(p => p !== null);
+      if(photosToSave.length === 0 && tempPhotos.length > 0) {
+        saveProfile(currentUserName,{photos: tempPhotos});
+      } else {
+        saveProfile(currentUserName,{photos: photosToSave});
+      }
       showScreen("screen-home");
       renderPlacesList();
       renderTonightPlan();
@@ -4371,8 +4557,8 @@ function renderPlacesList(){
         // Recommendation badge (based on your existing recommender)
         let recHtml="";
         if(profile && isRecommendedPlaceForUser(profile, place)){
-          const vibeTxt=profile.vibe||"seu estilo";
-          recHtml=`<div class="std-recommend">⭐ Combina com seu estilo (${escapeHtml(vibeTxt)})</div>`;
+          const vibeTxt=profile.vibe||"your style";
+          recHtml=`<div class="std-recommend">⭐ Matches your style (${escapeHtml(vibeTxt)})</div>`;
         }
 
         const hotBadge = (hotSet.has(place.id) || goingCount>=5)
@@ -4445,8 +4631,8 @@ function renderPlacesList(){
       const interestedData=getInterestedData();
       const list=Array.isArray(interestedData[placeId])?interestedData[placeId]:[];
       const idx=list.indexOf(currentUserName);
-      if(idx===-1){ list.push(currentUserName); toast("Salvo ✅"); }
-      else { list.splice(idx,1); toast("Removed"); }
+      if(idx===-1){ list.push(currentUserName); toast("Saved ✅"); }
+      else { list.splice(idx,1); toast("Removido"); }
       interestedData[placeId]=list;
       setInterestedData(interestedData);
       renderPlacesList();
@@ -4696,17 +4882,17 @@ let extraHtml=extraParts.join(" · ");
                 track("bot_match_simulated", {botName: targetName, user: currentUserName});
                 toast("✨ Match! You both liked each other.");
               } else {
-                toast("Curtido ❤️");
+                toast("Liked ❤️");
               }
             } else {
               track("bot_like", {botName: targetName, user: currentUserName});
-              toast("Curtido ❤️");
+              toast("Liked ❤️");
             }
       } else {
-        toast(likedNow ? "Curtido ❤️" : "Curtida removida");
+        toast(likedNow ? "Liked ❤️" : "Like removed");
           }
         } else {
-          toast(likedNow ? "Curtido ❤️" : "Curtida removida");
+          toast(likedNow ? "Liked ❤️" : "Like removed");
         }
       }
       try{ renderMatchesList(); }catch(e){}
@@ -4761,7 +4947,7 @@ function renderGoingForPlace(placeId){
           if(isMatch) rightHtml=`<span style="font-size:12px;color:#f9a8d4;">💖 Match</span>`;
           else{
             const encoded=encodeURIComponent(name);
-            const label=likedByCurrent ? "💗 Curtido" : "🤍 Curtir";
+            const label=likedByCurrent ? "💗 Liked" : "🤍 Like";
             rightHtml=`<button class="pill-button small secondary" onclick="toggleLike('${placeId}','${encoded}')">${label}</button>`;
           }
         }
@@ -5147,7 +5333,7 @@ function renderGoingForPlace(placeId){
         reader.onload=e=>{
           tempPhotos.push(e.target.result);
           renderProfilePhotosPreview();
-          // instant preview: temporarily saves for render
+          // Instant preview: save temporarily for render
           const p=getProfile(currentUserName);
           saveProfile(currentUserName, {...p, photos: tempPhotos});
           renderProfilePreviewCard();
@@ -5256,7 +5442,7 @@ function renderGoingForPlace(placeId){
             <span style="color:#94a3b8;font-size:20px;">○</span>
             <div>
               <div style="color:#94a3b8;font-weight:600;">Not verified</div>
-              <div style="color:#94a3b8;font-size:12px;">Envie uma selfie para verificar</div>
+              <div style="color:#94a3b8;font-size:12px;">Send a selfie to verify</div>
             </div>
           </div>
         `;
@@ -5295,7 +5481,7 @@ function renderGoingForPlace(placeId){
           
           <div id="report-reasons" style="display:none;margin-top:16px;">
             <div class="input-group">
-              <label>Motivo do report</label>
+              <label>Report reason</label>
               <select id="report-reason-select" class="input">
                 <option value="">Select a reason</option>
                 <option value="spam">Spam</option>
@@ -5358,7 +5544,7 @@ function renderGoingForPlace(placeId){
         placeId: currentPlaceId
       });
       
-      toast("Report enviado. Obrigado!");
+      toast("Report sent. Thank you!");
       
       if(confirm("Also block this user?")){
         blockUser(currentReportTarget);
@@ -5943,7 +6129,7 @@ function renderGoingForPlace(placeId){
     function clearBots(){
       if(confirm("Clear all bots? This will remove all bots and their presence at venues.")){
         const count = clearAllBots();
-        toast(`✅ ${count} bot(s) removed!`);
+        toast(`✅ ${count} bot(s) removido(s)!`);
         renderBotsStats();
         // Refresh places list if on home screen
         try {
@@ -6159,9 +6345,9 @@ function renderGoingForPlace(placeId){
 
       lines.push(`
         <div style="margin-top:12px;">
-          <div class="section-title" style="font-size:14px;">Paywall por motivo</div>
+          <div class="section-title" style="font-size:14px;">Paywall by reason</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-            ${reasonRows || `<div class="pay-note">Ainda sem dados.</div>`}
+            ${reasonRows || `<div class="pay-note">No data yet.</div>`}
           </div>
         </div>
       `);
@@ -6190,9 +6376,9 @@ function renderGoingForPlace(placeId){
       lines.push(`
         <div style="margin-top:12px;">
           <div class="section-title" style="font-size:14px;">Conversion (Paywall → PRO)</div>
-          <div class="section-sub" style="margin-top:6px;">Geral: <b>${overallRate}%</b> (${totalPro}/${totalPay}) • por motivo abaixo</div>
+          <div class="section-sub" style="margin-top:6px;">Overall: <b>${overallRate}%</b> (${totalPro}/${totalPay}) • by reason below</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-            ${convRows || `<div class="pay-note">Ainda sem dados.</div>`}
+            ${convRows || `<div class="pay-note">No data yet.</div>`}
           </div>
         </div>
       `);
@@ -6201,7 +6387,7 @@ lines.push(`
         <div style="margin-top:12px;">
           <div class="section-title" style="font-size:14px;">Selected plans</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-            ${planRows || `<div class="pay-note">Ainda sem dados.</div>`}
+            ${planRows || `<div class="pay-note">No data yet.</div>`}
           </div>
         </div>
       `);
@@ -6265,3 +6451,1435 @@ function initApp(){
       // Initialize quotas
       resetDailyQuotasIfNeeded();
       
+      // Move modal to body on load to avoid transform issues on iOS/WhatsApp
+      const modal = document.getElementById("paywall-modal");
+      if(modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      loadCustomPlaces();
+      seedDemoCrowd();
+      ensureDemoBots(); // always run on load so "who's going" has bots per venue
+      const onboardingDone=localStorage.getItem("tonightly_onboarding_done");
+      if(!onboardingDone){
+        onboardingStep=0;
+        updateOnboardingView();
+        showScreen("screen-onboarding");
+        return;
+      }
+      const savedUser=localStorage.getItem("tonightly_username");
+      if(savedUser){
+        currentUserName=savedUser;
+        updateUserLabel();
+        showScreen("screen-home");
+        renderPlacesList();
+        renderTonightPlan();
+      } else showScreen("screen-username");
+    }
+
+
+    // --- Swipe cards ---
+    let swipePlaceId = null;
+    let swipeQueue = [];
+    let swipeTop = null; // {el, profileName}
+    let swipePointer = {down:false, startX:0, startY:0, dx:0, dy:0};
+
+    function toast(msg){
+      const t=$("toast");
+      if(!t) return;
+      t.textContent=msg;
+      t.classList.add("show");
+      clearTimeout(toast._timer);
+      toast._timer=setTimeout(()=>t.classList.remove("show"), 1800);
+    }
+
+    function openSwipeForCurrent(){
+      if(!currentUserName){ alert("Set up your profile first."); showScreen("screen-username"); return; }
+      if(!currentPlaceId){ toast("Open a venue first to swipe who's going."); return; }
+      openSwipe(currentPlaceId);
+    }
+
+    function openSwipe(placeId){
+      swipePlaceId = placeId;
+      const place = places.find(p=>p.id===placeId);
+      $("swipe-title").textContent = "Swipe — " + (place?place.name:"Venue");
+      $("swipe-sub").textContent = place
+        ? `Profiles who marked “Going tonight” at ${place.name}.`
+        : "Profiles who marked “Going tonight”.";
+
+      buildSwipeQueue(placeId);
+      renderSwipeDeck();
+      showScreen("screen-swipe");
+    }
+
+    function backFromSwipe(){
+      // Go back to place (if exists) or home
+      if(swipePlaceId && currentPlaceId===swipePlaceId) showScreen("screen-place");
+      else goHome();
+    }
+
+    function buildSwipeQueue(placeId){
+      const goingData=getGoingData();
+      const list=Array.isArray(goingData[placeId])?goingData[placeId]:[];
+      const me=currentUserName;
+
+      // Only people going, exclude current user
+      let candidates=list.filter(n=>n && n!==me);
+      
+      // Filter out blocked/soft-banned users
+      candidates=candidates.filter(n=>!shouldFilterUser(n));
+
+      // Apply preference compatibility (showMe)
+      candidates=candidates.filter(other=>areProfilesCompatible(me, other));
+
+      // Fallback: if nobody going, use matching bots for demo
+      if(candidates.length===0){
+        const profiles=getProfilesData();
+        candidates=Object.keys(profiles).filter(n=>n!==me && profiles[n] && profiles[n].isBot===true)
+          .filter(n=>!shouldFilterUser(n))
+          .filter(other=>areProfilesCompatible(me, other))
+          .slice(0,6);
+      }
+
+      // remove já matchados nesse lugar? (deixa mesmo)
+      swipeQueue=candidates;
+    }
+
+    function profileMainPhoto(name){
+      const p=getProfile(name);
+      if(p && Array.isArray(p.photos) && p.photos.length) return p.photos[0];
+      // fallback image (colored placeholder)
+      return "https://via.placeholder.com/900x1200.png?text="+encodeURIComponent(name);
+    }
+
+    function profileMetaLine(name){
+      const p=getProfile(name);
+      const parts=[];
+      const showAge = p.showAge!==false;
+      if(showAge && p.age) parts.push(p.age+" anos");
+      const g=genderLabel(p.gender); if(g) parts.push(g);
+      if(p.vibe) parts.push(p.vibe);
+      if(p.location) parts.push(p.location);
+      return parts.join(" · ");
+    }
+
+    function renderSwipeDeck(){
+      const deck=$("swipe-deck");
+      if(!deck) return;
+
+      // limpa
+      deck.innerHTML="";
+      swipeTop=null;
+
+      if(!currentUserName){
+        deck.innerHTML=`<div class="card"><div class="section-sub">Create your profile first.</div></div>`;
+        return;
+      }
+
+      if(!swipeQueue.length){
+        deck.innerHTML=`
+          <div class="card" style="height:100%;display:flex;align-items:center;justify-content:center;">
+            <div style="text-align:center;">
+              <div style="font-size:30px;margin-bottom:6px;">😅</div>
+              <div style="font-weight:700;margin-bottom:6px;">No profiles to swipe here</div>
+              <div class="section-sub">Mark “Going tonight” at a busier venue, or wait for more people to join.</div>
+              <button class="pill-button" style="margin-top:10px;" onclick="goHome()">Explore venues</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // cria no máximo 2 cards (top + behind)
+      const names = swipeQueue.slice(0, 2);
+      names.reverse().forEach((name, idx) => {
+        const p=getProfile(name);
+        const photo=profileMainPhoto(name);
+        const meta=profileMetaLine(name);
+        const showAge = p.showAge!==false;
+        const ageTxt = (showAge && p.age) ? p.age : "";
+        const el=document.createElement("div");
+        el.className="swipe-card"+(idx===0?" behind":"");
+        el.dataset.name=name;
+        el.innerHTML=`
+          <div class="hero">
+            <img src="${photo}" alt="${name}" />
+            <div class="badge-like">LIKE</div>
+            <div class="badge-nope">NOPE</div>
+            <div class="overlay"></div>
+            <div class="info">
+              <div class="name">${name} <span class="age">${ageTxt}</span></div>
+              <div class="meta">${meta || " "}</div><div class="icon-row" style="margin-top:10px;">${buildIconRowHtml(name)}</div>
+            </div>
+          </div>
+        `;
+        el.onclick = ()=>{ if(!moved) openPublicProfile(name,{placeId: swipePlaceId}); }; 
+        deck.appendChild(el);
+      });
+
+      // top = último filho
+      const top=deck.lastElementChild;
+      if(top){
+        swipeTop={el: top, profileName: top.dataset.name};
+        attachSwipeHandlers(top);
+      }
+    }
+
+    function attachSwipeHandlers(cardEl){
+      const likeBadge = cardEl.querySelector(".badge-like");
+      const nopeBadge = cardEl.querySelector(".badge-nope");
+      let moved=false;
+
+      const onPointerDown=(e)=>{
+        swipePointer.down=true;
+        swipePointer.startX=e.clientX;
+        swipePointer.startY=e.clientY;
+        swipePointer.dx=0; swipePointer.dy=0;
+        moved=false;
+        cardEl.setPointerCapture(e.pointerId);
+        cardEl.style.transition="none";
+      };
+      const onPointerMove=(e)=>{
+        if(!swipePointer.down) return;
+        swipePointer.dx = e.clientX - swipePointer.startX;
+        swipePointer.dy = e.clientY - swipePointer.startY;
+        if(Math.abs(swipePointer.dx)>6 || Math.abs(swipePointer.dy)>6) moved=true;
+
+        const dx=swipePointer.dx;
+        const dy=swipePointer.dy;
+
+        const rot = Math.max(-18, Math.min(18, dx/18));
+        cardEl.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${rot}deg)`;
+
+        const opacity = Math.min(1, Math.abs(dx)/90);
+        if(dx>0){
+          if(likeBadge) likeBadge.style.opacity = opacity;
+          if(nopeBadge) nopeBadge.style.opacity = 0;
+        } else if(dx<0){
+          if(nopeBadge) nopeBadge.style.opacity = opacity;
+          if(likeBadge) likeBadge.style.opacity = 0;
+        } else {
+          if(likeBadge) likeBadge.style.opacity = 0;
+          if(nopeBadge) nopeBadge.style.opacity = 0;
+        }
+      };
+      const onPointerUp=(e)=>{
+        if(!swipePointer.down) return;
+        swipePointer.down=false;
+
+        const dx=swipePointer.dx;
+        const dy=swipePointer.dy;
+
+        const threshold = 110;
+        if(dx > threshold) finalizeSwipe("right");
+        else if(dx < -threshold) finalizeSwipe("left");
+        else {
+          // volta ao centro
+          cardEl.style.transition="transform 0.22s ease";
+          cardEl.style.transform="translate3d(0,0,0) rotate(0deg)";
+          if(likeBadge) likeBadge.style.opacity = 0;
+          if(nopeBadge) nopeBadge.style.opacity = 0;
+        }
+      };
+
+      cardEl.onpointerdown=onPointerDown;
+      cardEl.onpointermove=onPointerMove;
+      cardEl.onpointerup=onPointerUp;
+      cardEl.onpointercancel=onPointerUp;
+    }
+
+    function swipeByButton(dir){
+      if(!swipeTop || !swipeTop.el) return;
+      finalizeSwipe(dir);
+    }
+
+    function finalizeSwipe(direction){
+      // Free daily swipe limit
+      if(!checkAndIncrementSwipes()){
+          openPaywall("swipe_limit");
+          toast("🔒 Daily FREE swipe limit. Unlock Link2Nite PRO.");
+          return;
+        }
+        try{ renderSwipeLimitUI(); }catch(e){}
+
+      if(!swipeTop || !swipeTop.el) return;
+      const el=swipeTop.el;
+      const name=swipeTop.profileName;
+
+      // Animate out
+      el.style.transition="transform 0.22s ease, opacity 0.22s ease";
+      const outX = direction==="right" ? 460 : -460;
+      const rot = direction==="right" ? 16 : -16;
+      el.style.transform=`translate3d(${outX}px, -30px, 0) rotate(${rot}deg)`;
+      el.style.opacity="0";
+
+      // Business action
+      if(direction==="right"){
+        applyLikeFromSwipe(name);
+      } else {
+        toast("Passou");
+      }
+
+      // remove do queue e render próximo
+      swipeQueue = swipeQueue.filter(n=>n!==name);
+
+      setTimeout(()=>{
+        // remove el
+        try{ el.remove(); }catch{}
+        swipeTop=null;
+        renderSwipeDeck();
+      }, 220);
+    }
+
+    function applyLikeFromSwipe(targetName){
+      if(!currentUserName || !swipePlaceId) return;
+
+      // mesmo comportamento do "Curtir" por lugar
+      const likesData=getLikesData();
+      if(!likesData[swipePlaceId]) likesData[swipePlaceId]={};
+      if(!Array.isArray(likesData[swipePlaceId][currentUserName])) likesData[swipePlaceId][currentUserName]=[];
+      const arr=likesData[swipePlaceId][currentUserName];
+      if(!arr.includes(targetName)) arr.push(targetName);
+
+      const targetProfile=getProfile(targetName);
+      if(targetProfile && targetProfile.isBot){
+        if(!Array.isArray(likesData[swipePlaceId][targetName])) likesData[swipePlaceId][targetName]=[];
+        if(!likesData[swipePlaceId][targetName].includes(currentUserName)) likesData[swipePlaceId][targetName].push(currentUserName);
+      }
+
+      setLikesData(likesData);
+
+      // checa match
+      const byPlace=likesData[swipePlaceId]||{};
+      const fromOther=byPlace[targetName]||[];
+      const likedBack=Array.isArray(fromOther) && fromOther.includes(currentUserName);
+      const isMatch = likedBack && areProfilesCompatible(currentUserName, targetName);
+
+      if(isMatch){
+        toast(`💖 Match with ${targetName}!`);
+        // atualiza lista de matches
+        renderMatches();
+      } else {
+        toast("Liked ❤️");
+      }
+
+      // If place is open, update UI too
+      if(currentPlaceId===swipePlaceId){
+        renderGoingForPlace(swipePlaceId);
+      }
+    }
+
+
+
+    function escapeHtml(s){
+      return String(s||"")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+    function escapeAttr(str){
+      return String(str||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+    function hashCode(str){
+      str=String(str||"");
+      let h=0;
+      for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; }
+      return h;
+    }
+
+
+    function buildIconRowItems(profile){
+      const items=[];
+      if(!profile) return items;
+
+      // Work (prefer jobTitle; include company if exists)
+      const workParts=[];
+      if(profile.jobTitle) workParts.push(profile.jobTitle);
+      if(profile.company) workParts.push(profile.company);
+      const work=workParts.join(" @ ").trim();
+      if(work) items.push({ic:"💼", txt: work});
+
+      // School
+      if(profile.school) items.push({ic:"🎓", txt: profile.school});
+
+      // Instagram
+      if(profile.instagram){
+        const ig = "@"+String(profile.instagram).replace(/^@/,"");
+        items.push({ic:"📸", txt: ig});
+      }
+
+      // Location (optional)
+      if(profile.location) items.push({ic:"📍", txt: profile.location});
+
+      return items.slice(0,4);
+    }
+
+    function buildIconRowHtml(name){
+      const p=getProfile(name)||{};
+      const items=buildIconRowItems(p);
+      if(!items.length) return "";
+      return items.map(it=>(
+        `<div class="icon-pill"><div class="ic">${escapeHtml(it.ic)}</div><div class="txt">${escapeHtml(it.txt)}</div></div>`
+      )).join("");
+    }
+
+
+    // --- Public profile preview (read-only) ---
+    let publicProfileName = null;
+    let publicProfilePhotoIndex = 0;
+    let publicProfileReturnTo = "screen-home"; // screen to go back
+    let publicProfileContext = { placeId: null }; // for "Curtir" action
+
+    function openPublicProfile(name, opts){
+      if(!name) return;
+      publicProfileName = name;
+      publicProfilePhotoIndex = 0;
+
+      // where we came from
+      const active = document.querySelector(".screen.active");
+      publicProfileReturnTo = active ? active.id : "screen-home";
+
+      // options/context
+      publicProfileContext = { placeId: (opts && opts.placeId) ? opts.placeId : (currentPlaceId || swipePlaceId || null) };
+
+      renderPublicProfile();
+      showScreen("screen-public-profile");
+    }
+
+    function closePublicProfile(){
+      showScreen(publicProfileReturnTo || "screen-home");
+      if(publicProfileReturnTo==="screen-place" && currentPlaceId) renderGoingForPlace(currentPlaceId);
+      if(publicProfileReturnTo==="screen-swipe") renderSwipeDeck();
+      if(publicProfileReturnTo==="screen-matches") renderMatches();
+    }
+
+    // Admin & Moderation UI functions
+    function renderAdminVerifications(){
+      const container = document.getElementById("admin-verifications-list");
+      if(!container) return;
+      
+      const allVerifications = getAllVerifications();
+      const profiles = getProfilesData();
+      const users = Object.keys(allVerifications).filter(name => {
+        const verification = allVerifications[name];
+        return verification && verification.status !== "unverified";
+      });
+      
+      if(users.length === 0){
+        container.innerHTML = `<div class="section-sub">No pending or approved verifications.</div>`;
+        return;
+      }
+      
+      container.innerHTML = users.map(userName => {
+        const verification = allVerifications[userName];
+        const profile = profiles[userName] || {};
+        const status = verification.status || "unverified";
+        const submittedAt = verification.submittedAt ? new Date(verification.submittedAt).toLocaleString() : "";
+        const hasSelfie = !!verification.selfieDataUrl;
+        
+        let statusBadge = "";
+        if(status === "verified"){
+          statusBadge = `<span style="color:#22c55e;font-weight:600;">✔ Verified</span>`;
+        } else if(status === "pending"){
+          statusBadge = `<span style="color:#fbbf24;font-weight:600;">⏳ Pendente</span>`;
+        }
+        
+        return `
+          <div class="settings-row" style="padding:12px; border-bottom:1px solid rgba(148,163,184,0.1);">
+            <div style="flex:1;">
+              <div style="font-weight:500; color:#f1f5f9; margin-bottom:4px;">${escapeHtml(userName)}</div>
+              <div style="font-size:12px; color:#94a3b8;">
+                ${statusBadge} ${submittedAt ? "• " + submittedAt : ""}
+              </div>
+              ${hasSelfie ? `<div style="margin-top:8px;"><img src="${escapeAttr(verification.selfieDataUrl)}" style="max-width:100px;max-height:100px;border-radius:8px;border:1px solid rgba(148,163,184,0.2);" /></div>` : ""}
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+              ${status === "pending" ? `
+                <button class="pill-button secondary small" onclick="approveVerification('${escapeAttr(userName)}')">Aprovar</button>
+                <button class="pill-button secondary small" onclick="rejectVerification('${escapeAttr(userName)}')" style="background:#7f1d1d;color:#fee2e2;">Reprovar</button>
+              ` : status === "verified" ? `
+                <button class="pill-button secondary small" onclick="rejectVerification('${escapeAttr(userName)}')" style="background:#7f1d1d;color:#fee2e2;">Remove verification</button>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+    
+    function renderModerationReports(){
+      const container = document.getElementById("moderation-reports-list");
+      if(!container) return;
+      
+      const reports = getReports();
+      const recentReports = reports.slice(-50).reverse(); // Last 50, newest first
+      
+      if(recentReports.length === 0){
+        container.innerHTML = `<div class="section-sub">No reports yet.</div>`;
+        return;
+      }
+      
+      const reasonLabels = {
+        spam: "Spam",
+        harassment: "Harassment",
+        inappropriate: "Inappropriate content",
+        fake: "Fake profile",
+        other: "Outro"
+      };
+      
+      container.innerHTML = recentReports.map((report, idx) => {
+        const date = new Date(report.ts).toLocaleString();
+        const reason = reasonLabels[report.reason] || report.reason || "Desconhecido";
+        
+        return `
+          <div class="settings-row" style="padding:12px; border-bottom:1px solid rgba(148,163,184,0.1);">
+            <div style="flex:1;">
+              <div style="font-weight:500; color:#f1f5f9; margin-bottom:4px;">
+                Reportado: <b>${escapeHtml(report.reportedId)}</b>
+              </div>
+              <div style="font-size:12px; color:#94a3b8; margin-bottom:4px;">
+                Reason: ${escapeHtml(reason)} • ${date}
+              </div>
+              ${report.note ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; margin-top:4px;">"${escapeHtml(report.note)}"</div>` : ""}
+              <div style="font-size:11px; color:#64748b; margin-top:4px;">
+                Reportado por: ${escapeHtml(report.reporter || "anonymous")}
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+              <button class="pill-button secondary small" onclick="markReportResolved(${reports.length - 1 - idx})">Mark resolved</button>
+              <button class="pill-button secondary small" onclick="blockReportedUser('${escapeAttr(report.reportedId)}')">Block reported user</button>
+              <button class="pill-button secondary small" onclick="softBanUserFromReport('${escapeAttr(report.reportedId)}')" style="background:#7f1d1d;color:#fee2e2;">Soft-ban</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+    
+    function markReportResolved(reportIndex){
+      const reports = getReports();
+      if(reports[reportIndex]){
+        reports.splice(reportIndex, 1);
+        localStorage.setItem("l2n_reports", JSON.stringify(reports));
+        renderModerationReports();
+        toast("Report marcado como resolvido.");
+      }
+    }
+    
+    function blockReportedUser(userId){
+      if(confirm(`Block ${userId}?`)){
+        blockUser(userId);
+        toast("User blocked.");
+        renderModerationReports();
+      }
+    }
+    
+    function softBanUserFromReport(userId){
+      if(confirm(`Soft-ban ${userId}? This user will no longer appear in the feed.`)){
+        softBanUser(userId);
+        toast("Soft-ban applied to user.");
+        renderModerationReports();
+      }
+    }
+
+    function renderPublicProfile(){
+      if(!publicProfileName) return;
+      const p = getProfile(publicProfileName) || {};
+      const photos = Array.isArray(p.photos) ? p.photos : [];
+
+      // Add verification badge
+      const verification = getVerificationData(publicProfileName);
+      const verifiedBadge = verification.status === "verified" 
+        ? `<span style="color:#3b82f6;font-size:14px;margin-left:6px;font-weight:600;">✔ Verified</span>` 
+        : "";
+      
+      $("public-profile-card-name").innerHTML = publicProfileName + verifiedBadge;
+      $("public-profile-card-age").textContent = (p.showAge!==false && p.age) ? p.age : "";
+      $("public-profile-card-gender").textContent = p.gender ? genderLabel(p.gender) : "";
+      $("public-profile-card-vibe").textContent = p.vibe || "—";
+      $("public-profile-card-location").textContent = p.location || "Manhattan";
+      const iconRow=$("public-profile-card-icons");
+      if(iconRow){ iconRow.innerHTML = buildIconRowHtml(publicProfileName); }
+
+      // fake distance/active derived from name
+      let hash=0; for(let i=0;i<publicProfileName.length;i++) hash=(hash*31+publicProfileName.charCodeAt(i))>>>0;
+      const dist = 1+(hash%12);
+      let hash2=0; for(let i=0;i<publicProfileName.length;i++) hash2=(hash2*17+publicProfileName.charCodeAt(i))>>>0;
+      const options=["🟢 Active recently","🟡 Active today","🔵 Online now"];
+      const active = options[hash2%options.length];
+
+            const st = (currentUserName?getSettings():{showDistance:true,showActive:true});
+      $("public-profile-distance").textContent = st.showDistance!==false ? `📍 ${dist} mi` : "";
+      $("public-profile-lastactive").textContent = st.showActive!==false ? active : "";
+
+      if(!photos.length){
+        $("public-profile-hero-img").src = "https://via.placeholder.com/900x1200.png?text="+encodeURIComponent(publicProfileName);
+        $("public-profile-photo-dots").innerHTML = "";
+      } else {
+        if(publicProfilePhotoIndex>=photos.length) publicProfilePhotoIndex=0;
+        if(publicProfilePhotoIndex<0) publicProfilePhotoIndex=0;
+        $("public-profile-hero-img").src = photos[publicProfilePhotoIndex];
+        $("public-profile-photo-dots").innerHTML = photos.map((_,idx)=>`<div class="photo-dot ${idx===publicProfilePhotoIndex?"active":""}"></div>`).join("");
+      }
+
+      $("public-profile-bio").textContent = (p.bio && p.bio.trim()) ? p.bio : "—";
+      $("public-profile-job").textContent = (p.jobTitle && p.jobTitle.trim()) ? p.jobTitle : "—";
+      $("public-profile-company").textContent = (p.company && p.company.trim()) ? p.company : "—";
+      $("public-profile-school").textContent = (p.school && p.school.trim()) ? p.school : "—";
+      $("public-profile-ig").textContent = (p.instagram && p.instagram.trim()) ? "@"+p.instagram.replace(/^@/,"") : "—";
+
+      const pid = publicProfileContext ? publicProfileContext.placeId : null;
+      let ctx = "";
+      if(pid){
+        const place = places.find(x=>x.id===pid);
+        if(place) ctx = `Context: you both appear at <strong>${place.name}</strong>.`;
+      }
+      $("public-profile-context").innerHTML = ctx || " ";
+
+      const likeBtn = $("public-like-btn");
+      if(likeBtn){
+        if(!pid || !currentUserName || publicProfileName===currentUserName){
+          likeBtn.textContent="Curtir";
+          likeBtn.disabled=true;
+          likeBtn.style.opacity="0.55";
+          likeBtn.style.cursor="not-allowed";
+        } else {
+          likeBtn.disabled=false;
+          likeBtn.style.opacity="1";
+          likeBtn.style.cursor="pointer";
+
+          const likesData=getLikesData();
+          const byPlace=likesData[pid]||{};
+          const fromCurrent=byPlace[currentUserName]||[];
+          const liked = Array.isArray(fromCurrent) && fromCurrent.includes(publicProfileName);
+          likeBtn.textContent = liked ? "Liked ✅" : "Like";
+        }
+      }
+    }
+
+    function cyclePublicProfilePhoto(dir){
+      if(!publicProfileName) return;
+      const p=getProfile(publicProfileName) || {};
+      const photos=Array.isArray(p.photos)?p.photos:[];
+      if(!photos.length) return;
+      publicProfilePhotoIndex += dir;
+      if(publicProfilePhotoIndex<0) publicProfilePhotoIndex = photos.length-1;
+      if(publicProfilePhotoIndex>=photos.length) publicProfilePhotoIndex = 0;
+      renderPublicProfile();
+    }
+
+    function publicLike(){
+      if(!currentUserName){ alert("Set up your profile first."); showScreen("screen-username"); return; }
+      if(!publicProfileName) return;
+      const pid = publicProfileContext ? publicProfileContext.placeId : null;
+      if(!pid){ toast("Open a venue to like for the event."); return; }
+
+      const likesData=getLikesData();
+      if(!likesData[pid]) likesData[pid]={};
+      if(!Array.isArray(likesData[pid][currentUserName])) likesData[pid][currentUserName]=[];
+      const arr=likesData[pid][currentUserName];
+      const idx=arr.indexOf(publicProfileName);
+      const nowLiked = idx===-1;
+      if(nowLiked) arr.push(publicProfileName); else arr.splice(idx,1);
+
+      const targetProfile=getProfile(publicProfileName);
+      if(targetProfile && targetProfile.isBot && nowLiked){
+        if(!Array.isArray(likesData[pid][publicProfileName])) likesData[pid][publicProfileName]=[];
+        if(!likesData[pid][publicProfileName].includes(currentUserName)) likesData[pid][publicProfileName].push(currentUserName);
+      }
+
+      setLikesData(likesData);
+
+      const byPlace=likesData[pid]||{};
+      const fromOther=byPlace[publicProfileName]||[];
+      const likedBack=Array.isArray(fromOther) && fromOther.includes(currentUserName);
+      const isMatch = likedBack && areProfilesCompatible(currentUserName, publicProfileName);
+
+      if(isMatch) toast(`💖 Match with ${publicProfileName}!`);
+      else toast(nowLiked ? "Liked ❤️" : "Unliked");
+
+      renderPublicProfile();
+      renderMatches();
+      if(currentPlaceId===pid) renderGoingForPlace(pid);
+    }
+
+
+    
+    
+    // --- Settings (per-user, stored locally) ---
+    function settingsKey(){ return "tonightly_settings_" + (currentUserName || ""); }
+
+    function getSettings(){
+      if(!currentUserName) return {
+        showDistance:true, showActive:true, notifyMatch:true, notifyMsg:true,
+        ageMin:24, ageMax:35, maxDistance:10
+      };
+      try{
+        const raw=localStorage.getItem(settingsKey());
+        if(raw) return JSON.parse(raw);
+      }catch(e){}
+      return { showDistance:true, showActive:true, notifyMatch:true, notifyMsg:true, ageMin:24, ageMax:35, maxDistance:10 };
+    }
+
+    function setSettings(s){
+      if(!currentUserName) return;
+      localStorage.setItem(settingsKey(), JSON.stringify(s));
+    }
+
+    function openSettings(){
+      if(!currentUserName){ showScreen("screen-username"); return; }
+      const p=getProfile(currentUserName) || {};
+      const s=getSettings();
+      document.getElementById("settings-username").textContent = currentUserName;
+
+      document.getElementById("set-show-age").checked = (p.showAge!==false);
+      document.getElementById("set-show-distance").checked = (s.showDistance!==false);
+      document.getElementById("set-show-active").checked = (s.showActive!==false);
+
+      document.getElementById("set-show-me").value = p.showMe || "both";
+      document.getElementById("set-age-min").value = s.ageMin ?? 24;
+      document.getElementById("set-age-max").value = s.ageMax ?? 35;
+      document.getElementById("set-distance").value = String(s.maxDistance ?? 10);
+      syncAgeRangeUI();
+
+      document.getElementById("set-notify-match").checked = (s.notifyMatch!==false);
+      document.getElementById("set-notify-msg").checked = (s.notifyMsg!==false);
+
+      // Update PRO status
+      updateSettingsProStatus();
+      renderEventsDebug();
+      renderImageDebug();
+
+      showScreen("screen-settings");
+    }
+    function updateSettingsProStatus(){
+      const pro = isPro();
+      const plan = getTimSelectedPlan();
+      const statusEl = document.getElementById("settings-pro-status");
+      const badgeEl = document.getElementById("settings-pro-badge");
+      const toggleEl = document.getElementById("settings-pro-toggle");
+      const planEl = document.getElementById("settings-plan-display");
+      
+      if(statusEl) statusEl.textContent = pro ? "Ativo (demo)" : "Inativo";
+      if(badgeEl) badgeEl.textContent = pro ? "PRO" : "FREE";
+      if(toggleEl) {
+        toggleEl.textContent = pro ? "Deactivate" : "Activate";
+        toggleEl.style.display = pro ? "block" : "none";
+      }
+      if(planEl) planEl.textContent = plan === "weekly" ? "Weekly ($4.99/week)" : "Monthly ($14.99/month)";
+    }
+    function toggleProStatus(){
+      if(isPro()){
+        setPro(false);
+        toast("✅ PRO deactivated. You're back on the FREE plan.");
+      } else {
+        openPaywall("settings");
+      }
+      updateSettingsProStatus();
+    }
+    function renderEventsDebug(){
+      const events = getTimEvents();
+      const listEl = document.getElementById("events-debug-list");
+      if(!listEl) return;
+      
+      const last20 = events.slice(-20).reverse();
+      if(last20.length === 0){
+        listEl.innerHTML = '<div class="section-sub">No events yet.</div>';
+        return;
+      }
+      
+      listEl.innerHTML = last20.map(ev => {
+        const date = new Date(ev.ts);
+        const timeStr = date.toLocaleTimeString();
+        const propsStr = Object.keys(ev.props || {}).length > 0 
+          ? " " + JSON.stringify(ev.props) 
+          : "";
+        return `<div style="padding:6px;border-bottom:1px solid rgba(148,163,184,.1);">
+          <div style="color:#fde68a;font-weight:700;">${ev.event}</div>
+          <div style="color:#9ca3af;font-size:10px;">${timeStr}${propsStr}</div>
+        </div>`;
+      }).join("");
+    }
+    
+    function renderImageDebug(){
+      const statsEl = document.getElementById("image-debug-stats");
+      if(!statsEl) return;
+      
+      const stats = window.imageStats || imageStats;
+      const total = stats.total || 0;
+      const loaded = stats.loaded || 0;
+      const failed = stats.failed || [];
+      const failedCount = failed.length;
+      const successRate = total > 0 ? Math.round((loaded / total) * 100) : 0;
+      
+      let html = `
+        <div style="padding:10px;border-radius:14px;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.14);margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-weight:900;color:#f8fafc;">Total venues</div>
+            <div style="font-weight:900;color:#fde68a;">${total}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-weight:700;color:#e2e8f0;">Images loaded</div>
+            <div style="font-weight:700;color:#22c55e;">${loaded}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:700;color:#e2e8f0;">Success rate</div>
+            <div style="font-weight:700;color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'};">${successRate}%</div>
+          </div>
+        </div>
+      `;
+      
+      if(failedCount > 0){
+        html += `
+          <div style="margin-top:12px;">
+            <div style="font-weight:900;color:#f8fafc;margin-bottom:8px;">Last ${Math.min(10, failedCount)} that failed:</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+        `;
+        
+        failed.slice(-10).reverse().forEach(item => {
+          html += `
+            <div style="padding:10px;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);">
+              <div style="font-weight:900;color:#f8fafc;margin-bottom:4px;">${escapeHtml(item.name)}</div>
+              <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;word-break:break-all;">${escapeHtml(item.url || "no URL")}</div>
+              <div style="font-size:11px;color:#fde68a;">Fallback: <b>${escapeHtml(item.fallback)}</b></div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div style="padding:10px;border-radius:14px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);margin-top:12px;">
+            <div style="color:#22c55e;font-weight:700;">✅ All images loaded successfully!</div>
+          </div>
+        `;
+      }
+      
+      statsEl.innerHTML = html;
+    }
+
+    function syncAgeRangeUI(){
+      const min = parseInt(document.getElementById("set-age-min").value,10);
+      const max = parseInt(document.getElementById("set-age-max").value,10);
+      const a = Math.min(min,max);
+      const b = Math.max(min,max);
+      document.getElementById("set-age-range-label").textContent = `${a} – ${b}`;
+      // distance label
+      const d = document.getElementById("set-distance").value;
+      const lbl = document.getElementById("set-distance-label");
+      if(lbl) lbl.textContent = `${d} mi`;
+    }
+
+    function updateSettingsFromUI(){
+      if(!currentUserName) return;
+
+      const p=getProfile(currentUserName) || {};
+      p.showAge = document.getElementById("set-show-age").checked;
+      p.showMe = document.getElementById("set-show-me").value || "both";
+      setProfile(currentUserName, p);
+
+      const s=getSettings();
+      s.showDistance = document.getElementById("set-show-distance").checked;
+      s.showActive = document.getElementById("set-show-active").checked;
+      s.notifyMatch = document.getElementById("set-notify-match").checked;
+      s.notifyMsg = document.getElementById("set-notify-msg").checked;
+
+      const min = parseInt(document.getElementById("set-age-min").value,10);
+      const max = parseInt(document.getElementById("set-age-max").value,10);
+      s.ageMin = Math.min(min,max);
+      s.ageMax = Math.max(min,max);
+
+      s.maxDistance = parseInt(document.getElementById("set-distance").value,10) || 10;
+
+      setSettings(s);
+      syncAgeRangeUI();
+
+      // refresh UI
+      renderProfilePreviewCard();
+      if(currentPlaceId) renderGoingForPlace(currentPlaceId);
+      try{ renderSwipeDeck(); }catch(e){}
+      toast("Settings salvas ✅");
+    }
+
+    function changeName(){
+      const newName = prompt("New name:", currentUserName || "");
+      if(!newName) return;
+
+      const profiles=getProfilesData();
+      profiles[newName]=profiles[currentUserName] || getProfile(currentUserName) || {};
+      delete profiles[currentUserName];
+      setProfilesData(profiles);
+
+      const oldK="tonightly_settings_"+currentUserName;
+      const newK="tonightly_settings_"+newName;
+      const old=localStorage.getItem(oldK);
+      if(old){ localStorage.setItem(newK, old); localStorage.removeItem(oldK); }
+
+      localStorage.setItem("tonightly_user", newName);
+      currentUserName=newName;
+
+      toast("Name updated ✅");
+      openSettings();
+    }
+
+    function logout(){
+      localStorage.removeItem("tonightly_user");
+      localStorage.removeItem("tonightly_onboarded");
+      currentUserName=null;
+      showScreen("screen-username");
+    }
+
+    function resetAndReseed(){
+      resetDemoData();
+      try{ seedDemoCrowd(true); ensureDemoCrowd(); }catch(e){}
+    }
+
+
+function toggleDemoPanel(){
+      const p = document.getElementById("demo-panel");
+      if(!p) return;
+      p.style.display = (p.style.display==="none" || !p.style.display) ? "block" : "none";
+    }
+    function toggleImageDebugPanel(){
+      const p = document.getElementById("image-debug-panel");
+      if(!p) return;
+      const isVisible = p.style.display !== "none";
+      p.style.display = isVisible ? "none" : "block";
+      if(!isVisible){
+        // Update quick stats
+        const stats = window.imageStats || imageStats;
+        const total = stats.total || 0;
+        const loaded = stats.loaded || 0;
+        const failed = (stats.failed || []).length;
+        const successRate = total > 0 ? Math.round((loaded / total) * 100) : 0;
+        const quickEl = document.getElementById("image-debug-quick-stats");
+        if(quickEl){
+          quickEl.innerHTML = `
+            <div style="margin-bottom:8px;"><b>Total:</b> ${total} venues</div>
+            <div style="margin-bottom:8px;"><b>Loaded:</b> ${loaded}</div>
+            <div style="margin-bottom:8px;"><b>Falharam:</b> ${failed}</div>
+            <div><b>Rate:</b> <span style="color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'}">${successRate}%</span></div>
+          `;
+        }
+      }
+    }
+
+function resetDemoData(){
+      const keys=[
+        "tonightly_profiles",
+        "tonightly_going",
+        "tonightly_interested",
+        "tonightly_likes",
+        "tonightly_matches",
+        "tonightly_messages",
+        "tonightly_user",
+        "tonightly_onboarded",
+        "tonightly_seed_version"
+      ];
+      keys.forEach(k=>localStorage.removeItem(k));
+      alert("Demo reset! Now reload the page (F5 / refresh) to see the new photos.");
+    }
+    
+    // ===========================
+    // PLACE PHOTOS MANAGEMENT UI
+    // ===========================
+    // Simple toast function if not exists
+    if(typeof showToast === 'undefined'){
+      window.showToast = function(message, duration = 2000){
+        // Try to find existing toast container or create one
+        let toastContainer = document.getElementById("toast-container");
+        if(!toastContainer){
+          toastContainer = document.createElement("div");
+          toastContainer.id = "toast-container";
+          toastContainer.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:1000000; pointer-events:none;";
+          document.body.appendChild(toastContainer);
+        }
+        
+        const toast = document.createElement("div");
+        toast.style.cssText = "background:rgba(15,23,42,0.95); color:#f1f5f9; padding:12px 20px; border-radius:8px; margin-top:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); pointer-events:auto; font-size:14px; max-width:300px; text-align:center;";
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transition = "opacity 0.3s";
+          setTimeout(() => {
+            if(toast.parentNode) toast.parentNode.removeChild(toast);
+          }, 300);
+        }, duration);
+      };
+    }
+    
+    function renderPlacePhotosList(){
+      const container = document.getElementById("place-photos-list");
+      if(!container) return;
+      
+      const searchTerm = (document.getElementById("place-photo-search")?.value || "").toLowerCase().trim();
+      const allPhotos = getAllManualPlacePhotos();
+      
+      // Get all places - try multiple methods
+      let placesList = [];
+      try {
+        // Method 1: Try global scope (most common)
+        if(typeof places !== 'undefined' && Array.isArray(places) && places.length > 0){
+          placesList = places;
+        } 
+        // Method 2: Try window object
+        else if(typeof window !== 'undefined' && window.places && Array.isArray(window.places)){
+          placesList = window.places;
+        }
+        // Method 3: Try localStorage for custom places
+        else {
+          const customPlacesRaw = localStorage.getItem("tonightly_custom_places");
+          if(customPlacesRaw){
+            try {
+              const customPlaces = JSON.parse(customPlacesRaw);
+              if(Array.isArray(customPlaces) && customPlaces.length > 0) placesList = customPlaces;
+            } catch(e){}
+          }
+        }
+        
+        // If still empty, log warning but continue
+        if(placesList.length === 0){
+          console.warn("[Place Photos] Could not find places array. Make sure places are loaded.");
+        }
+      } catch(e){
+        console.error("[Place Photos] Error getting places", e);
+      }
+      
+      // Filter places by search term
+      const filtered = placesList.filter(place => {
+        if(!searchTerm) return true;
+        const name = (place.name || "").toLowerCase();
+        return name.includes(searchTerm);
+      });
+      
+      // Sort by name
+      filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      
+      if(filtered.length === 0){
+        container.innerHTML = `
+          <div class="section-sub" style="text-align:center; padding:20px;">
+            ${searchTerm ? "No venues found." : "No venues available."}
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = filtered.map(place => {
+        const placeId = place.id;
+        const placeName = escapeHtml(place.name || "No name");
+        const hasPhoto = !!allPhotos[placeId];
+        const photoDataUrl = allPhotos[placeId] || null;
+        const thumbnailUrl = photoDataUrl || (place.image || "");
+        
+        return `
+          <div class="settings-row" style="padding:12px; border-bottom:1px solid rgba(148,163,184,0.1); align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+              <div style="width:60px; height:60px; border-radius:8px; overflow:hidden; background:#1e293b; flex-shrink:0;">
+                ${hasPhoto ? 
+                  `<img src="${escapeAttr(photoDataUrl)}" alt="${placeName}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';" />` :
+                  (thumbnailUrl && !thumbnailUrl.includes("data:image/svg+xml") ? 
+                    `<img src="${escapeAttr(thumbnailUrl)}" alt="${placeName}" style="width:100%; height:100%; object-fit:cover; opacity:0.5;" onerror="this.style.display='none';" />` :
+                    `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:20px;">📷</div>`
+                  )
+                }
+              </div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-weight:500; color:#f1f5f9; margin-bottom:4px;">${placeName}</div>
+                <div style="font-size:12px; color:#94a3b8;">
+                  ${hasPhoto ? "✓ Manual photo" : "No manual photo"}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink:0;">
+              <button class="pill-button secondary small" onclick="uploadPlacePhoto('${escapeAttr(placeId)}', '${escapeAttr(placeName)}')">
+                ${hasPhoto ? "Alterar" : "Upload"}
+              </button>
+              ${hasPhoto ? `
+                <button class="pill-button secondary small" onclick="removePlacePhotoConfirm('${escapeAttr(placeId)}', '${escapeAttr(placeName)}')" style="background:#7f1d1d; color:#fee2e2;">
+                  Remover
+                </button>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+    
+    function uploadPlacePhoto(placeId, placeName){
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = async function(e){
+        const file = e.target.files?.[0];
+        if(!file) return;
+        
+        try {
+          // Show loading
+          const toast = showToast("Comprimindo imagem...", 2000);
+          
+          const dataUrl = await compressImageToDataUrl(file);
+          
+          const success = setManualPlacePhoto(placeId, dataUrl);
+          if(success){
+            showToast(`Photo saved for ${placeName}`, 2000);
+            renderPlacePhotosList();
+            // Refresh places list if on home screen
+            try {
+              if(typeof renderPlacesList === 'function'){
+                renderPlacesList();
+              }
+            } catch(e){}
+          } else {
+            showToast("Error saving photo", 2000);
+          }
+        } catch(err) {
+          console.error("[Place Photos] Upload error", err);
+          showToast("Error processing image: " + (err.message || "Unknown error"), 3000);
+        }
+      };
+      input.click();
+    }
+    
+    function removePlacePhotoConfirm(placeId, placeName){
+      if(confirm(`Remove manual photo from "${placeName}"?`)){
+        removeManualPlacePhoto(placeId);
+        showToast(`Photo removed from ${placeName}`, 2000);
+        renderPlacePhotosList();
+        // Refresh places list if on home screen
+        try {
+          if(typeof renderPlacesList === 'function'){
+            renderPlacesList();
+          }
+        } catch(e){}
+      }
+    }
+    
+    function exportPlacePhotos(){
+      try {
+        const allPhotos = getAllManualPlacePhotos();
+        const exportData = {
+          version: "1.0",
+          timestamp: new Date().toISOString(),
+          photos: Object.keys(allPhotos).map(placeId => ({
+            placeId: placeId,
+            dataUrl: allPhotos[placeId]
+          }))
+        };
+        
+        const json = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `tonight-place-photos-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showToast(`Exported ${exportData.photos.length} photo(s)`, 2000);
+      } catch(err) {
+        console.error("[Place Photos] Export error", err);
+        showToast("Error exporting photos", 2000);
+      }
+    }
+    
+    function importPlacePhotos(){
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json,.json";
+      input.onchange = function(e){
+        const file = e.target.files?.[0];
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e){
+          try {
+            const data = JSON.parse(e.target.result);
+            if(!data.photos || !Array.isArray(data.photos)){
+              throw new Error("Invalid format: expected 'photos' array");
+            }
+            
+            let imported = 0;
+            let errors = 0;
+            
+            data.photos.forEach(item => {
+              if(item.placeId && item.dataUrl){
+                if(setManualPlacePhoto(item.placeId, item.dataUrl)){
+                  imported++;
+                } else {
+                  errors++;
+                }
+              }
+            });
+            
+            showToast(`Imported ${imported} photo(s)${errors > 0 ? `, ${errors} error(s)` : ""}`, 3000);
+            renderPlacePhotosList();
+            // Refresh places list if on home screen
+            try {
+              if(typeof renderPlacesList === 'function'){
+                renderPlacesList();
+              }
+            } catch(e){}
+          } catch(err) {
+            console.error("[Place Photos] Import error", err);
+            showToast("Import error: " + (err.message || "Invalid format"), 3000);
+          }
+        };
+        reader.onerror = function(){
+          showToast("Error reading file", 2000);
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+    
+    function resetPlacePhotos(){
+      const count = Object.keys(getAllManualPlacePhotos()).length;
+      if(count === 0){
+        showToast("No photos to remove", 2000);
+        return;
+      }
+      
+      if(confirm(`Remove all ${count} manual photo(s)? This action cannot be undone.`)){
+        const removed = removeAllManualPlacePhotos();
+        showToast(`${removed} photo(s) removed`, 2000);
+        renderPlacePhotosList();
+        // Refresh places list if on home screen
+        try {
+          if(typeof renderPlacesList === 'function'){
+            renderPlacesList();
+          }
+        } catch(e){}
+      }
+    }
+    
+    // Expose functions globally
+    window.uploadPlacePhoto = uploadPlacePhoto;
+    window.removePlacePhotoConfirm = removePlacePhotoConfirm;
+    window.exportPlacePhotos = exportPlacePhotos;
+    window.importPlacePhotos = importPlacePhotos;
+    window.resetPlacePhotos = resetPlacePhotos;
+    window.renderPlacePhotosList = renderPlacePhotosList;
+
+    window.openPlace=openPlace;
+    window.toggleLike=toggleLike;
+    window.openMatches=openMatches;
+    
+    // Bot management functions
+    window.recreateBots=recreateBots;
+    window.clearBots=clearBots;
+    window.renderBotsStats=renderBotsStats;
+    window.askNewName=askNewName;
+    window.openChat=openChat;
+    window.sendChatMessage=sendChatMessage;
+    window.nextOnboarding=nextOnboarding;
+    window.skipOnboarding=skipOnboarding;
+    window.setFilter=setFilter;
+    window.toggleGoingForCurrent=toggleGoingForCurrent;
+    window.toggleInterestedForCurrent=toggleInterestedForCurrent;
+    window.goHome=goHome;
+    window.openProducer=openProducer;
+    window.saveProducerPlace=saveProducerPlace;
+    window.openTonightPlan=openTonightPlan;
+    window.resetDemo=resetDemo;
+    window.openProfile=openProfile;
+    window.handleOnboardingPhotoChange=handleOnboardingPhotoChange;
+    window.handleProfilePhotoInput=handleProfilePhotoInput;
+    window.saveProfileFromProfileScreen=saveProfileFromProfileScreen;
+    window.cycleProfilePhoto=cycleProfilePhoto;
+    window.scrollToProfileEdit=scrollToProfileEdit;
+
+
+    window.openSwipeForCurrent=openSwipeForCurrent;
+    window.openSwipe=openSwipe;
+    window.backFromSwipe=backFromSwipe;
+    window.swipeByButton=swipeByButton;
+
+
+    window.openPublicProfile=openPublicProfile;
+    window.closePublicProfile=closePublicProfile;
+    window.cyclePublicProfilePhoto=cyclePublicProfilePhoto;
+    window.publicLike=publicLike;
+    
+    // Paywall functions
+    window.openPaywall=openPaywall;
+    window.closePaywall=closePaywall;
+    window.selectPlan=selectPlan;
+    window.activateProDemo=activateProDemo;
+    window.resetTimDemo=resetTimDemo;
+    window.toggleProStatus=toggleProStatus;
+    window.renderEventsDebug=renderEventsDebug;
+    window.renderImageDebug=renderImageDebug;
+    window.toggleImageDebugPanel=toggleImageDebugPanel;
+
+
+    function forceBots(){
+      seedDemoCrowd(true);
+      alert("Bots recreated! Now click OK and refresh (F5) if they still don't appear.");
+    }
+
+    window.resetDemoData=resetDemoData;
+    window.forceBots=forceBots;
+        window.openSettings=openSettings;
+    window.updateSettingsFromUI=updateSettingsFromUI;
+    window.syncAgeRangeUI=syncAgeRangeUI;
+    window.changeName=changeName;
+    window.logout=logout;
+    window.resetAndReseed=resetAndReseed;
+    window.openGoingList=openGoingList;
+    window.renderGoingList=renderGoingList;
+    window.toggleLike=toggleLike;
+document.addEventListener("DOMContentLoaded", initApp);
+  </script>
+
+  <!-- Debug / Demo controls (always visible) -->
+  <div id="demo-fab" class="demo-fab" onclick="toggleDemoPanel()">🛠</div>
+  <div id="image-debug-fab" class="demo-fab" style="bottom: 140px;" onclick="toggleImageDebugPanel()" title="Debug de Imagens">🖼️</div>
+  <div id="image-debug-panel" class="demo-panel" style="display:none;">
+    <div class="demo-panel-header">
+      <div style="font-weight:800;">🖼️ Debug de Imagens</div>
+      <button class="demo-close" onclick="toggleImageDebugPanel();event.stopPropagation()">✕</button>
+    </div>
+    <div class="demo-panel-body">
+      <div id="image-debug-quick-stats" style="font-size:12px;color:#cbd5e1;">
+        <div class="section-sub">Loading...</div>
+      </div>
+      <button class="pill-button" style="width:100%;margin-top:10px;" onclick="renderImageDebug();toggleImageDebugPanel();openSettings();event.stopPropagation()">View details in Settings</button>
+    </div>
+  </div>
+  <div id="demo-panel" class="demo-panel" style="display:none;">
+    <div class="demo-panel-header">
+      <div style="font-weight:800;">Demo Controls</div>
+      <button class="demo-close" onclick="toggleDemoPanel();event.stopPropagation()">✕</button>
+    </div>
+    <div class="demo-panel-body">
+      <button class="pill-button" onclick="forceBots();event.stopPropagation()">Recreate bots</button>
+      <button class="pill-button secondary" onclick="resetDemoData();event.stopPropagation()">Reset demo</button>
+      <button class="pill-button secondary" onclick="localStorage.setItem('tonightly_seed_version','');alert('Seed version cleared. Now refresh (F5).');event.stopPropagation()">Clear seed</button>
+      <div class="section-sub" style="margin-top:10px;">
+        If the bots don't appear, click <b>Recreate bots</b> and then press <b>F5</b>.
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  
+  <!-- Paywall Screen -->
+  <section id="screen-paywall" class="screen">
+    <div class="back-row">
+      <button onclick="closePaywall()">◀ Back</button>
+      <h2>Link2Nite PRO</h2>
+    </div>
+
+    <div class="card">
+      <div class="pay-head">
+        <div>
+          <div class="pay-title" id="pay-title">Unlock Link2Nite PRO</div>
+        <div class="pay-sub" id="pay-sub">See the full list of who's going to the same place and match faster.</div>
+        </div>
+      </div>
+
+      <div class="pay-feats" id="pay-feats">
+        <div class="pay-feat"><div class="ic">👀</div><div class="txt">Full list of "Who's going" (no limit)</div></div>
+        <div class="pay-feat"><div class="ic">♾️</div><div class="txt">Unlimited swipes</div></div>
+        <div class="pay-feat"><div class="ic">❤️</div><div class="txt">See who liked you (coming soon)</div></div>
+        <div class="pay-feat"><div class="ic">⚡</div><div class="txt">Priority on cards (coming soon)</div></div>
+      </div>
+
+      <div class="price-pills" id="price-pills">
+        <div class="price-pill active" id="pill-monthly" onclick="selectPlan('monthly')">
+          <div class="tag">Melhor valor</div>
+          <div class="k">Monthly</div>
+          <div class="p">$14.99</div>
+          <div class="s">por mês • cancele quando quiser</div>
+        </div>
+        <div class="price-pill" id="pill-weekly" onclick="selectPlan('weekly')">
+          <div class="k">Weekly</div>
+          <div class="p">$4.99</div>
+          <div class="s">per week • flexible</div>
+        </div>
+      </div>
+
+      <div class="pay-price" style="margin-top:12px;">
+        <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+          <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/mês</span></div>
+          <div class="fine" id="pay-fine">Cancele quando quiser. (Checkout Stripe entra depois.)</div>
+        </div>
+        <div class="std-badge" id="pay-badge">🔥 Melhor valor</div>
+      </div>
+
+      <div class="pay-actions">
+        <button class="pill-button" id="pay-cta" onclick="activateProDemo()">Activate PRO (demo)</button>
+        <button class="pill-button secondary" onclick="closePaywall()">Not now</button>
+      </div>
+
+      <div class="pay-note" id="pay-note">
+        You'll connect with Stripe later. For now, PRO is a demo.
+      </div>
+    </div>
+  </section>
+
+  <!-- Paywall Modal (legacy - keeping for compatibility but not used) -->
+  <div id="paywall-modal" class="modal hidden" role="dialog" aria-modal="true" style="display:none;">
+    <div class="modal-card">
+      <div class="pay-head">
+        <div>
+          <div class="pay-title" id="pay-title">Unlock Link2Nite PRO</div>
+          <div class="pay-sub" id="pay-sub">See the full list of who's going to the same place and match faster.</div>
+  </div>
+<button class="pay-x" onclick="closePaywall()">✕</button>
+      </div>
+
+      <div class="pay-feats" id="pay-feats">
+        <div class="pay-feat"><div class="ic">👀</div><div class="txt">Full list of “Who's going” (no limit)</div></div>
+        <div class="pay-feat"><div class="ic">♾️</div><div class="txt">Unlimited swipes</div></div>
+        <div class="pay-feat"><div class="ic">❤️</div><div class="txt">See who liked you</div></div>
+      </div>
+
+
+      <div class="price-pills" id="price-pills">
+        <div class="price-pill active" id="pill-monthly" onclick="selectPlan('monthly')">
+          <div class="tag">Melhor valor</div>
+          <div class="k">Monthly</div>
+          <div class="p">$14.99</div>
+          <div class="s">por mês • cancele quando quiser</div>
+        </div>
+        <div class="price-pill" id="pill-weekly" onclick="selectPlan('weekly')">
+          <div class="k">Weekly</div>
+          <div class="p">$4.99</div>
+          <div class="s">per week • flexible</div>
+        </div>
+      </div>
+
+      <div class="pay-price" style="margin-top:12px;">
+        <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+          <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/mês</span></div>
+          <div class="fine" id="pay-fine">Cancele quando quiser. (Checkout Stripe entra depois.)</div>
+        </div>
+        <div class="std-badge" id="pay-badge">🔥 Melhor valor</div>
+      </div>
+
+      <div class="pay-actions">
+        <button class="pill-button" id="pay-cta" onclick="activateProDemo()">Subscribe to Link2Nite PRO (demo)</button>
+        <button class="pill-button secondary" onclick="closePaywall()">Continue on FREE</button>
+      </div>
+
+      <div class="pay-note" id="pay-note">
+        Tip: PRO works best when you use "Who's going" to set the meetup fast.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if("serviceWorker" in navigator){
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
