@@ -44,6 +44,7 @@ Existem **duas cópias** do protótipo no mesmo monorepo:
 - Branch: `main`
 - Sempre confira o estado real com `git status` e `git log --oneline -5`.
 - Commits de referência (ordem pode variar; ver log local):
+  - `576acda` — `link2nite-repo/beta/index.html` = cópia integral da raiz (ficheiro antes truncado) + nota no handoff
   - `a17a7fa` — alinhar `link2nite-repo/beta/` com a raiz (`PLACE_IMAGE_DIRECT_MAP` + `beta/images/venues/*.jpg`) + handoff
   - `acb4a00` — sync de trabalho local + snapshot `link2nite-repo/` no repo pai
   - `8918651` / `638d870` — docs handoff/histórico
