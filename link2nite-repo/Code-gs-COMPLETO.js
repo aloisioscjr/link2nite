@@ -1,11 +1,11 @@
 /**
  * Code.gs completo — Waitlist + email HTML profissional
  * Envio: se MS365_TENANT_ID, MS365_CLIENT_ID e MS365_CLIENT_SECRET estiverem
- * nas Script Properties, envia via Microsoft Graph (team@link2nite.com).
+ * nas Script Properties, envia via Microsoft Graph (noreply@link2nite.com).
  * Senão usa MailApp (Gmail).
  */
 var WAITLIST_EMAIL_IMAGE_URL = "https://www.link2nite.com/rooftop.png";
-var MS365_FROM_EMAIL = "team@link2nite.com";
+var MS365_FROM_EMAIL = "noreply@link2nite.com";
 
 function getWaitlistEmailHtml(data) {
   var firstName = (data.firstName || "there").trim() || "there";
@@ -75,7 +75,7 @@ function doPost(e) {
 
     sheet.appendRow(row);
 
-    // Email de confirmação (Microsoft Graph = team@link2nite.com, ou Gmail)
+    // Email de confirmação (Microsoft Graph = noreply@link2nite.com, ou Gmail)
     try {
       var email = (data.email || "").trim();
       if (email) {
@@ -123,12 +123,11 @@ function getGraphAccessToken() {
 }
 
 /**
- * Envia email via Microsoft Graph (team@link2nite.com). Se falhar ou não configurado, usa Gmail.
+ * Envia email via Microsoft Graph (noreply@link2nite.com). Se falhar ou não configurado, usa Gmail.
  * Logs ficam em Execuções do Apps Script para debug.
  */
 function sendWaitlistEmail(to, subject, plainBody, htmlBody) {
   var token = getGraphAccessToken();
-  Logger.log("sendWaitlistEmail: Graph token = " + (token ? "OK (enviará de team@link2nite.com)" : "AUSENTE (enviará do Gmail)"));
   if (token) {
     try {
       Logger.log("Graph: token obtido, tentando sendMail como " + MS365_FROM_EMAIL);
@@ -152,7 +151,7 @@ function sendWaitlistEmail(to, subject, plainBody, htmlBody) {
       var responseText = response.getContentText();
       Logger.log("Graph sendMail: HTTP " + code + " | " + responseText);
       if (code >= 200 && code < 300) {
-        Logger.log("Graph: envio aceito (202). Se o email não chegar, confira SPF/DKIM e caixa team@ no M365.");
+        Logger.log("Graph: envio aceito (202). Se o email não chegar, confira SPF/DKIM e caixa noreply@ no M365.");
         return;
       }
       Logger.log("Graph falhou, usando fallback Gmail.");
@@ -218,7 +217,7 @@ function verUltimoErro() {
 // Troque "seu-email@exemplo.com" pelo email onde você quer RECEBER o teste (ex.: seu Gmail ou hello@link2nite.com)
 function testarEnvioEmail() {
   Logger.log("testarEnvioEmail iniciado.");
-  var destinoTeste = "aloisioscjr@hotmail.com";
+  var destinoTeste = "aloisioscjr@gmail.com";
   var testData = { firstName: "Test", email: destinoTeste };
   var subject = "Teste Link2Nite — Email HTML";
   var plain = "Versão em texto simples.";

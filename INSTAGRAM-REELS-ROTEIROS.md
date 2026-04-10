@@ -439,5 +439,45 @@ NYC waitlist in bio 🔗
 | 8 | Reel 13 (Friday in 10 seconds) |
 | 9 | Reel 14 (Empty bar syndrome) |
 | 10 | Reel 15 (Main character energy) |
+| 11 | Reel 16 (Landing — Match. Meet. Tonight.) |
 
 Alternar com os posts estáticos (carrossel, quote, etc.) para não saturar só Reels.
+
+---
+
+## REEL 16 — "Match. Meet. Tonight." (Landing page)
+
+**Duração:** 25–32 s  
+**Tipo:** Hero / How it works — espelho da landing page
+
+Baseado na landing: hero (Match. Meet. Tonight.), 3 passos (Pick a spot → See who's going → Match & meet IRL), CTA waitlist. Use as imagens da landing (rooftop, venue cards, who's going) ou clips de vídeo IA no mesmo estilo.
+
+### Roteiro
+| Tempo | Tela / ação | Texto na tela |
+|-------|-------------|----------------|
+| 0–3 s | Hook + hero vibe | **Match. Meet. Tonight.** |
+| 3–7 s | Rooftop / Manhattan à noite (hero image ou clip) | See what's hot, see who's going — no endless chat. |
+| 7–12 s | “Pick a spot” — venues (imagens pick1/pick2 ou clip) | **1. Pick a spot** — Rooftops, bars, lounges. |
+| 12–17 s | “See who's going” — pessoas/render (who's going ou clip) | **2. See who's going** — Real profiles, tonight. |
+| 17–24 s | Match & meet — bar/casal (clip ou imagem) | **3. Match & meet IRL** — Same place, same night. |
+| 24–28 s | Logo + perks (opcional: free entry, 1 drink, skip the line) | Guestlist perks. Invites only. |
+| 28–32 s | CTA | **Join the waitlist — link in bio** |
+
+### Imagens da landing (usar no CapCut)
+| Arquivo | Uso no Reel 16 |
+|---------|-----------------|
+| `rooftop.png` | Hero / 3–7 s (ou capa) |
+| `images/pick1.PNG`, `images/pick2.PNG` | Step 1 — Pick a spot |
+| `images/whos-going.PNG` | Step 2 — See who's going |
+| Logo / end card | Final + CTA |
+
+### Legenda
+```
+Match. Meet. Tonight. 🌃
+
+Pick a spot → see who's going → match → meet IRL. No endless chat.
+
+Link2Nite — guestlist perks, verified profiles, women-first early access. Join the waitlist, link in bio 🔗
+```
+### Hashtags
+`#matchmeettonight #nycnightlife #nycdating #link2nite #howitworks #waitlist #nycsingles`

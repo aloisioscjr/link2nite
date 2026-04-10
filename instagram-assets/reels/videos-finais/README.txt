@@ -18,6 +18,9 @@ Salve aqui os Reels finais após editar no CapCut:
 • reel-13-friday-10-seconds.mp4
 • reel-14-empty-bar.mp4
 • reel-15-main-character.mp4
+• reel-16-landing-match-meet-tonight.mp4
+
+Reel 16: pode usar imagens da landing (rooftop.png, images/pick1.PNG, pick2.PNG, whos-going.PNG) + textos no CapCut, ou clips de vídeo IA da pasta ai-clips-reel-16.
 
 FORMATO FINAL:
 - Resolução: 1080x1920 (9:16 vertical)
