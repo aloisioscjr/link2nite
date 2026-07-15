@@ -1501,7 +1501,7 @@
       will-change: auto;
       isolation: isolate;
       contain: layout style paint;
-      /* Forçar novo contexto de empilhamento no iOS */
+      /* Force a new stacking context on iOS */
       -webkit-perspective: 1000px;
       perspective: 1000px;
       /* Ensure not affected by parent overflow */
@@ -5488,7 +5488,7 @@ function renderGoingForPlace(placeId){
                 <option value="harassment">Harassment</option>
                 <option value="inappropriate">Inappropriate content</option>
                 <option value="fake">Fake profile</option>
-                <option value="other">Outro</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div class="input-group">
@@ -6540,7 +6540,7 @@ function initApp(){
           .slice(0,6);
       }
 
-      // remove já matchados nesse lugar? (deixa mesmo)
+      // Remove users already matched at this place? (keep as-is for now)
       swipeQueue=candidates;
     }
 
@@ -6589,7 +6589,7 @@ function initApp(){
         return;
       }
 
-      // cria no máximo 2 cards (top + behind)
+      // Create at most 2 cards (top + behind)
       const names = swipeQueue.slice(0, 2);
       names.reverse().forEach((name, idx) => {
         const p=getProfile(name);
@@ -6616,7 +6616,7 @@ function initApp(){
         deck.appendChild(el);
       });
 
-      // top = último filho
+      // Top card = last child
       const top=deck.lastElementChild;
       if(top){
         swipeTop={el: top, profileName: top.dataset.name};
@@ -6716,10 +6716,10 @@ function initApp(){
       if(direction==="right"){
         applyLikeFromSwipe(name);
       } else {
-        toast("Passou");
+        toast("Passed");
       }
 
-      // remove do queue e render próximo
+      // Remove from queue and render the next card
       swipeQueue = swipeQueue.filter(n=>n!==name);
 
       setTimeout(()=>{
@@ -6733,7 +6733,7 @@ function initApp(){
     function applyLikeFromSwipe(targetName){
       if(!currentUserName || !swipePlaceId) return;
 
-      // mesmo comportamento do "Curtir" por lugar
+      // Same behavior as the per-place "Like" action
       const likesData=getLikesData();
       if(!likesData[swipePlaceId]) likesData[swipePlaceId]={};
       if(!Array.isArray(likesData[swipePlaceId][currentUserName])) likesData[swipePlaceId][currentUserName]=[];
@@ -6748,7 +6748,7 @@ function initApp(){
 
       setLikesData(likesData);
 
-      // checa match
+      // Check for match
       const byPlace=likesData[swipePlaceId]||{};
       const fromOther=byPlace[targetName]||[];
       const likedBack=Array.isArray(fromOther) && fromOther.includes(currentUserName);
@@ -6756,7 +6756,7 @@ function initApp(){
 
       if(isMatch){
         toast(`💖 Match with ${targetName}!`);
-        // atualiza lista de matches
+        // Update the matches list
         renderMatches();
       } else {
         toast("Liked ❤️");
@@ -6829,7 +6829,7 @@ function initApp(){
     let publicProfileName = null;
     let publicProfilePhotoIndex = 0;
     let publicProfileReturnTo = "screen-home"; // screen to go back
-    let publicProfileContext = { placeId: null }; // for "Curtir" action
+    let publicProfileContext = { placeId: null }; // for "Like" action
 
     function openPublicProfile(name, opts){
       if(!name) return;
@@ -6882,7 +6882,7 @@ function initApp(){
         if(status === "verified"){
           statusBadge = `<span style="color:#22c55e;font-weight:600;">✔ Verified</span>`;
         } else if(status === "pending"){
-          statusBadge = `<span style="color:#fbbf24;font-weight:600;">⏳ Pendente</span>`;
+          statusBadge = `<span style="color:#fbbf24;font-weight:600;">⏳ Pending</span>`;
         }
         
         return `
@@ -6896,8 +6896,8 @@ function initApp(){
             </div>
             <div style="display:flex;gap:8px;flex-shrink:0;">
               ${status === "pending" ? `
-                <button class="pill-button secondary small" onclick="approveVerification('${escapeAttr(userName)}')">Aprovar</button>
-                <button class="pill-button secondary small" onclick="rejectVerification('${escapeAttr(userName)}')" style="background:#7f1d1d;color:#fee2e2;">Reprovar</button>
+                <button class="pill-button secondary small" onclick="approveVerification('${escapeAttr(userName)}')">Approve</button>
+                <button class="pill-button secondary small" onclick="rejectVerification('${escapeAttr(userName)}')" style="background:#7f1d1d;color:#fee2e2;">Reject</button>
               ` : status === "verified" ? `
                 <button class="pill-button secondary small" onclick="rejectVerification('${escapeAttr(userName)}')" style="background:#7f1d1d;color:#fee2e2;">Remove verification</button>
               ` : ""}
@@ -6924,25 +6924,25 @@ function initApp(){
         harassment: "Harassment",
         inappropriate: "Inappropriate content",
         fake: "Fake profile",
-        other: "Outro"
+        other: "Other"
       };
       
       container.innerHTML = recentReports.map((report, idx) => {
         const date = new Date(report.ts).toLocaleString();
-        const reason = reasonLabels[report.reason] || report.reason || "Desconhecido";
+        const reason = reasonLabels[report.reason] || report.reason || "Unknown";
         
         return `
           <div class="settings-row" style="padding:12px; border-bottom:1px solid rgba(148,163,184,0.1);">
             <div style="flex:1;">
               <div style="font-weight:500; color:#f1f5f9; margin-bottom:4px;">
-                Reportado: <b>${escapeHtml(report.reportedId)}</b>
+                Reported: <b>${escapeHtml(report.reportedId)}</b>
               </div>
               <div style="font-size:12px; color:#94a3b8; margin-bottom:4px;">
                 Reason: ${escapeHtml(reason)} • ${date}
               </div>
               ${report.note ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; margin-top:4px;">"${escapeHtml(report.note)}"</div>` : ""}
               <div style="font-size:11px; color:#64748b; margin-top:4px;">
-                Reportado por: ${escapeHtml(report.reporter || "anonymous")}
+                Reported by: ${escapeHtml(report.reporter || "anonymous")}
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
@@ -6961,7 +6961,7 @@ function initApp(){
         reports.splice(reportIndex, 1);
         localStorage.setItem("l2n_reports", JSON.stringify(reports));
         renderModerationReports();
-        toast("Report marcado como resolvido.");
+        toast("Report marked as resolved.");
       }
     }
     
@@ -7038,7 +7038,7 @@ function initApp(){
       const likeBtn = $("public-like-btn");
       if(likeBtn){
         if(!pid || !currentUserName || publicProfileName===currentUserName){
-          likeBtn.textContent="Curtir";
+          likeBtn.textContent="Like";
           likeBtn.disabled=true;
           likeBtn.style.opacity="0.55";
           likeBtn.style.cursor="not-allowed";
@@ -7496,11 +7496,11 @@ function resetDemoData(){
             </div>
             <div style="display:flex; gap:8px; flex-shrink:0;">
               <button class="pill-button secondary small" onclick="uploadPlacePhoto('${escapeAttr(placeId)}', '${escapeAttr(placeName)}')">
-                ${hasPhoto ? "Alterar" : "Upload"}
+                ${hasPhoto ? "Change" : "Upload"}
               </button>
               ${hasPhoto ? `
                 <button class="pill-button secondary small" onclick="removePlacePhotoConfirm('${escapeAttr(placeId)}', '${escapeAttr(placeName)}')" style="background:#7f1d1d; color:#fee2e2;">
-                  Remover
+                  Remove
                 </button>
               ` : ""}
             </div>
@@ -7792,10 +7792,10 @@ document.addEventListener("DOMContentLoaded", initApp);
 
       <div class="price-pills" id="price-pills">
         <div class="price-pill active" id="pill-monthly" onclick="selectPlan('monthly')">
-          <div class="tag">Melhor valor</div>
+          <div class="tag">Best value</div>
           <div class="k">Monthly</div>
           <div class="p">$14.99</div>
-          <div class="s">por mês • cancele quando quiser</div>
+          <div class="s">per month • cancel anytime</div>
         </div>
         <div class="price-pill" id="pill-weekly" onclick="selectPlan('weekly')">
           <div class="k">Weekly</div>
@@ -7806,10 +7806,10 @@ document.addEventListener("DOMContentLoaded", initApp);
 
       <div class="pay-price" style="margin-top:12px;">
         <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
-          <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/mês</span></div>
-          <div class="fine" id="pay-fine">Cancele quando quiser. (Checkout Stripe entra depois.)</div>
+          <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/month</span></div>
+          <div class="fine" id="pay-fine">Cancel anytime. (Stripe checkout comes later.)</div>
         </div>
-        <div class="std-badge" id="pay-badge">🔥 Melhor valor</div>
+        <div class="std-badge" id="pay-badge">🔥 Best value</div>
       </div>
 
       <div class="pay-actions">
@@ -7843,10 +7843,10 @@ document.addEventListener("DOMContentLoaded", initApp);
 
       <div class="price-pills" id="price-pills">
         <div class="price-pill active" id="pill-monthly" onclick="selectPlan('monthly')">
-          <div class="tag">Melhor valor</div>
+          <div class="tag">Best value</div>
           <div class="k">Monthly</div>
           <div class="p">$14.99</div>
-          <div class="s">por mês • cancele quando quiser</div>
+          <div class="s">per month • cancel anytime</div>
         </div>
         <div class="price-pill" id="pill-weekly" onclick="selectPlan('weekly')">
           <div class="k">Weekly</div>
@@ -7857,10 +7857,10 @@ document.addEventListener("DOMContentLoaded", initApp);
 
       <div class="pay-price" style="margin-top:12px;">
         <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
-          <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/mês</span></div>
-          <div class="fine" id="pay-fine">Cancele quando quiser. (Checkout Stripe entra depois.)</div>
+          <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/month</span></div>
+          <div class="fine" id="pay-fine">Cancel anytime. (Stripe checkout comes later.)</div>
         </div>
-        <div class="std-badge" id="pay-badge">🔥 Melhor valor</div>
+        <div class="std-badge" id="pay-badge">🔥 Best value</div>
       </div>
 
       <div class="pay-actions">
