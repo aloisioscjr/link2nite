@@ -2499,6 +2499,7 @@
     // IMAGE SYSTEM
     // ===========================
     const PLACE_IMAGE_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='450'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%231f2937;stop-opacity:1' /%3E%3Cstop offset='50%25' style='stop-color:%230f172a;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23020617;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23grad)'/%3E%3Ctext x='50%25' y='50%25' font-family='system-ui' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3E📍 Place%3C/text%3E%3C/svg%3E";
+    const PLACE_IMAGE_VERSION = "20260715-1";
     
     // Image loading tracking
     let imageStats = {
@@ -2603,16 +2604,26 @@
       "boweryballroom": "Bowery Ballroom New York"
     };
     
+    function addLocalAssetVersion(url){
+      if(!url) return url;
+      const isLocalPath = url.startsWith("./") || url.startsWith("/") || url.startsWith("images/");
+      if(!isLocalPath) return url;
+      if(/[?&]v=/.test(url)) return url;
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}v=${PLACE_IMAGE_VERSION}`;
+    }
+
     function resolvePlaceImage(url, placeId = null, placeName = null){
       // PRIORITY 1: Check for manual photo in localStorage first
       if(placeId){
         const manualPhoto = getManualPlacePhoto(placeId);
         if(manualPhoto){
+          const manualUrl = addLocalAssetVersion(manualPhoto);
           console.log("[Image] Using manual photo for", placeId);
           return {
-            direct: manualPhoto,
-            proxy: manualPhoto, // Same data URL
-            proxy2: manualPhoto,
+            direct: manualUrl,
+            proxy: manualUrl, // Same URL or data URL
+            proxy2: manualUrl,
             placeholder: PLACE_IMAGE_PLACEHOLDER
           };
         }
@@ -2626,6 +2637,7 @@
           if((directUrl.startsWith("./") || directUrl.startsWith("/") || directUrl.startsWith("images/")) && !directUrl.includes('%20') && directUrl.includes(' ')){
             directUrl = directUrl.replace(/ /g, '%20');
           }
+          directUrl = addLocalAssetVersion(directUrl);
           console.log("[Image] Using direct mapped URL for", placeId, directUrl.substring(0, 80));
           return {
             direct: directUrl,
@@ -2675,6 +2687,7 @@
         if(!normalized.includes('%20') && normalized.includes(' ')){
           encodedPath = normalized.replace(/ /g, '%20');
         }
+        encodedPath = addLocalAssetVersion(encodedPath);
         return {
           direct: encodedPath,
           proxy: encodedPath, // Same path as fallback
@@ -7877,7 +7890,7 @@ document.addEventListener("DOMContentLoaded", initApp);
   <script>
     if("serviceWorker" in navigator){
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
+        navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).catch(() => {});
       });
     }
   </script>
