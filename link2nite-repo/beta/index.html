@@ -616,6 +616,10 @@
       margin-top:2px;
     }
 
+    .admin-hidden {
+      display:none !important;
+    }
+
     .user-label-link {
       margin-left:4px;
       text-decoration:underline;
@@ -1636,7 +1640,7 @@
       </div>
       <div style="text-align:right;">
         <div id="current-user-label" style="font-size:11px;color:#9ca3af;"></div>
-        <span class="reset-link" onclick="resetDemo()">reset demo</span>
+        <span class="reset-link admin-only admin-hidden" onclick="resetDemo()">reset demo</span>
       </div>
     </header>
 
@@ -1670,6 +1674,10 @@
           <div class="input-group">
             <label>Name you want to show</label>
             <input type="text" id="username-input" placeholder="e.g., Ana, Lucas, Gabi..." />
+          </div>
+          <div class="input-group">
+            <label>Email <span style="color:#f97373;">(required)</span></label>
+            <input type="email" id="email-input" placeholder="e.g., you@example.com" />
           </div>
           <div class="input-group">
             <label>Age <span style="color:#f97373;">(required)</span></label>
@@ -1783,7 +1791,7 @@
 
           <div id="places-list"></div>
 
-          <div class="producer-link" onclick="openProducer()">Producer mode (demo) — add a new venue/event</div>
+          <div class="producer-link admin-only admin-hidden" onclick="openProducer()">Producer mode (demo) — add a new venue/event</div>
         </div>
       </section>
 
@@ -2048,7 +2056,7 @@
         <div class="back-row">
           <button onclick="goHome()">◀ Back</button>
           <h2>My profile</h2>
-        <button class="pill-button secondary" style="margin:10px 0 0 0;" onclick="resetDemoData()">Reset demo (fix photos)</button>
+        <button class="pill-button secondary admin-only admin-hidden" style="margin:10px 0 0 0;" onclick="resetDemoData()">Reset demo (fix photos)</button>
 
         </div>
         <button class="pill-button secondary" style="margin:10px 0 0 0;width:100%;" onclick="openSettings()">⚙️ Settings</button>
@@ -2184,6 +2192,13 @@
             </div>
             <button class="pill-button secondary small" onclick="logout()">Log out</button>
           </div>
+
+          <div class="input-group" style="margin-top:14px;">
+            <label>Email</label>
+            <input type="email" id="settings-email" class="input" placeholder="you@example.com" />
+            <div class="small-muted">Used to keep your access on this device.</div>
+          </div>
+          <button class="pill-button secondary small" onclick="saveSettingsEmail()">Save email</button>
         </div>
 
         <div class="card">
@@ -2326,7 +2341,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card admin-only admin-hidden">
           <div class="section-title">Data (demo)</div>
 
           <div class="settings-row">
@@ -2354,7 +2369,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card admin-only admin-hidden">
           <div class="section-title">Demo bots (500 bots)</div>
           <div class="section-sub">Bot system for tests and demo. Bots appear in the "Who's going" list.</div>
 
@@ -2374,7 +2389,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card admin-only admin-hidden">
           <div class="section-title">Admin (local)</div>
           <div class="section-sub">Manual verification approvals (demo).</div>
           
@@ -2387,7 +2402,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card admin-only admin-hidden">
           <div class="section-title">Moderation (local)</div>
           <div class="section-sub">Manage reports and soft-bans (demo).</div>
           
@@ -2401,7 +2416,7 @@
         </div>
 
       
-        <div class="card" id="analytics-card">
+        <div class="card admin-only admin-hidden" id="analytics-card">
           <div class="section-title">Analytics (MVP)</div>
           <div class="section-sub">Local metrics (localStorage). Use to validate the funnel.</div>
 
@@ -2417,7 +2432,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card admin-only admin-hidden">
           <div class="section-title">Events (debug)</div>
           <div class="section-sub">Last 20 events from the l2n_events system.</div>
 
@@ -2430,7 +2445,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card admin-only admin-hidden">
           <div class="section-title">🖼️ Image Debug</div>
           <div class="section-sub">Image load stats for venues.</div>
 
@@ -2443,7 +2458,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card admin-only admin-hidden">
           <div class="section-title">Venue Photos (manual)</div>
           <div class="section-sub">Manual photo uploads for venues. Photos are saved locally and take priority over external URLs.</div>
 
@@ -3215,7 +3230,10 @@
     function setTimLastQuotaDate(date){ setL2nLastQuotaDate(date); }
     function getTimEvents(){ return getL2nEvents(); }
     function addTimEvent(event, props){ addL2nEvent(event, props); }
-    function resetTimDemo(){ resetL2nDemo(); }
+    function resetTimDemo(){
+      if(!requireAdminAccess()) return;
+      resetL2nDemo();
+    }
     // ===========================
     
     // ===========================
@@ -3268,11 +3286,13 @@
       try{ renderAnalyticsPanel(); }catch(e){}
     }
     function resetMetrics(){
+      if(!requireAdminAccess()) return;
       localStorage.removeItem(METRICS_KEY);
       try{ renderAnalyticsPanel(); }catch(e){}
       toast("🧹 Metrics reset.");
     }
     function exportMetrics(){
+      if(!requireAdminAccess()) return;
       const m = getMetrics();
       const txt = JSON.stringify(m, null, 2);
       if(navigator.clipboard && navigator.clipboard.writeText){
@@ -4079,6 +4099,7 @@ let currentUserName = null;
 
     function getProfilesData(){ try{ return JSON.parse(localStorage.getItem("tonightly_profiles")||"{}"); }catch{ return {}; } }
     function setProfilesData(d){ localStorage.setItem("tonightly_profiles", JSON.stringify(d)); }
+    const ADMIN_EMAIL_ALLOWLIST = ["team@link2nite.com"];
     function saveProfile(name, partial){
       const profiles=getProfilesData();
       const existing=profiles[name]||{};
@@ -4086,6 +4107,44 @@ let currentUserName = null;
       setProfilesData(profiles);
     }
     function getProfile(name){ const p=getProfilesData(); return p[name]||{}; }
+
+    function normalizeEmail(value){
+      return String(value||"").trim().toLowerCase();
+    }
+
+    function isValidEmail(value){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+    }
+
+    function getCurrentUserEmail(){
+      if(!currentUserName) return "";
+      const profile=getProfile(currentUserName) || {};
+      return normalizeEmail(profile.email);
+    }
+
+    function isAdminSession(){
+      const email=getCurrentUserEmail();
+      return !!email && ADMIN_EMAIL_ALLOWLIST.includes(email);
+    }
+
+    function requireAdminAccess(message="Admin tools are available only for authorized accounts."){
+      if(isAdminSession()) return true;
+      toast(message);
+      return false;
+    }
+
+    function updateAdminUIVisibility(){
+      const admin=isAdminSession();
+      document.querySelectorAll(".admin-only").forEach(el=>{
+        el.classList.toggle("admin-hidden", !admin);
+      });
+      if(!admin){
+        const demoPanel=$("demo-panel");
+        const imageDebugPanel=$("image-debug-panel");
+        if(demoPanel) demoPanel.style.display="none";
+        if(imageDebugPanel) imageDebugPanel.style.display="none";
+      }
+    }
 
     function genderLabel(g){
       if(g==="man") return "Man";
@@ -4148,12 +4207,17 @@ let currentUserName = null;
 
     let currentScreenId = "";
 function showScreen(id){
+      if(id==="screen-producer" && !isAdminSession()){
+        toast("Venue tools are available only for authorized accounts.");
+        id="screen-home";
+      }
       currentScreenId = id;
       try{ renderProBadges(); }catch(e){}
       try{ updateProUi(); }catch(e){}
 
       document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
       $(id).classList.add("active");
+      updateAdminUIVisibility();
       if (id === "screen-home" || id === "screen-place" || id === "screen-producer" || id === "screen-profile" || id === "screen-swipe" || id === "screen-public-profile") setActiveNav("home");
       else if (id === "screen-matches" || id === "screen-chat") setActiveNav("matches");
       else if (id === "screen-night") setActiveNav("night");
@@ -4168,10 +4232,14 @@ function showScreen(id){
       }catch(e){}
 
       try{
-        if(id==="screen-settings"){ 
-          renderAnalyticsPanel(); 
+        if(id==="screen-settings" && isAdminSession()){
+          renderAnalyticsPanel();
           renderPlacePhotosList();
           renderBotsStats();
+          renderAdminVerifications();
+          renderModerationReports();
+          renderEventsDebug();
+          renderImageDebug();
         }
       }catch(e){}
 }
@@ -4207,6 +4275,7 @@ function showScreen(id){
 
     function saveUsername(){
       const name=($("username-input").value||"").trim();
+      const email=normalizeEmail(($("email-input").value||""));
       const ageText=($("age-input").value||"").trim();
       const gender=($("gender-input").value||"").trim();
       const showMe=($("showme-input").value||"").trim();
@@ -4214,6 +4283,7 @@ function showScreen(id){
       const showAge=!!$("show-age-input").checked;
 
       if(!name){ alert("Add at least a name or nickname 😉"); return; }
+      if(!isValidEmail(email)){ alert("Enter a valid email."); return; }
       const age=parseInt(ageText,10);
       if(!ageText || isNaN(age) || age<18 || age>99){ alert("Enter a valid age (18+)."); return; }
       if(!gender){ alert("Select your gender."); return; }
@@ -4221,7 +4291,7 @@ function showScreen(id){
 
       currentUserName=name;
       localStorage.setItem("tonightly_username", currentUserName);
-      saveProfile(currentUserName,{age, vibe, gender, showAge, showMe});
+      saveProfile(currentUserName,{age, email, vibe, gender, showAge, showMe});
       updateUserLabel();
       tempPhotos=[];
       renderOnboardingPhotosPreview();
@@ -4333,6 +4403,7 @@ function showScreen(id){
           '<span class="user-label-link" onclick="openProfile()">view profile</span>'+
           '<span class="user-label-link" onclick="askNewName()">change</span>';
       } else label.textContent="";
+      updateAdminUIVisibility();
     }
     function askNewName(){ localStorage.removeItem("tonightly_username"); currentUserName=null; updateUserLabel(); showScreen("screen-username"); }
 
@@ -4442,6 +4513,7 @@ function showScreen(id){
     }
 
     function saveProducerPlace(){
+      if(!requireAdminAccess("Venue tools are available only for authorized accounts.")) return;
       const name=($("prod-name").value||"").trim();
       const neighborhood=($("prod-neighborhood").value||"").trim();
       const type=($("prod-type").value||"").trim();
@@ -5567,11 +5639,15 @@ function renderGoingForPlace(placeId){
     }
 
     function goHome(){ showScreen("screen-home"); renderPlacesList(); }
-    function openProducer(){ showScreen("screen-producer"); }
+    function openProducer(){
+      if(!requireAdminAccess("Venue tools are available only for authorized accounts.")) return;
+      showScreen("screen-producer");
+    }
 
     function resetDemo(){
+      if(!requireAdminAccess()) return;
       if(!confirm("This will erase prototype data (matches, messages, etc.) and recreate the simulated crowd. Continue?")) return;
-      ["tonightly_onboarding_done","tonightly_username","tonightly_profiles","tonightly_going","tonightly_interested","tonightly_likes","tonightly_messages","tonightly_custom_places","tonightly_seed_done"].forEach(k=>localStorage.removeItem(k));
+      ["tonightly_onboarding_done","tonightly_onboarded","tonightly_username","tonightly_user","tonightly_profiles","tonightly_going","tonightly_interested","tonightly_likes","tonightly_messages","tonightly_custom_places","tonightly_seed_done"].forEach(k=>localStorage.removeItem(k));
       location.reload();
     }
 
@@ -5956,11 +6032,13 @@ function renderGoingForPlace(placeId){
     }
     
     function approveVerification(userName){
+      if(!requireAdminAccess()) return;
       setVerificationData(userName, { status: "verified", approvedAt: Date.now() });
       track("verification_approved", { userName });
     }
     
     function rejectVerification(userName){
+      if(!requireAdminAccess()) return;
       setVerificationData(userName, { status: "unverified", rejectedAt: Date.now() });
       track("verification_rejected", { userName });
     }
@@ -6126,6 +6204,7 @@ function renderGoingForPlace(placeId){
     
     // UI Functions for Settings
     function recreateBots(){
+      if(!requireAdminAccess()) return;
       if(confirm("Recreate all 500 bots? This will redistribute bots across venues. It may take a few seconds.")){
         createAndAssignBots();
         toast("✅ Bots recreated and redistributed!");
@@ -6140,6 +6219,7 @@ function renderGoingForPlace(placeId){
     }
     
     function clearBots(){
+      if(!requireAdminAccess()) return;
       if(confirm("Clear all bots? This will remove all bots and their presence at venues.")){
         const count = clearAllBots();
         toast(`✅ ${count} bot(s) removido(s)!`);
@@ -6157,6 +6237,7 @@ function renderGoingForPlace(placeId){
     }
     
     function renderBotsStats(){
+      if(!isAdminSession()) return;
       const container = document.getElementById("bots-stats");
       if(!container) return;
       
@@ -6275,6 +6356,7 @@ function renderGoingForPlace(placeId){
 
 
     function renderAnalyticsPanel(){
+      if(!isAdminSession()) return;
       const el = document.getElementById("analytics-summary");
       if(!el) return;
 
@@ -6476,6 +6558,7 @@ function initApp(){
       if(!onboardingDone){
         onboardingStep=0;
         updateOnboardingView();
+        updateAdminUIVisibility();
         showScreen("screen-onboarding");
         return;
       }
@@ -6486,7 +6569,10 @@ function initApp(){
         showScreen("screen-home");
         renderPlacesList();
         renderTonightPlan();
-      } else showScreen("screen-username");
+      } else {
+        updateAdminUIVisibility();
+        showScreen("screen-username");
+      }
     }
 
 
@@ -6869,6 +6955,7 @@ function initApp(){
 
     // Admin & Moderation UI functions
     function renderAdminVerifications(){
+      if(!isAdminSession()) return;
       const container = document.getElementById("admin-verifications-list");
       if(!container) return;
       
@@ -6921,6 +7008,7 @@ function initApp(){
     }
     
     function renderModerationReports(){
+      if(!isAdminSession()) return;
       const container = document.getElementById("moderation-reports-list");
       if(!container) return;
       
@@ -6969,6 +7057,7 @@ function initApp(){
     }
     
     function markReportResolved(reportIndex){
+      if(!requireAdminAccess()) return;
       const reports = getReports();
       if(reports[reportIndex]){
         reports.splice(reportIndex, 1);
@@ -6979,6 +7068,7 @@ function initApp(){
     }
     
     function blockReportedUser(userId){
+      if(!requireAdminAccess()) return;
       if(confirm(`Block ${userId}?`)){
         blockUser(userId);
         toast("User blocked.");
@@ -6987,6 +7077,7 @@ function initApp(){
     }
     
     function softBanUserFromReport(userId){
+      if(!requireAdminAccess()) return;
       if(confirm(`Soft-ban ${userId}? This user will no longer appear in the feed.`)){
         softBanUser(userId);
         toast("Soft-ban applied to user.");
@@ -7143,6 +7234,7 @@ function initApp(){
       const p=getProfile(currentUserName) || {};
       const s=getSettings();
       document.getElementById("settings-username").textContent = currentUserName;
+      document.getElementById("settings-email").value = p.email || "";
 
       document.getElementById("set-show-age").checked = (p.showAge!==false);
       document.getElementById("set-show-distance").checked = (s.showDistance!==false);
@@ -7159,10 +7251,20 @@ function initApp(){
 
       // Update PRO status
       updateSettingsProStatus();
-      renderEventsDebug();
-      renderImageDebug();
-
       showScreen("screen-settings");
+    }
+    function saveSettingsEmail(){
+      if(!currentUserName) return;
+      const email = normalizeEmail(document.getElementById("settings-email").value || "");
+      if(!isValidEmail(email)){
+        toast("Enter a valid email.");
+        return;
+      }
+      saveProfile(currentUserName,{email});
+      updateUserLabel();
+      updateAdminUIVisibility();
+      toast("Email saved.");
+      if(currentScreenId==="screen-settings") openSettings();
     }
     function updateSettingsProStatus(){
       const pro = isPro();
@@ -7190,6 +7292,7 @@ function initApp(){
       updateSettingsProStatus();
     }
     function renderEventsDebug(){
+      if(!isAdminSession()) return;
       const events = getTimEvents();
       const listEl = document.getElementById("events-debug-list");
       if(!listEl) return;
@@ -7214,6 +7317,7 @@ function initApp(){
     }
     
     function renderImageDebug(){
+      if(!isAdminSession()) return;
       const statsEl = document.getElementById("image-debug-stats");
       if(!statsEl) return;
       
@@ -7291,7 +7395,7 @@ function initApp(){
       const p=getProfile(currentUserName) || {};
       p.showAge = document.getElementById("set-show-age").checked;
       p.showMe = document.getElementById("set-show-me").value || "both";
-      setProfile(currentUserName, p);
+      saveProfile(currentUserName, p);
 
       const s=getSettings();
       s.showDistance = document.getElementById("set-show-distance").checked;
@@ -7330,7 +7434,7 @@ function initApp(){
       const old=localStorage.getItem(oldK);
       if(old){ localStorage.setItem(newK, old); localStorage.removeItem(oldK); }
 
-      localStorage.setItem("tonightly_user", newName);
+      localStorage.setItem("tonightly_username", newName);
       currentUserName=newName;
 
       toast("Name updated ✅");
@@ -7338,24 +7442,29 @@ function initApp(){
     }
 
     function logout(){
+      localStorage.removeItem("tonightly_username");
       localStorage.removeItem("tonightly_user");
       localStorage.removeItem("tonightly_onboarded");
       currentUserName=null;
+      updateAdminUIVisibility();
       showScreen("screen-username");
     }
 
     function resetAndReseed(){
+      if(!requireAdminAccess()) return;
       resetDemoData();
       try{ seedDemoCrowd(true); ensureDemoCrowd(); }catch(e){}
     }
 
 
 function toggleDemoPanel(){
+      if(!requireAdminAccess()) return;
       const p = document.getElementById("demo-panel");
       if(!p) return;
       p.style.display = (p.style.display==="none" || !p.style.display) ? "block" : "none";
     }
     function toggleImageDebugPanel(){
+      if(!requireAdminAccess()) return;
       const p = document.getElementById("image-debug-panel");
       if(!p) return;
       const isVisible = p.style.display !== "none";
@@ -7380,6 +7489,7 @@ function toggleDemoPanel(){
     }
 
 function resetDemoData(){
+      if(!requireAdminAccess()) return;
       const keys=[
         "tonightly_profiles",
         "tonightly_going",
@@ -7387,7 +7497,9 @@ function resetDemoData(){
         "tonightly_likes",
         "tonightly_matches",
         "tonightly_messages",
+        "tonightly_username",
         "tonightly_user",
+        "tonightly_onboarding_done",
         "tonightly_onboarded",
         "tonightly_seed_version"
       ];
@@ -7426,6 +7538,7 @@ function resetDemoData(){
     }
     
     function renderPlacePhotosList(){
+      if(!isAdminSession()) return;
       const container = document.getElementById("place-photos-list");
       if(!container) return;
       
@@ -7523,6 +7636,7 @@ function resetDemoData(){
     }
     
     function uploadPlacePhoto(placeId, placeName){
+      if(!requireAdminAccess()) return;
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "image/*";
@@ -7558,6 +7672,7 @@ function resetDemoData(){
     }
     
     function removePlacePhotoConfirm(placeId, placeName){
+      if(!requireAdminAccess()) return;
       if(confirm(`Remove manual photo from "${placeName}"?`)){
         removeManualPlacePhoto(placeId);
         showToast(`Photo removed from ${placeName}`, 2000);
@@ -7572,6 +7687,7 @@ function resetDemoData(){
     }
     
     function exportPlacePhotos(){
+      if(!requireAdminAccess()) return;
       try {
         const allPhotos = getAllManualPlacePhotos();
         const exportData = {
@@ -7600,6 +7716,7 @@ function resetDemoData(){
     }
     
     function importPlacePhotos(){
+      if(!requireAdminAccess()) return;
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "application/json,.json";
@@ -7650,6 +7767,7 @@ function resetDemoData(){
     }
     
     function resetPlacePhotos(){
+      if(!requireAdminAccess()) return;
       const count = Object.keys(getAllManualPlacePhotos()).length;
       if(count === 0){
         showToast("No photos to remove", 2000);
@@ -7730,6 +7848,7 @@ function resetDemoData(){
 
 
     function forceBots(){
+      if(!requireAdminAccess()) return;
       seedDemoCrowd(true);
       alert("Bots recreated! Now click OK and refresh (F5) if they still don't appear.");
     }
@@ -7737,6 +7856,7 @@ function resetDemoData(){
     window.resetDemoData=resetDemoData;
     window.forceBots=forceBots;
         window.openSettings=openSettings;
+    window.saveSettingsEmail=saveSettingsEmail;
     window.updateSettingsFromUI=updateSettingsFromUI;
     window.syncAgeRangeUI=syncAgeRangeUI;
     window.changeName=changeName;
@@ -7749,9 +7869,9 @@ document.addEventListener("DOMContentLoaded", initApp);
   </script>
 
   <!-- Debug / Demo controls (always visible) -->
-  <div id="demo-fab" class="demo-fab" onclick="toggleDemoPanel()">🛠</div>
-  <div id="image-debug-fab" class="demo-fab" style="bottom: 140px;" onclick="toggleImageDebugPanel()" title="Debug de Imagens">🖼️</div>
-  <div id="image-debug-panel" class="demo-panel" style="display:none;">
+  <div id="demo-fab" class="demo-fab admin-only admin-hidden" onclick="toggleDemoPanel()">🛠</div>
+  <div id="image-debug-fab" class="demo-fab admin-only admin-hidden" style="bottom: 140px;" onclick="toggleImageDebugPanel()" title="Debug de Imagens">🖼️</div>
+  <div id="image-debug-panel" class="demo-panel admin-only admin-hidden" style="display:none;">
     <div class="demo-panel-header">
       <div style="font-weight:800;">🖼️ Debug de Imagens</div>
       <button class="demo-close" onclick="toggleImageDebugPanel();event.stopPropagation()">✕</button>
@@ -7763,7 +7883,7 @@ document.addEventListener("DOMContentLoaded", initApp);
       <button class="pill-button" style="width:100%;margin-top:10px;" onclick="renderImageDebug();toggleImageDebugPanel();openSettings();event.stopPropagation()">View details in Settings</button>
     </div>
   </div>
-  <div id="demo-panel" class="demo-panel" style="display:none;">
+  <div id="demo-panel" class="demo-panel admin-only admin-hidden" style="display:none;">
     <div class="demo-panel-header">
       <div style="font-weight:800;">Demo Controls</div>
       <button class="demo-close" onclick="toggleDemoPanel();event.stopPropagation()">✕</button>
