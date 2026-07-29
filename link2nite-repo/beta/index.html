@@ -4205,7 +4205,12 @@ let currentUserName = null;
       if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
     }
 
+    const NAV_HIDDEN_SCREENS = new Set(["screen-onboarding","screen-username","screen-photos-onboarding"]);
     let currentScreenId = "";
+    function updateBottomNavVisibility(screenId){
+      const nav=document.querySelector(".bottom-nav");
+      if(nav) nav.style.display = NAV_HIDDEN_SCREENS.has(screenId) ? "none" : "flex";
+    }
 function showScreen(id){
       if(id==="screen-producer" && !isAdminSession()){
         toast("Venue tools are available only for authorized accounts.");
@@ -4217,6 +4222,7 @@ function showScreen(id){
 
       document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
       $(id).classList.add("active");
+      updateBottomNavVisibility(id);
       updateAdminUIVisibility();
       if (id === "screen-home" || id === "screen-place" || id === "screen-producer" || id === "screen-profile" || id === "screen-swipe" || id === "screen-public-profile") setActiveNav("home");
       else if (id === "screen-matches" || id === "screen-chat") setActiveNav("matches");
@@ -5200,13 +5206,17 @@ function renderGoingForPlace(placeId){
             <div style="font-size:12px;color:#e5e7eb;margin-bottom:6px;">
               In the full app, this is where you set time, meeting spot, and after.
             </div>
-            <button class="pill-button small" onclick="openChat('${m.placeId}','${encodedOther}')">Abrir chat</button>
+            <button class="pill-button small" onclick="openChat('${m.placeId}','${encodedOther}')">Open chat</button>
           </div>
         `;
       }).join("");
     }
 
-    function openMatches(){ showScreen("screen-matches"); renderMatches(); }
+    function openMatches(){
+      if(!currentUserName){ showScreen("screen-username"); return; }
+      showScreen("screen-matches");
+      renderMatches();
+    }
 
     function chatKey(placeId,userA,userB){ const arr=[userA,userB].slice().sort(); return placeId+"||"+arr[0]+"||"+arr[1]; }
 
@@ -5389,7 +5399,11 @@ function renderGoingForPlace(placeId){
       }
       container.innerHTML=html;
     }
-    function openTonightPlan(){ showScreen("screen-night"); renderTonightPlan(); }
+    function openTonightPlan(){
+      if(!currentUserName){ showScreen("screen-username"); return; }
+      showScreen("screen-night");
+      renderTonightPlan();
+    }
 
     function openProfile(){
       if(!currentUserName){ showScreen("screen-username"); return; }
@@ -5638,7 +5652,11 @@ function renderGoingForPlace(placeId){
       closeReportModal();
     }
 
-    function goHome(){ showScreen("screen-home"); renderPlacesList(); }
+    function goHome(){
+      if(!currentUserName){ showScreen("screen-username"); return; }
+      showScreen("screen-home");
+      renderPlacesList();
+    }
     function openProducer(){
       if(!requireAdminAccess("Venue tools are available only for authorized accounts.")) return;
       showScreen("screen-producer");
