@@ -5014,7 +5014,7 @@ function renderGoingForPlace(placeId){
         const profile=getProfile(name);
         const initial=(name.trim()[0]||"?").toUpperCase();
         const detailsParts=[];
-        if(profile.showAge!==false && profile.age) detailsParts.push(profile.age+" anos");
+        if(profile.showAge!==false && profile.age) detailsParts.push(String(profile.age));
         const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
         if(profile.vibe) detailsParts.push(profile.vibe);
         if(profile.location) detailsParts.push(profile.location);
@@ -5191,7 +5191,7 @@ function renderGoingForPlace(placeId){
         const neighborhood=place?place.neighborhood:"";
         const profile=getProfile(m.other);
         const detailsParts=[];
-        if(profile.showAge!==false && profile.age) detailsParts.push(profile.age+" anos");
+        if(profile.showAge!==false && profile.age) detailsParts.push(String(profile.age));
         const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
         if(profile.vibe) detailsParts.push(profile.vibe);
         if(profile.location) detailsParts.push(profile.location);
@@ -5202,7 +5202,7 @@ function renderGoingForPlace(placeId){
           <div class="match-item">
             <div class="match-place">You & ${m.other}</div>
             <div class="match-sub">${detailsText}</div>
-            <div class="match-sub">Match em: ${placeName} (${neighborhood})</div>
+            <div class="match-sub">Matched at: ${placeName} (${neighborhood})</div>
             <div style="font-size:12px;color:#e5e7eb;margin-bottom:6px;">
               In the full app, this is where you set time, meeting spot, and after.
             </div>
@@ -5235,7 +5235,7 @@ function renderGoingForPlace(placeId){
       const place=places.find(p=>p.id===placeId);
       const profile=getProfile(otherName);
       const detailsParts=[];
-      if(profile.showAge!==false && profile.age) detailsParts.push(profile.age+" anos");
+      if(profile.showAge!==false && profile.age) detailsParts.push(String(profile.age));
       const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
       if(profile.vibe) detailsParts.push(profile.vibe);
       if(profile.location) detailsParts.push(profile.location);
@@ -6672,7 +6672,7 @@ function initApp(){
       const p=getProfile(name);
       const parts=[];
       const showAge = p.showAge!==false;
-      if(showAge && p.age) parts.push(p.age+" anos");
+      if(showAge && p.age) parts.push(String(p.age));
       const g=genderLabel(p.gender); if(g) parts.push(g);
       if(p.vibe) parts.push(p.vibe);
       if(p.location) parts.push(p.location);
@@ -7888,10 +7888,10 @@ document.addEventListener("DOMContentLoaded", initApp);
 
   <!-- Debug / Demo controls (always visible) -->
   <div id="demo-fab" class="demo-fab admin-only admin-hidden" onclick="toggleDemoPanel()">🛠</div>
-  <div id="image-debug-fab" class="demo-fab admin-only admin-hidden" style="bottom: 140px;" onclick="toggleImageDebugPanel()" title="Debug de Imagens">🖼️</div>
+  <div id="image-debug-fab" class="demo-fab admin-only admin-hidden" style="bottom: 140px;" onclick="toggleImageDebugPanel()" title="Image debug">🖼️</div>
   <div id="image-debug-panel" class="demo-panel admin-only admin-hidden" style="display:none;">
     <div class="demo-panel-header">
-      <div style="font-weight:800;">🖼️ Debug de Imagens</div>
+      <div style="font-weight:800;">🖼️ Image debug</div>
       <button class="demo-close" onclick="toggleImageDebugPanel();event.stopPropagation()">✕</button>
     </div>
     <div class="demo-panel-body">
