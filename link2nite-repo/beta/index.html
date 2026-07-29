@@ -4099,7 +4099,7 @@ let currentUserName = null;
 
     function getProfilesData(){ try{ return JSON.parse(localStorage.getItem("tonightly_profiles")||"{}"); }catch{ return {}; } }
     function setProfilesData(d){ localStorage.setItem("tonightly_profiles", JSON.stringify(d)); }
-    const ADMIN_EMAIL_ALLOWLIST = ["team@link2nite.com"];
+    const ADMIN_EMAIL_ALLOWLIST = ["team@link2nite.com", "aloisioscjr@hotmail.com"];
     function saveProfile(name, partial){
       const profiles=getProfilesData();
       const existing=profiles[name]||{};
