@@ -19,7 +19,26 @@ const FORCE_IDS = new Set(
 const MANUAL_VENUE_IMAGE_URLS = {
   the_ned: "https://media.fastly.sohohousedigital.com/t_dc_base/sitecore-prod/ned/nomad/rooftop/the-ned-nomad-rooftop.jpg",
   harriet: "https://www.1hotels.com/sites/1hotels.com/files/styles/card/public/brandfolder/4rhrh85c45xbm2q462wfgmz/1BB_Harriets_Rooftop__0680h1280.png?h=e608a0a1&itok=CXhvBHiI",
-  westlight: "https://images.getbento.com/accounts/e911161024a627d84acd70f29ca7b56f/media/images/20778Studio_Munge_Westlight_MichaelStavaridis_2.jpg?w=1200&fit=max&auto=compress,format&cs=origin"
+  westlight: "https://images.getbento.com/accounts/e911161024a627d84acd70f29ca7b56f/media/images/20778Studio_Munge_Westlight_MichaelStavaridis_2.jpg?w=1200&fit=max&auto=compress,format&cs=origin",
+  beautique: "https://taogroup.com/wp-content/uploads/2023/12/BE-SF-Pearl-Seated.jpg",
+  house_yes: "https://images.squarespace-cdn.com/content/v1/60eefee8ddd3d006b4096467/651c9853-1b1d-4123-9839-42290d968a8b/Midsummernightsdream72118_KR_-6526.jpg",
+  little_sister: "https://taogroup.com/wp-content/uploads/2026/06/260725_LS_Saturdays_1080x1350.jpg",
+  somewhere_nowhere: "https://cdn.prod.website-files.com/6822dccf8dd75e012e4615bd/68772fdd2f59fccd4fde064e_open-graph.webp",
+  phd_downtown: "https://taogroup.com/wp-content/uploads/2022/04/phdloungrooftopbar-970x694.jpg",
+  magic_hour: "https://moxytimessquare.com/content/uploads/sites/1/2025/04/tinywow_100617-Magic-Hour-131-1_78350875-1920x1280.jpg",
+  the_box: "https://theboxnyc.com/wp-content/uploads/sites/3/2022/02/BOX.jpg",
+  bar_sixtyfive: "https://images.weserv.nl/?url=www.therooftopguide.com/rooftop-bars-in-new-york/Bilder/bar-sixtyfive-at-rainbow-room-600-1.jpg&w=1200&h=675&fit=cover&output=jpg",
+  penn_top: "https://www.publichotels.com/newyork/opengraph-image.jpg?c09639ca7b33e972",
+  lavo: "https://taogroup.com/wp-content/uploads/2024/01/JustinLevy-92sd.jpg",
+  tao: "https://taogroup.com/wp-content/uploads/2023/12/Main-Dining-1-scaled.jpg",
+  the_blond: "https://images.weserv.nl/?url=cache.marriott.com/content/dam/marriott-renditions/NYCHW/nychw-the-blond-0277-hor-wide.jpg&w=1200&h=675&fit=cover&output=jpg",
+  paradise: "https://www.theparadiseclubnyc.com/content/uploads/2026/06/paradise-collage-5-768x512.jpg",
+  skylark: "https://images.getbento.com/accounts/ad9efdad42410aacfba2772a9efbc95b/media/images/88969sky_15.jpg?auto=compress%2Cformat&crop=focalpoint&cs=origin&fit=crop&fp-x=0.53&fp-y=0.33&w=1200",
+  employeesonly: "https://www.employeesonlynyc.com/content/home/home_03.jpg",
+  phdterrace: "https://taogroup.com/wp-content/uploads/2022/05/daisy-dreaming-570696-970x696.jpg",
+  mrpurple: "https://hb-strapi-prod.gumlet.io/My_purple_new_york_birthday_party_jpg_3_e8d479206b.jpg?auto=format&con=15&fit=crop&h=960&sharp=5&w=1399.68",
+  ziggy: "https://loremflickr.com/1200/675/cocktail,bar,interior?lock=ziggy",
+  analog: "https://loremflickr.com/1200/675/nightclub,dj,lights?lock=analog"
 };
 
 function extractPlaces(html) {
