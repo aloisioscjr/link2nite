@@ -9,6 +9,18 @@ const OUTPUT_DIRS = [
 ];
 const PLACEHOLDER_MAX_BYTES = 20_000;
 const MIN_NON_STOCK_PHOTO_BYTES = 30_000;
+const FORCE_IDS = new Set(
+  (process.argv.find((arg) => arg.startsWith("--force=")) || "")
+    .replace("--force=", "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
+const MANUAL_VENUE_IMAGE_URLS = {
+  the_ned: "https://media.fastly.sohohousedigital.com/t_dc_base/sitecore-prod/ned/nomad/rooftop/the-ned-nomad-rooftop.jpg",
+  harriet: "https://www.1hotels.com/sites/1hotels.com/files/styles/card/public/brandfolder/4rhrh85c45xbm2q462wfgmz/1BB_Harriets_Rooftop__0680h1280.png?h=e608a0a1&itok=CXhvBHiI",
+  westlight: "https://images.getbento.com/accounts/e911161024a627d84acd70f29ca7b56f/media/images/20778Studio_Munge_Westlight_MichaelStavaridis_2.jpg?w=1200&fit=max&auto=compress,format&cs=origin"
+};
 
 function extractPlaces(html) {
   const startToken = "let places = [";
@@ -165,6 +177,14 @@ async function findOfficialImage(place) {
 }
 
 async function resolveSource(place) {
+  const manualImage = MANUAL_VENUE_IMAGE_URLS[place.id];
+  if (manualImage) {
+    return {
+      sourceUrl: manualImage,
+      sourceKind: "manual-official"
+    };
+  }
+
   const officialImage = await findOfficialImage(place);
   if (officialImage) {
     return {
@@ -224,7 +244,7 @@ async function main() {
 
   for (const place of places) {
     const rootOutputPath = path.join(OUTPUT_DIRS[0], `${place.id}.jpg`);
-    if (!isSmallPlaceholder(rootOutputPath)) {
+    if (!FORCE_IDS.has(place.id) && !isSmallPlaceholder(rootOutputPath)) {
       summary.skipped.push(place.id);
       continue;
     }
