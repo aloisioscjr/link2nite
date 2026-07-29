@@ -2196,9 +2196,33 @@
           <div class="input-group" style="margin-top:14px;">
             <label>Email</label>
             <input type="email" id="settings-email" class="input" placeholder="you@example.com" />
-            <div class="small-muted">Used to keep your access on this device.</div>
+            <div class="small-muted">This is your profile email on this device. It does not unlock admin tools.</div>
           </div>
           <button class="pill-button secondary small" onclick="saveSettingsEmail()">Save email</button>
+
+          <div class="settings-row" style="margin-top:18px;">
+            <div class="settings-left">
+              <div class="settings-label">Team access</div>
+              <div class="settings-sub" id="auth-status-copy">Not signed in. Admin tools stay hidden until you verify an authorized email.</div>
+            </div>
+            <div class="std-badge" id="auth-status-badge">Public mode</div>
+          </div>
+
+          <div class="input-group" style="margin-top:14px;">
+            <label>Authorized email</label>
+            <input type="email" id="auth-email" class="input" placeholder="your authorized email" />
+            <div class="small-muted" id="auth-help">Sign in with your authorized team email to unlock venue tools and admin panels on this device.</div>
+          </div>
+          <div class="input-group">
+            <label>Sign-in code</label>
+            <input type="text" id="auth-code" class="input" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+            <div class="small-muted" id="auth-capability-note">Checking whether team sign-in is live on this deployment...</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+            <button id="auth-request-btn" class="pill-button secondary small" onclick="requestAdminCode()">Email me a code</button>
+            <button id="auth-verify-btn" class="pill-button small" onclick="verifyAdminCode()">Verify code</button>
+            <button id="auth-logout-btn" class="pill-button secondary small" onclick="logoutAdmin()" style="display:none;">Sign out</button>
+          </div>
         </div>
 
         <div class="card">
@@ -4099,7 +4123,11 @@ let currentUserName = null;
 
     function getProfilesData(){ try{ return JSON.parse(localStorage.getItem("tonightly_profiles")||"{}"); }catch{ return {}; } }
     function setProfilesData(d){ localStorage.setItem("tonightly_profiles", JSON.stringify(d)); }
-    const ADMIN_EMAIL_ALLOWLIST = ["team@link2nite.com", "aloisioscjr@hotmail.com"];
+    const ADMIN_AUTH_ENDPOINT = "https://script.google.com/macros/s/AKfycbxnPAbUdYLuTL4dN0x0Z0nJIVjmqZECNfiP-o3OVqy7ThzgGCLG9Gf_mr-FJZKOLVDp0g/exec";
+    const ADMIN_AUTH_SESSION_KEY = "l2n_admin_auth_session_v1";
+    let adminAuthSession = null;
+    let adminAuthBusy = false;
+    const authSupportState = { checked:false, available:false, checking:false, error:"" };
     function saveProfile(name, partial){
       const profiles=getProfilesData();
       const existing=profiles[name]||{};
@@ -4116,18 +4144,331 @@ let currentUserName = null;
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
     }
 
+    function getAdminAuthEndpoint(){
+      return String(window.LINK2NITE_ADMIN_AUTH_ENDPOINT || ADMIN_AUTH_ENDPOINT || "").trim();
+    }
+
+    function loadAdminAuthSession(){
+      try{
+        const raw=localStorage.getItem(ADMIN_AUTH_SESSION_KEY);
+        if(!raw) return null;
+        const parsed=JSON.parse(raw);
+        if(!parsed || !parsed.sessionToken || !parsed.email) return null;
+        const expiresAt = parsed.expiresAt || "";
+        if(expiresAt){
+          const ts = Date.parse(expiresAt);
+          if(Number.isFinite(ts) && ts <= Date.now()){
+            localStorage.removeItem(ADMIN_AUTH_SESSION_KEY);
+            return null;
+          }
+        }
+        return {
+          sessionToken: String(parsed.sessionToken || ""),
+          email: normalizeEmail(parsed.email),
+          expiresAt,
+          signedInAt: parsed.signedInAt || ""
+        };
+      }catch(e){
+        localStorage.removeItem(ADMIN_AUTH_SESSION_KEY);
+        return null;
+      }
+    }
+
+    function persistAdminAuthSession(session){
+      adminAuthSession = {
+        sessionToken: String(session.sessionToken || ""),
+        email: normalizeEmail(session.email),
+        expiresAt: session.expiresAt || "",
+        signedInAt: session.signedInAt || new Date().toISOString()
+      };
+      localStorage.setItem(ADMIN_AUTH_SESSION_KEY, JSON.stringify(adminAuthSession));
+    }
+
+    function clearAdminAuthSession(){
+      adminAuthSession = null;
+      localStorage.removeItem(ADMIN_AUTH_SESSION_KEY);
+    }
+
+    function getAdminSessionEmail(){
+      return normalizeEmail(adminAuthSession && adminAuthSession.email);
+    }
+
+    function isAdminSession(){
+      if(!adminAuthSession || !adminAuthSession.sessionToken) return false;
+      if(!getAdminSessionEmail()) return false;
+      if(adminAuthSession.expiresAt){
+        const ts = Date.parse(adminAuthSession.expiresAt);
+        if(Number.isFinite(ts) && ts <= Date.now()){
+          clearAdminAuthSession();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    adminAuthSession = loadAdminAuthSession();
+
+    async function ensureAdminAuthAvailable(force=false){
+      if(authSupportState.checking && !force) return authSupportState.available;
+      if(authSupportState.checked && !force) return authSupportState.available;
+
+      const endpoint = getAdminAuthEndpoint();
+      if(!endpoint){
+        authSupportState.checked = true;
+        authSupportState.available = false;
+        authSupportState.checking = false;
+        authSupportState.error = "missing_endpoint";
+        renderAdminAuthState();
+        return false;
+      }
+
+      authSupportState.checking = true;
+      renderAdminAuthState();
+
+      try{
+        const sep = endpoint.includes("?") ? "&" : "?";
+        const response = await fetch(endpoint + sep + "action=capabilities&feature=admin_auth", {
+          method:"GET",
+          cache:"no-store"
+        });
+        const text = await response.text();
+        let data = null;
+        try{ data = JSON.parse(text); }catch(_){}
+        authSupportState.available = !!(data && data.ok && data.supportsAdminAuth);
+        authSupportState.error = authSupportState.available ? "" : "not_deployed";
+      }catch(e){
+        authSupportState.available = false;
+        authSupportState.error = "network";
+      }
+
+      authSupportState.checked = true;
+      authSupportState.checking = false;
+      renderAdminAuthState();
+      return authSupportState.available;
+    }
+
+    async function postAdminAuth(payload){
+      const ready = await ensureAdminAuthAvailable();
+      if(!ready) throw new Error("team_signin_unavailable");
+      const response = await fetch(getAdminAuthEndpoint(), {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const text = await response.text();
+      try{
+        return JSON.parse(text);
+      }catch(e){
+        throw new Error("invalid_auth_response");
+      }
+    }
+
+    function setAdminAuthBusy(busy){
+      adminAuthBusy = !!busy;
+      ["auth-request-btn","auth-verify-btn","auth-logout-btn"].forEach(id=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.disabled = adminAuthBusy;
+        el.style.opacity = adminAuthBusy ? "0.65" : "1";
+        el.style.cursor = adminAuthBusy ? "wait" : "pointer";
+      });
+    }
+
+    function renderAdminAuthState(){
+      const statusCopy = document.getElementById("auth-status-copy");
+      const statusBadge = document.getElementById("auth-status-badge");
+      const authEmail = document.getElementById("auth-email");
+      const authCode = document.getElementById("auth-code");
+      const authHelp = document.getElementById("auth-help");
+      const capabilityNote = document.getElementById("auth-capability-note");
+      const requestBtn = document.getElementById("auth-request-btn");
+      const verifyBtn = document.getElementById("auth-verify-btn");
+      const logoutBtn = document.getElementById("auth-logout-btn");
+      const signedIn = isAdminSession();
+
+      if(authEmail && !authEmail.value){
+        authEmail.value = getAdminSessionEmail() || getCurrentUserEmail() || "";
+      }
+      if(authCode && signedIn) authCode.value = "";
+
+      if(statusCopy){
+        statusCopy.textContent = signedIn
+          ? `Signed in as ${getAdminSessionEmail()}. Admin tools are unlocked on this device.`
+          : "Not signed in. Admin tools stay hidden until you verify an authorized email.";
+      }
+      if(statusBadge){
+        statusBadge.textContent = signedIn ? "Admin unlocked" : "Public mode";
+      }
+      if(authHelp){
+        authHelp.textContent = signedIn
+          ? "Your verified team email is now controlling admin access. The profile email above is unrelated."
+          : "Sign in with your authorized team email to unlock venue tools and admin panels on this device.";
+      }
+      if(capabilityNote){
+        if(authSupportState.checking){
+          capabilityNote.textContent = "Checking whether team sign-in is live on this deployment...";
+        } else if(authSupportState.available){
+          capabilityNote.textContent = signedIn
+            ? "Admin session is active. You can sign out below if you want to hide the tools again."
+            : "Request a code by email, then verify it here. Only authorized team emails can unlock admin tools.";
+        } else if(authSupportState.checked){
+          capabilityNote.textContent = "Team sign-in is not live on this deployment yet. Deploy the updated Apps Script web app first.";
+        } else {
+          capabilityNote.textContent = "Checking whether team sign-in is live on this deployment...";
+        }
+      }
+
+      const authReady = authSupportState.available && !adminAuthBusy;
+      if(requestBtn){
+        requestBtn.disabled = !authReady;
+        requestBtn.style.opacity = requestBtn.disabled ? "0.65" : "1";
+      }
+      if(verifyBtn){
+        verifyBtn.disabled = !authReady;
+        verifyBtn.style.opacity = verifyBtn.disabled ? "0.65" : "1";
+      }
+      if(logoutBtn){
+        logoutBtn.style.display = signedIn ? "inline-flex" : "none";
+      }
+      if(authEmail){
+        authEmail.disabled = !authReady && !signedIn;
+      }
+    }
+
+    async function refreshAdminSession(options={}){
+      if(!isAdminSession()){
+        renderAdminAuthState();
+        return false;
+      }
+
+      const canValidate = await ensureAdminAuthAvailable();
+      if(!canValidate){
+        renderAdminAuthState();
+        return isAdminSession();
+      }
+
+      try{
+        const data = await postAdminAuth({
+          action:"auth_session_status",
+          sessionToken: adminAuthSession.sessionToken
+        });
+        if(data && data.ok && data.authenticated){
+          persistAdminAuthSession({
+            sessionToken: adminAuthSession.sessionToken,
+            email: data.email || adminAuthSession.email,
+            expiresAt: data.expiresAt || adminAuthSession.expiresAt,
+            signedInAt: adminAuthSession.signedInAt || new Date().toISOString()
+          });
+          updateAdminUIVisibility();
+          return true;
+        }
+        clearAdminAuthSession();
+        updateAdminUIVisibility();
+        if(!options.silent) toast("Your team access session expired. Sign in again to unlock admin tools.");
+        return false;
+      }catch(e){
+        if(!options.silent) toast("Couldn't validate team access right now.");
+        renderAdminAuthState();
+        return isAdminSession();
+      }
+    }
+
+    async function requestAdminCode(){
+      const emailInput = document.getElementById("auth-email");
+      const email = normalizeEmail((emailInput && emailInput.value) || getAdminSessionEmail() || getCurrentUserEmail() || "");
+      if(emailInput) emailInput.value = email;
+      if(!isValidEmail(email)){
+        toast("Enter a valid authorized email first.");
+        return;
+      }
+
+      setAdminAuthBusy(true);
+      renderAdminAuthState();
+      try{
+        const data = await postAdminAuth({ action:"auth_request_code", email });
+        toast((data && data.message) || "If this email is authorized, a sign-in code was sent.");
+      }catch(e){
+        const fallback = authSupportState.available
+          ? "Couldn't send a sign-in code right now."
+          : "Team sign-in is not live on this deployment yet.";
+        toast(fallback);
+      }finally{
+        setAdminAuthBusy(false);
+        renderAdminAuthState();
+      }
+    }
+
+    async function verifyAdminCode(){
+      const emailInput = document.getElementById("auth-email");
+      const codeInput = document.getElementById("auth-code");
+      const email = normalizeEmail((emailInput && emailInput.value) || "");
+      const code = String((codeInput && codeInput.value) || "").replace(/\D+/g,"").slice(0,6);
+
+      if(emailInput) emailInput.value = email;
+      if(codeInput) codeInput.value = code;
+
+      if(!isValidEmail(email)){
+        toast("Enter a valid authorized email first.");
+        return;
+      }
+      if(code.length !== 6){
+        toast("Enter the 6-digit sign-in code from your email.");
+        return;
+      }
+
+      setAdminAuthBusy(true);
+      renderAdminAuthState();
+      try{
+        const data = await postAdminAuth({ action:"auth_verify_code", email, code });
+        if(data && data.ok && data.authenticated && data.sessionToken){
+          persistAdminAuthSession({
+            sessionToken: data.sessionToken,
+            email: data.email || email,
+            expiresAt: data.expiresAt || "",
+            signedInAt: new Date().toISOString()
+          });
+          if(codeInput) codeInput.value = "";
+          updateAdminUIVisibility();
+          toast("Team access unlocked.");
+          if(currentScreenId==="screen-settings") openSettings();
+          return;
+        }
+        toast((data && data.error) || "Invalid or expired sign-in code.");
+      }catch(e){
+        const fallback = authSupportState.available
+          ? "Couldn't verify the sign-in code right now."
+          : "Team sign-in is not live on this deployment yet.";
+        toast(fallback);
+      }finally{
+        setAdminAuthBusy(false);
+        renderAdminAuthState();
+      }
+    }
+
+    async function logoutAdmin(options={}){
+      const sessionToken = adminAuthSession && adminAuthSession.sessionToken;
+      clearAdminAuthSession();
+      updateAdminUIVisibility();
+      if(!options.silent) toast("Team access signed out.");
+
+      if(!options.skipRemote && sessionToken && authSupportState.available){
+        try{
+          await postAdminAuth({ action:"auth_logout", sessionToken });
+        }catch(_){}
+      }
+
+      if(currentScreenId==="screen-settings" && !options.skipRefresh){
+        openSettings();
+      }
+    }
+
     function getCurrentUserEmail(){
       if(!currentUserName) return "";
       const profile=getProfile(currentUserName) || {};
       return normalizeEmail(profile.email);
     }
 
-    function isAdminSession(){
-      const email=getCurrentUserEmail();
-      return !!email && ADMIN_EMAIL_ALLOWLIST.includes(email);
-    }
-
-    function requireAdminAccess(message="Admin tools are available only for authorized accounts."){
+    function requireAdminAccess(message="Admin tools are available only after team sign-in in Settings."){
       if(isAdminSession()) return true;
       toast(message);
       return false;
@@ -4138,6 +4479,7 @@ let currentUserName = null;
       document.querySelectorAll(".admin-only").forEach(el=>{
         el.classList.toggle("admin-hidden", !admin);
       });
+      renderAdminAuthState();
       if(!admin){
         const demoPanel=$("demo-panel");
         const imageDebugPanel=$("image-debug-panel");
@@ -4405,7 +4747,11 @@ function showScreen(id){
     function updateUserLabel(){
       const label=$("current-user-label");
       if(currentUserName){
+        const adminChip = isAdminSession()
+          ? '<span class="user-label-link" onclick="openSettings()">admin unlocked</span>'
+          : "";
         label.innerHTML='You: '+currentUserName+
+          adminChip+
           '<span class="user-label-link" onclick="openProfile()">view profile</span>'+
           '<span class="user-label-link" onclick="askNewName()">change</span>';
       } else label.textContent="";
@@ -6240,7 +6586,7 @@ function renderGoingForPlace(placeId){
       if(!requireAdminAccess()) return;
       if(confirm("Clear all bots? This will remove all bots and their presence at venues.")){
         const count = clearAllBots();
-        toast(`✅ ${count} bot(s) removido(s)!`);
+        toast(`✅ ${count} bot(s) removed!`);
         renderBotsStats();
         // Refresh places list if on home screen
         try {
@@ -6572,6 +6918,8 @@ function initApp(){
       loadCustomPlaces();
       seedDemoCrowd();
       ensureDemoBots(); // always run on load so "who's going" has bots per venue
+      ensureAdminAuthAvailable(true);
+      refreshAdminSession({silent:true});
       const onboardingDone=localStorage.getItem("tonightly_onboarding_done");
       if(!onboardingDone){
         onboardingStep=0;
@@ -7253,6 +7601,8 @@ function initApp(){
       const s=getSettings();
       document.getElementById("settings-username").textContent = currentUserName;
       document.getElementById("settings-email").value = p.email || "";
+      document.getElementById("auth-email").value = getAdminSessionEmail() || p.email || "";
+      document.getElementById("auth-code").value = "";
 
       document.getElementById("set-show-age").checked = (p.showAge!==false);
       document.getElementById("set-show-distance").checked = (s.showDistance!==false);
@@ -7269,7 +7619,10 @@ function initApp(){
 
       // Update PRO status
       updateSettingsProStatus();
+      renderAdminAuthState();
       showScreen("screen-settings");
+      ensureAdminAuthAvailable();
+      refreshAdminSession({silent:true});
     }
     function saveSettingsEmail(){
       if(!currentUserName) return;
@@ -7280,8 +7633,7 @@ function initApp(){
       }
       saveProfile(currentUserName,{email});
       updateUserLabel();
-      updateAdminUIVisibility();
-      toast("Email saved.");
+      toast("Profile email saved.");
       if(currentScreenId==="screen-settings") openSettings();
     }
     function updateSettingsProStatus(){
@@ -7435,7 +7787,7 @@ function initApp(){
       renderProfilePreviewCard();
       if(currentPlaceId) renderGoingForPlace(currentPlaceId);
       try{ renderSwipeDeck(); }catch(e){}
-      toast("Settings salvas ✅");
+      toast("Settings saved ✅");
     }
 
     function changeName(){
@@ -7460,6 +7812,7 @@ function initApp(){
     }
 
     function logout(){
+      logoutAdmin({silent:true, skipRemote:true, skipRefresh:true});
       localStorage.removeItem("tonightly_username");
       localStorage.removeItem("tonightly_user");
       localStorage.removeItem("tonightly_onboarded");
@@ -7664,7 +8017,7 @@ function resetDemoData(){
         
         try {
           // Show loading
-          const toast = showToast("Comprimindo imagem...", 2000);
+          const toast = showToast("Compressing image...", 2000);
           
           const dataUrl = await compressImageToDataUrl(file);
           
@@ -7875,6 +8228,9 @@ function resetDemoData(){
     window.forceBots=forceBots;
         window.openSettings=openSettings;
     window.saveSettingsEmail=saveSettingsEmail;
+    window.requestAdminCode=requestAdminCode;
+    window.verifyAdminCode=verifyAdminCode;
+    window.logoutAdmin=logoutAdmin;
     window.updateSettingsFromUI=updateSettingsFromUI;
     window.syncAgeRangeUI=syncAgeRangeUI;
     window.changeName=changeName;
