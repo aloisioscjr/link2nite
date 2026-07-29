@@ -4205,7 +4205,7 @@ let currentUserName = null;
       if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
     }
 
-    const NAV_HIDDEN_SCREENS = new Set(["screen-onboarding","screen-username","screen-photos-onboarding"]);
+    const NAV_HIDDEN_SCREENS = new Set(["screen-onboarding","screen-username","screen-photos-onboarding","screen-chat"]);
     let currentScreenId = "";
     function updateBottomNavVisibility(screenId){
       const nav=document.querySelector(".bottom-nav");
