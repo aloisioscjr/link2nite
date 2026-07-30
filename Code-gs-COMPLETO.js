@@ -10,6 +10,17 @@ var DEFAULT_ADMIN_ALLOWLIST = ["team@link2nite.com", "aloisioscjr@hotmail.com"];
 var AUTH_CODE_TTL_SECONDS = 10 * 60;
 var AUTH_CODE_COOLDOWN_SECONDS = 60;
 var AUTH_SESSION_TTL_DAYS = 30;
+var USER_AUTH_CODE_TTL_SECONDS = 10 * 60;
+var USER_AUTH_COOLDOWN_SECONDS = 60;
+var USER_SESSION_TTL_DAYS = 30;
+var GOING_TONIGHT_TTL_HOURS = 18;
+var GOING_TONIGHT_TTL_MS = GOING_TONIGHT_TTL_HOURS * 60 * 60 * 1000;
+var PROFILE_JSON_PARTS = 20;
+var PROFILE_JSON_CHUNK_SIZE = 40000;
+var SHARED_PROFILES_SHEET_NAME = "L2N_Profiles";
+var SHARED_PRESENCE_SHEET_NAME = "L2N_Presence";
+var SHARED_LIKES_SHEET_NAME = "L2N_Likes";
+var SHARED_MESSAGES_SHEET_NAME = "L2N_Messages";
 
 function jsonResponse_(payload) {
   return ContentService
@@ -230,6 +241,687 @@ function handleAuthLogout_(data) {
   return { ok: true };
 }
 
+function getUserAuthCodeCacheKey_(email) {
+  return "USER_AUTH_CODE_" + sha256Hex_(normalizeEmail_(email));
+}
+
+function getUserAuthCooldownCacheKey_(email) {
+  return "USER_AUTH_COOLDOWN_" + sha256Hex_(normalizeEmail_(email));
+}
+
+function getUserSessionPropertyKey_(token) {
+  return "USER_SESSION_" + sha256Hex_(String(token || ""));
+}
+
+function getUserSignInEmailHtml_(email, code) {
+  var img = WAITLIST_EMAIL_IMAGE_URL;
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;padding:0;background-color:#0f172a;font-family:\'Segoe UI\',Tahoma,Geneva,Verdana,sans-serif;">' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#0f172a;">' +
+    '<tr><td align="center" style="padding:32px 16px;">' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;margin:0 auto;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">' +
+    '<tr><td style="line-height:0;"><img src="' + img + '" alt="Link2Nite" width="560" style="display:block;width:100%;max-width:560px;height:auto;object-fit:cover;" /></td></tr>' +
+    '<tr><td style="background-color:#0f172a;padding:20px 28px;text-align:center;border-bottom:1px solid rgba(148,163,184,0.15);">' +
+    '<span style="font-size:22px;font-weight:800;color:#f1f5f9;letter-spacing:0.5px;">L2</span><span style="font-size:22px;font-weight:800;color:#a78bfa;letter-spacing:0.5px;">N</span><span style="font-size:22px;font-weight:800;color:#f1f5f9;letter-spacing:0.5px;"> Link2Nite</span></td></tr>' +
+    '<tr><td style="background-color:#1e293b;padding:32px 28px;">' +
+    '<p style="margin:0 0 16px;font-size:18px;color:#f1f5f9;font-weight:600;">Your Link2Nite sign-in code</p>' +
+    '<p style="margin:0 0 16px;font-size:15px;color:#cbd5e1;line-height:1.6;">A sign-in was requested for <strong style="color:#f8fafc;">' + maskEmail_(email) + '</strong>.</p>' +
+    '<p style="margin:0 0 24px;font-size:15px;color:#cbd5e1;line-height:1.6;">Use the code below in the app to keep your profile, going-tonight status, likes, matches, and chats synced across devices. This code expires in 10 minutes.</p>' +
+    '<div style="display:inline-block;padding:14px 20px;border-radius:16px;background:#0f172a;border:1px solid rgba(167,139,250,0.35);font-size:30px;font-weight:800;letter-spacing:6px;color:#f8fafc;">' + code + '</div>' +
+    '<p style="margin:24px 0 0;font-size:13px;color:#94a3b8;line-height:1.5;">If you did not request this code, you can ignore this email.</p>' +
+    '</td></tr>' +
+    '<tr><td style="background-color:#0f172a;padding:20px 28px;text-align:center;border-top:1px solid rgba(148,163,184,0.2);">' +
+    '<p style="margin:0;font-size:12px;color:#94a3b8;">Link2Nite — Match. Meet. Tonight.</p></td></tr>' +
+    '</table></td></tr></table></body></html>';
+}
+
+function storeUserSessionRecord_(token, email, username) {
+  var props = PropertiesService.getScriptProperties();
+  var expiresAt = new Date(Date.now() + USER_SESSION_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  props.setProperty(
+    getUserSessionPropertyKey_(token),
+    JSON.stringify({
+      email: normalizeEmail_(email),
+      username: String(username || "").trim(),
+      createdAt: new Date().toISOString(),
+      expiresAt: expiresAt
+    })
+  );
+  return expiresAt;
+}
+
+function getUserSessionRecord_(token) {
+  if (!token) return null;
+  var props = PropertiesService.getScriptProperties();
+  var key = getUserSessionPropertyKey_(token);
+  var raw = props.getProperty(key);
+  if (!raw) return null;
+
+  try {
+    var parsed = JSON.parse(raw);
+    var expiresAt = parsed.expiresAt || "";
+    if (expiresAt && Date.parse(expiresAt) <= Date.now()) {
+      props.deleteProperty(key);
+      return null;
+    }
+    if (!isValidEmail_(parsed.email)) {
+      props.deleteProperty(key);
+      return null;
+    }
+    return parsed;
+  } catch (err) {
+    props.deleteProperty(key);
+    return null;
+  }
+}
+
+function deleteUserSessionRecord_(token) {
+  if (!token) return;
+  PropertiesService.getScriptProperties().deleteProperty(getUserSessionPropertyKey_(token));
+}
+
+function getSharedSpreadsheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    var id = PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID");
+    if (id) ss = SpreadsheetApp.openById(id.trim());
+  }
+  if (!ss) throw new Error("Shared backend spreadsheet not configured.");
+  return ss;
+}
+
+function getOrCreateSheet_(name, headers) {
+  var ss = getSharedSpreadsheet_();
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.appendRow(headers);
+  } else if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+  } else {
+    var existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    if (String(existingHeaders[0] || "") !== String(headers[0] || "")) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+  }
+  return sheet;
+}
+
+function readSheetObjects_(sheet) {
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+  var values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+  var headers = values[0].map(function(item) { return String(item || ""); });
+  return values.slice(1).map(function(row, index) {
+    var obj = { _rowNumber: index + 2 };
+    headers.forEach(function(header, colIndex) {
+      obj[header] = row[colIndex];
+    });
+    return obj;
+  });
+}
+
+function withScriptLock_(callback) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    return callback();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getProfilesSheetHeaders_() {
+  var headers = ["username", "email"];
+  for (var i = 1; i <= PROFILE_JSON_PARTS; i++) {
+    headers.push("profile_part_" + i);
+  }
+  headers.push("created_at");
+  headers.push("updated_at");
+  return headers;
+}
+
+function getPresenceSheetHeaders_() {
+  return ["place_id", "username", "state", "active", "updated_at", "expires_at"];
+}
+
+function getLikesSheetHeaders_() {
+  return ["place_id", "from_username", "to_username", "active", "updated_at"];
+}
+
+function getMessagesSheetHeaders_() {
+  return ["chat_key", "place_id", "from_username", "to_username", "text", "ts"];
+}
+
+function splitTextIntoChunks_(text, size, maxParts) {
+  var source = String(text || "");
+  if (source.length > size * maxParts) {
+    throw new Error("Profile data is too large to sync right now.");
+  }
+  var chunks = [];
+  for (var i = 0; i < maxParts; i++) {
+    chunks.push(source.slice(i * size, (i + 1) * size));
+  }
+  return chunks;
+}
+
+function joinProfileChunksFromRow_(row) {
+  var parts = [];
+  for (var i = 1; i <= PROFILE_JSON_PARTS; i++) {
+    var value = row["profile_part_" + i];
+    if (value !== null && value !== undefined && value !== "") {
+      parts.push(String(value));
+    }
+  }
+  return parts.join("");
+}
+
+function parseProfileRecord_(row) {
+  var parsedProfile = {};
+  var rawProfile = joinProfileChunksFromRow_(row);
+  if (rawProfile) {
+    try {
+      parsedProfile = JSON.parse(rawProfile) || {};
+    } catch (_) {
+      parsedProfile = {};
+    }
+  }
+  return {
+    rowNumber: row._rowNumber,
+    username: String(row.username || "").trim(),
+    email: normalizeEmail_(row.email),
+    profile: parsedProfile,
+    createdAt: String(row.created_at || ""),
+    updatedAt: String(row.updated_at || "")
+  };
+}
+
+function getProfileRecords_(sheet) {
+  return readSheetObjects_(sheet)
+    .map(parseProfileRecord_)
+    .filter(function(record) {
+      return !!record.username && !!record.email;
+    });
+}
+
+function findProfileRecordByEmail_(records, email) {
+  var normalized = normalizeEmail_(email);
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].email === normalized) return records[i];
+  }
+  return null;
+}
+
+function findProfileRecordByUsername_(records, username) {
+  var normalized = String(username || "").trim();
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].username === normalized) return records[i];
+  }
+  return null;
+}
+
+function writeProfileRecord_(sheet, rowNumber, username, email, profile, createdAt, updatedAt) {
+  var json = JSON.stringify(profile || {});
+  var chunks = splitTextIntoChunks_(json, PROFILE_JSON_CHUNK_SIZE, PROFILE_JSON_PARTS);
+  var row = [String(username || "").trim(), normalizeEmail_(email)].concat(chunks).concat([createdAt || "", updatedAt || ""]);
+  if (rowNumber) {
+    sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
+  } else {
+    sheet.appendRow(row);
+  }
+}
+
+function sanitizePublicProfilePayload_(profile) {
+  var source = profile && typeof profile === "object" ? profile : {};
+  var result = {};
+
+  if (source.age !== undefined && source.age !== null && source.age !== "") {
+    var age = parseInt(source.age, 10);
+    if (!isNaN(age) && age >= 18 && age <= 99) result.age = age;
+  }
+
+  ["vibe", "gender", "showMe", "bio", "location", "jobTitle", "company", "school", "instagram"].forEach(function(key) {
+    var value = source[key];
+    if (value === undefined || value === null) return;
+    var text = String(value).trim();
+    if (!text) return;
+    result[key] = text.slice(0, key === "bio" ? 600 : 120);
+  });
+
+  if (source.showAge !== undefined) result.showAge = source.showAge !== false;
+  if (source.isBot === true) result.isBot = true;
+
+  if (Array.isArray(source.photos)) {
+    result.photos = source.photos
+      .filter(function(item) {
+        return typeof item === "string" && item.trim();
+      })
+      .slice(0, 6)
+      .map(function(item) {
+        return String(item);
+      });
+  }
+
+  return result;
+}
+
+function sanitizeProfileForPublic_(profile) {
+  var clean = sanitizePublicProfilePayload_(profile || {});
+  if (profile && profile.isBot === true) clean.isBot = true;
+  return clean;
+}
+
+function getUsernameForUserSession_(sessionRecord, sessionToken) {
+  if (!sessionRecord || !sessionRecord.email) return "";
+  if (sessionRecord.username) return String(sessionRecord.username || "").trim();
+
+  var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+  var records = getProfileRecords_(profilesSheet);
+  var byEmail = findProfileRecordByEmail_(records, sessionRecord.email);
+  if (!byEmail) return "";
+
+  storeUserSessionRecord_(sessionToken, sessionRecord.email, byEmail.username);
+  sessionRecord.username = byEmail.username;
+  return byEmail.username;
+}
+
+function buildChatKey_(placeId, userA, userB) {
+  var names = [String(userA || "").trim(), String(userB || "").trim()].sort();
+  return String(placeId || "").trim() + "||" + names[0] + "||" + names[1];
+}
+
+function buildSharedSnapshot_() {
+  var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+  var presenceSheet = getOrCreateSheet_(SHARED_PRESENCE_SHEET_NAME, getPresenceSheetHeaders_());
+  var likesSheet = getOrCreateSheet_(SHARED_LIKES_SHEET_NAME, getLikesSheetHeaders_());
+  var messagesSheet = getOrCreateSheet_(SHARED_MESSAGES_SHEET_NAME, getMessagesSheetHeaders_());
+
+  var profiles = {};
+  getProfileRecords_(profilesSheet).forEach(function(record) {
+    profiles[record.username] = sanitizeProfileForPublic_(record.profile);
+  });
+
+  var now = Date.now();
+  var going = {};
+  var goingMeta = {};
+  var interested = {};
+  readSheetObjects_(presenceSheet).forEach(function(row) {
+    var placeId = String(row.place_id || "").trim();
+    var username = String(row.username || "").trim();
+    var state = String(row.state || "").trim();
+    var isActive = String(row.active || "").toLowerCase() === "true";
+    if (!placeId || !username || !state || !isActive) return;
+
+    var updatedAtText = String(row.updated_at || "");
+    var expiresAtText = String(row.expires_at || "");
+    var updatedAtTs = Date.parse(updatedAtText);
+    var expiresAtTs = Date.parse(expiresAtText);
+
+    if (state === "going") {
+      if (Number.isFinite(expiresAtTs) && expiresAtTs <= now) return;
+      if (!going[placeId]) going[placeId] = [];
+      if (!goingMeta[placeId]) goingMeta[placeId] = {};
+      if (going[placeId].indexOf(username) === -1) going[placeId].push(username);
+      goingMeta[placeId][username] = Number.isFinite(updatedAtTs) ? updatedAtTs : now;
+      return;
+    }
+
+    if (state === "interested") {
+      if (!interested[placeId]) interested[placeId] = [];
+      if (interested[placeId].indexOf(username) === -1) interested[placeId].push(username);
+    }
+  });
+
+  var likes = {};
+  readSheetObjects_(likesSheet).forEach(function(row) {
+    var placeId = String(row.place_id || "").trim();
+    var fromUsername = String(row.from_username || "").trim();
+    var toUsername = String(row.to_username || "").trim();
+    var isActive = String(row.active || "").toLowerCase() === "true";
+    if (!placeId || !fromUsername || !toUsername || !isActive) return;
+    if (!likes[placeId]) likes[placeId] = {};
+    if (!Array.isArray(likes[placeId][fromUsername])) likes[placeId][fromUsername] = [];
+    if (likes[placeId][fromUsername].indexOf(toUsername) === -1) likes[placeId][fromUsername].push(toUsername);
+  });
+
+  var messages = {};
+  readSheetObjects_(messagesSheet).forEach(function(row) {
+    var chatKey = String(row.chat_key || "").trim();
+    var fromUsername = String(row.from_username || "").trim();
+    var text = String(row.text || "");
+    var ts = Number(row.ts || 0);
+    if (!chatKey || !fromUsername || !text) return;
+    if (!Array.isArray(messages[chatKey])) messages[chatKey] = [];
+    messages[chatKey].push({
+      from: fromUsername,
+      text: text,
+      ts: Number.isFinite(ts) && ts > 0 ? ts : Date.now()
+    });
+  });
+
+  Object.keys(messages).forEach(function(chatKey) {
+    messages[chatKey].sort(function(a, b) {
+      return Number(a.ts || 0) - Number(b.ts || 0);
+    });
+  });
+
+  return {
+    profiles: profiles,
+    going: going,
+    goingMeta: goingMeta,
+    interested: interested,
+    likes: likes,
+    messages: messages,
+    snapshotAt: new Date().toISOString(),
+    goingTtlHours: GOING_TONIGHT_TTL_HOURS
+  };
+}
+
+function handleUserRequestCode_(data) {
+  var email = normalizeEmail_(data.email);
+  if (!isValidEmail_(email)) {
+    return { ok: false, error: "Enter a valid email." };
+  }
+
+  var cache = CacheService.getScriptCache();
+  var cooldownKey = getUserAuthCooldownCacheKey_(email);
+  if (cache.get(cooldownKey)) {
+    return { ok: false, error: "Please wait a minute before requesting another code." };
+  }
+
+  cache.put(cooldownKey, "1", USER_AUTH_COOLDOWN_SECONDS);
+  var code = generateOtpCode_();
+  cache.put(getUserAuthCodeCacheKey_(email), JSON.stringify({
+    codeHash: sha256Hex_(code),
+    expiresAt: Date.now() + USER_AUTH_CODE_TTL_SECONDS * 1000
+  }), USER_AUTH_CODE_TTL_SECONDS);
+
+  var subject = "Your Link2Nite sign-in code";
+  var plainBody = "Your Link2Nite sign-in code is " + code + ". It expires in 10 minutes.";
+  var htmlBody = getUserSignInEmailHtml_(email, code);
+  sendWaitlistEmail(email, subject, plainBody, htmlBody);
+
+  return {
+    ok: true,
+    message: "If this email can receive Link2Nite access codes, a sign-in code was sent."
+  };
+}
+
+function handleUserVerifyCode_(data) {
+  var email = normalizeEmail_(data.email);
+  var code = String(data.code || "").replace(/\D+/g, "").slice(0, 6);
+  if (!isValidEmail_(email) || code.length !== 6) {
+    return { ok: false, error: "Invalid or expired sign-in code." };
+  }
+
+  var cache = CacheService.getScriptCache();
+  var raw = cache.get(getUserAuthCodeCacheKey_(email));
+  if (!raw) {
+    return { ok: false, error: "Invalid or expired sign-in code." };
+  }
+
+  try {
+    var stored = JSON.parse(raw);
+    if (!stored || !stored.codeHash || !stored.expiresAt || stored.expiresAt < Date.now()) {
+      return { ok: false, error: "Invalid or expired sign-in code." };
+    }
+    if (stored.codeHash !== sha256Hex_(code)) {
+      return { ok: false, error: "Invalid or expired sign-in code." };
+    }
+  } catch (err) {
+    return { ok: false, error: "Invalid or expired sign-in code." };
+  }
+
+  cache.remove(getUserAuthCodeCacheKey_(email));
+  var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+  var records = getProfileRecords_(profilesSheet);
+  var byEmail = findProfileRecordByEmail_(records, email);
+  var username = byEmail ? byEmail.username : "";
+  var sessionToken = createSessionToken_();
+  var expiresAt = storeUserSessionRecord_(sessionToken, email, username);
+
+  return {
+    ok: true,
+    authenticated: true,
+    email: email,
+    username: username,
+    sessionToken: sessionToken,
+    expiresAt: expiresAt
+  };
+}
+
+function handleUserSessionStatus_(data) {
+  var token = String(data.sessionToken || "");
+  var record = getUserSessionRecord_(token);
+  if (!record) {
+    return { ok: true, authenticated: false };
+  }
+  var username = getUsernameForUserSession_(record, token);
+  return {
+    ok: true,
+    authenticated: true,
+    email: record.email,
+    username: username,
+    expiresAt: record.expiresAt
+  };
+}
+
+function handleUserLogout_(data) {
+  deleteUserSessionRecord_(data.sessionToken);
+  return { ok: true };
+}
+
+function handleSharedSnapshot_(data) {
+  var token = String(data.sessionToken || "");
+  var sessionRecord = token ? getUserSessionRecord_(token) : null;
+  var viewer = { authenticated: false };
+
+  if (sessionRecord) {
+    viewer = {
+      authenticated: true,
+      email: sessionRecord.email,
+      username: getUsernameForUserSession_(sessionRecord, token),
+      expiresAt: sessionRecord.expiresAt
+    };
+  }
+
+  return {
+    ok: true,
+    supportsSharedState: true,
+    supportsUserAuth: true,
+    viewer: viewer,
+    snapshot: buildSharedSnapshot_()
+  };
+}
+
+function handleSharedProfileUpsert_(data) {
+  return withScriptLock_(function() {
+    var token = String(data.sessionToken || "");
+    var sessionRecord = getUserSessionRecord_(token);
+    if (!sessionRecord) return { ok: false, error: "Sign in again to sync this profile.", code: "user_session_required" };
+
+    var desiredUsername = String(data.username || "").trim();
+    if (!desiredUsername) return { ok: false, error: "Choose a display name first.", code: "missing_username" };
+
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    var records = getProfileRecords_(profilesSheet);
+    var byEmail = findProfileRecordByEmail_(records, sessionRecord.email);
+    var byUsername = findProfileRecordByUsername_(records, desiredUsername);
+
+    if (byUsername && byUsername.email !== sessionRecord.email) {
+      return {
+        ok: false,
+        error: "That name is already taken. Try a different one.",
+        code: "username_taken"
+      };
+    }
+
+    if (byEmail && byEmail.username && byEmail.username !== desiredUsername) {
+      return {
+        ok: false,
+        error: "This verified email is already linked to @" + byEmail.username + ".",
+        code: "username_locked",
+        username: byEmail.username
+      };
+    }
+
+    var username = byEmail ? byEmail.username : desiredUsername;
+    var existingProfile = byEmail ? byEmail.profile : (byUsername ? byUsername.profile : {});
+    var nextProfile = sanitizePublicProfilePayload_(existingProfile);
+    var incomingProfile = sanitizePublicProfilePayload_(data.profile || {});
+    Object.keys(incomingProfile).forEach(function(key) {
+      nextProfile[key] = incomingProfile[key];
+    });
+    nextProfile.isBot = false;
+
+    var nowIso = new Date().toISOString();
+    var createdAt = byEmail ? (byEmail.createdAt || nowIso) : nowIso;
+    var rowNumber = byEmail ? byEmail.rowNumber : (byUsername ? byUsername.rowNumber : 0);
+    writeProfileRecord_(profilesSheet, rowNumber, username, sessionRecord.email, nextProfile, createdAt, nowIso);
+    storeUserSessionRecord_(token, sessionRecord.email, username);
+
+    return {
+      ok: true,
+      username: username,
+      updatedAt: nowIso,
+      profile: sanitizeProfileForPublic_(nextProfile)
+    };
+  });
+}
+
+function handleSharedPresenceSet_(data) {
+  return withScriptLock_(function() {
+    var token = String(data.sessionToken || "");
+    var sessionRecord = getUserSessionRecord_(token);
+    if (!sessionRecord) return { ok: false, error: "Sign in again to sync your plan.", code: "user_session_required" };
+
+    var username = getUsernameForUserSession_(sessionRecord, token);
+    if (!username) return { ok: false, error: "Create your profile before syncing venue activity.", code: "missing_profile" };
+
+    var placeId = String(data.placeId || "").trim();
+    var state = String(data.state || "").trim();
+    var active = data.active === true || String(data.active || "").toLowerCase() === "true";
+    if (!placeId) return { ok: false, error: "Missing venue.", code: "missing_place" };
+    if (state !== "going" && state !== "interested") {
+      return { ok: false, error: "Unsupported presence state.", code: "invalid_state" };
+    }
+
+    var presenceSheet = getOrCreateSheet_(SHARED_PRESENCE_SHEET_NAME, getPresenceSheetHeaders_());
+    var rows = readSheetObjects_(presenceSheet);
+    var rowNumber = 0;
+    rows.some(function(row) {
+      if (String(row.place_id || "").trim() === placeId &&
+          String(row.username || "").trim() === username &&
+          String(row.state || "").trim() === state) {
+        rowNumber = row._rowNumber;
+        return true;
+      }
+      return false;
+    });
+
+    var nowIso = new Date().toISOString();
+    var expiresAt = "";
+    if (state === "going" && active) {
+      expiresAt = new Date(Date.now() + GOING_TONIGHT_TTL_MS).toISOString();
+    }
+    var row = [placeId, username, state, active ? "true" : "false", nowIso, expiresAt];
+    if (rowNumber) {
+      presenceSheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
+    } else {
+      presenceSheet.appendRow(row);
+    }
+
+    return {
+      ok: true,
+      username: username,
+      placeId: placeId,
+      state: state,
+      active: active,
+      expiresAt: expiresAt,
+      updatedAt: nowIso
+    };
+  });
+}
+
+function handleSharedLikeSet_(data) {
+  return withScriptLock_(function() {
+    var token = String(data.sessionToken || "");
+    var sessionRecord = getUserSessionRecord_(token);
+    if (!sessionRecord) return { ok: false, error: "Sign in again to sync your likes.", code: "user_session_required" };
+
+    var fromUsername = getUsernameForUserSession_(sessionRecord, token);
+    if (!fromUsername) return { ok: false, error: "Create your profile before liking someone.", code: "missing_profile" };
+
+    var placeId = String(data.placeId || "").trim();
+    var toUsername = String(data.targetName || "").trim();
+    var active = data.active === true || String(data.active || "").toLowerCase() === "true";
+    if (!placeId || !toUsername) return { ok: false, error: "Missing like target.", code: "missing_like_target" };
+    if (toUsername === fromUsername) return { ok: false, error: "You can't like yourself.", code: "self_like" };
+
+    var likesSheet = getOrCreateSheet_(SHARED_LIKES_SHEET_NAME, getLikesSheetHeaders_());
+    var rows = readSheetObjects_(likesSheet);
+    var rowNumber = 0;
+    rows.some(function(row) {
+      if (String(row.place_id || "").trim() === placeId &&
+          String(row.from_username || "").trim() === fromUsername &&
+          String(row.to_username || "").trim() === toUsername) {
+        rowNumber = row._rowNumber;
+        return true;
+      }
+      return false;
+    });
+
+    var nowIso = new Date().toISOString();
+    var row = [placeId, fromUsername, toUsername, active ? "true" : "false", nowIso];
+    if (rowNumber) {
+      likesSheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
+    } else {
+      likesSheet.appendRow(row);
+    }
+
+    return {
+      ok: true,
+      placeId: placeId,
+      fromUsername: fromUsername,
+      toUsername: toUsername,
+      active: active,
+      updatedAt: nowIso
+    };
+  });
+}
+
+function handleSharedMessageAdd_(data) {
+  return withScriptLock_(function() {
+    var token = String(data.sessionToken || "");
+    var sessionRecord = getUserSessionRecord_(token);
+    if (!sessionRecord) return { ok: false, error: "Sign in again to sync chat.", code: "user_session_required" };
+
+    var fromUsername = getUsernameForUserSession_(sessionRecord, token);
+    if (!fromUsername) return { ok: false, error: "Create your profile before chatting.", code: "missing_profile" };
+
+    var placeId = String(data.placeId || "").trim();
+    var toUsername = String(data.otherName || "").trim();
+    var text = String(data.text || "").trim();
+    if (!placeId || !toUsername || !text) return { ok: false, error: "Missing chat data.", code: "missing_chat_payload" };
+    if (text.length > 500) text = text.slice(0, 500);
+
+    var ts = Date.now();
+    var chatKey = buildChatKey_(placeId, fromUsername, toUsername);
+    var messagesSheet = getOrCreateSheet_(SHARED_MESSAGES_SHEET_NAME, getMessagesSheetHeaders_());
+    messagesSheet.appendRow([chatKey, placeId, fromUsername, toUsername, text, ts]);
+
+    return {
+      ok: true,
+      chatKey: chatKey,
+      message: {
+        from: fromUsername,
+        text: text,
+        ts: ts
+      }
+    };
+  });
+}
+
 function handleWaitlistSubmission_(data) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("Waitlist") || ss.getSheets()[0];
@@ -318,6 +1010,15 @@ function doPost(e) {
     if (action === "auth_verify_code") return jsonResponse_(handleAuthVerifyCode_(data));
     if (action === "auth_session_status") return jsonResponse_(handleAuthSessionStatus_(data));
     if (action === "auth_logout") return jsonResponse_(handleAuthLogout_(data));
+    if (action === "user_auth_request_code") return jsonResponse_(handleUserRequestCode_(data));
+    if (action === "user_auth_verify_code") return jsonResponse_(handleUserVerifyCode_(data));
+    if (action === "user_session_status") return jsonResponse_(handleUserSessionStatus_(data));
+    if (action === "user_logout") return jsonResponse_(handleUserLogout_(data));
+    if (action === "shared_snapshot") return jsonResponse_(handleSharedSnapshot_(data));
+    if (action === "shared_profile_upsert") return jsonResponse_(handleSharedProfileUpsert_(data));
+    if (action === "shared_presence_set") return jsonResponse_(handleSharedPresenceSet_(data));
+    if (action === "shared_like_set") return jsonResponse_(handleSharedLikeSet_(data));
+    if (action === "shared_message_add") return jsonResponse_(handleSharedMessageAdd_(data));
     return jsonResponse_(handleWaitlistSubmission_(data));
 
   } catch (err) {
@@ -406,7 +1107,10 @@ function doGet(e) {
     return jsonResponse_({
       ok: true,
       supportsAdminAuth: true,
-      feature: "admin_auth"
+      supportsUserAuth: true,
+      supportsSharedState: true,
+      supportsAppBackend: true,
+      feature: String((e && e.parameter && e.parameter.feature) || "app_backend")
     });
   }
   return ContentService.createTextOutput("Link2Nite endpoint running.");

@@ -4181,19 +4181,40 @@ let currentUserName = null;
     }
 
     function getProfilesData(){ try{ return JSON.parse(localStorage.getItem("tonightly_profiles")||"{}"); }catch{ return {}; } }
-    function setProfilesData(d){ localStorage.setItem("tonightly_profiles", JSON.stringify(d)); }
+    function setProfilesDataLocal(d){ localStorage.setItem("tonightly_profiles", JSON.stringify(d)); }
+    function setProfilesData(d){ setProfilesDataLocal(d); }
     const ADMIN_AUTH_ENDPOINT = "https://script.google.com/macros/s/AKfycbxnPAbUdYLuTL4dN0x0Z0nJIVjmqZECNfiP-o3OVqy7ThzgGCLG9Gf_mr-FJZKOLVDp0g/exec";
     const ADMIN_AUTH_SESSION_KEY = "l2n_admin_auth_session_v1";
+    const USER_AUTH_SESSION_KEY = "l2n_user_auth_session_v1";
+    const SHARED_BACKEND_POLL_MS = 30000;
     let adminAuthSession = null;
     let adminAuthBusy = false;
+    let userAuthSession = null;
+    let sharedSyncChain = Promise.resolve();
+    let sharedPollingHandle = null;
+    let sharedAuthPromptBusy = false;
     const authSupportState = { checked:false, available:false, checking:false, error:"" };
+    const sharedBackendState = { checked:false, available:false, userAuth:false, shared:false, checking:false, error:"" };
     function saveProfile(name, partial){
       const profiles=getProfilesData();
       const existing=profiles[name]||{};
       profiles[name]={...existing, ...partial, isBot: existing.isBot===true};
       setProfilesData(profiles);
+      if(name===currentUserName){
+        queueSharedOperation(async () => {
+          await pushCurrentProfileToShared(name, profiles[name]);
+        });
+      }
     }
-    function getProfile(name){ const p=getProfilesData(); return p[name]||{}; }
+    function getProfile(name){
+      const p=getProfilesData();
+      const base=p[name]||{};
+      if(currentUserName && name===currentUserName){
+        const privateEmail = normalizeEmail((userAuthSession && userAuthSession.email) || base.email || "");
+        return privateEmail ? {...base, email: privateEmail} : base;
+      }
+      return base;
+    }
 
     function normalizeEmail(value){
       return String(value||"").trim().toLowerCase();
@@ -4307,6 +4328,7 @@ let currentUserName = null;
     }
 
     adminAuthSession = loadAdminAuthSession();
+    userAuthSession = loadUserAuthSession();
 
     async function ensureAdminAuthAvailable(force=false){
       if(authSupportState.checking && !force) return authSupportState.available;
@@ -4568,7 +4590,422 @@ let currentUserName = null;
     function getCurrentUserEmail(){
       if(!currentUserName) return "";
       const profile=getProfile(currentUserName) || {};
-      return normalizeEmail(profile.email);
+      return normalizeEmail((userAuthSession && userAuthSession.email) || profile.email);
+    }
+
+    function loadUserAuthSession(){
+      try{
+        const raw=localStorage.getItem(USER_AUTH_SESSION_KEY);
+        if(!raw) return null;
+        const parsed=JSON.parse(raw);
+        if(!parsed || !parsed.sessionToken || !parsed.email) return null;
+        const expiresAt = parsed.expiresAt || "";
+        if(expiresAt){
+          const ts = Date.parse(expiresAt);
+          if(Number.isFinite(ts) && ts <= Date.now()){
+            localStorage.removeItem(USER_AUTH_SESSION_KEY);
+            return null;
+          }
+        }
+        return {
+          sessionToken: String(parsed.sessionToken || ""),
+          email: normalizeEmail(parsed.email),
+          username: String(parsed.username || "").trim(),
+          expiresAt: expiresAt,
+          signedInAt: parsed.signedInAt || ""
+        };
+      }catch(e){
+        localStorage.removeItem(USER_AUTH_SESSION_KEY);
+        return null;
+      }
+    }
+
+    function persistUserAuthSession(session){
+      userAuthSession = {
+        sessionToken: String(session.sessionToken || ""),
+        email: normalizeEmail(session.email),
+        username: String(session.username || "").trim(),
+        expiresAt: session.expiresAt || "",
+        signedInAt: session.signedInAt || new Date().toISOString()
+      };
+      localStorage.setItem(USER_AUTH_SESSION_KEY, JSON.stringify(userAuthSession));
+    }
+
+    function clearUserAuthSession(){
+      userAuthSession = null;
+      localStorage.removeItem(USER_AUTH_SESSION_KEY);
+    }
+
+    function isUserSession(){
+      if(!userAuthSession || !userAuthSession.sessionToken) return false;
+      if(!userAuthSession.email) return false;
+      if(userAuthSession.expiresAt){
+        const ts = Date.parse(userAuthSession.expiresAt);
+        if(Number.isFinite(ts) && ts <= Date.now()){
+          clearUserAuthSession();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function getSharedBackendEndpoint(){
+      return getAdminAuthEndpoint();
+    }
+
+    async function ensureSharedBackendAvailable(force=false){
+      if(sharedBackendState.checking && !force) return sharedBackendState.available;
+      if(sharedBackendState.checked && !force) return sharedBackendState.available;
+
+      const endpoint = getSharedBackendEndpoint();
+      if(!endpoint){
+        sharedBackendState.checked = true;
+        sharedBackendState.available = false;
+        sharedBackendState.userAuth = false;
+        sharedBackendState.shared = false;
+        sharedBackendState.checking = false;
+        sharedBackendState.error = "missing_endpoint";
+        return false;
+      }
+
+      sharedBackendState.checking = true;
+      try{
+        const sep = endpoint.includes("?") ? "&" : "?";
+        const response = await fetch(endpoint + sep + "action=capabilities&feature=shared_state", {
+          method:"GET",
+          cache:"no-store"
+        });
+        const text = await response.text();
+        let data = null;
+        try{ data = JSON.parse(text); }catch(_){}
+        sharedBackendState.available = !!(data && data.ok && (data.supportsSharedState || data.supportsAppBackend));
+        sharedBackendState.userAuth = !!(data && data.ok && data.supportsUserAuth);
+        sharedBackendState.shared = !!(data && data.ok && data.supportsSharedState);
+        sharedBackendState.error = sharedBackendState.available ? "" : "not_deployed";
+      }catch(e){
+        sharedBackendState.available = false;
+        sharedBackendState.userAuth = false;
+        sharedBackendState.shared = false;
+        sharedBackendState.error = "network";
+      }
+
+      sharedBackendState.checked = true;
+      sharedBackendState.checking = false;
+      return sharedBackendState.available;
+    }
+
+    async function postSharedBackend(payload){
+      const ready = await ensureSharedBackendAvailable();
+      if(!ready) throw new Error("shared_backend_unavailable");
+      const response = await fetch(getSharedBackendEndpoint(), {
+        method:"POST",
+        headers:{ "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      const text = await response.text();
+      try{
+        return JSON.parse(text);
+      }catch(e){
+        throw new Error("invalid_shared_response");
+      }
+    }
+
+    function getPublicProfilePayload(profile){
+      const source = profile && typeof profile === "object" ? profile : {};
+      const payload = {};
+      ["age","vibe","gender","showAge","showMe","bio","location","jobTitle","company","school","instagram"].forEach(key => {
+        if(source[key] !== undefined) payload[key] = source[key];
+      });
+      if(Array.isArray(source.photos)) payload.photos = source.photos.slice(0,6);
+      return payload;
+    }
+
+    function refreshUiAfterSharedSync(){
+      try{ updateUserLabel(); }catch(e){}
+      try{ renderPlacesList(); }catch(e){}
+      try{ renderTonightPlan(); }catch(e){}
+      try{ if(currentPlaceId) renderGoingForPlace(currentPlaceId); }catch(e){}
+      try{ if(currentScreenId==="screen-goinglist" && currentPlaceId) renderGoingList(currentPlaceId); }catch(e){}
+      try{ if(currentScreenId==="screen-matches"){ renderMatches(); renderLikesYou(); } }catch(e){}
+      try{ if(currentScreenId==="screen-chat") renderChatMessages(); }catch(e){}
+      try{ if(currentScreenId==="screen-swipe" && swipePlaceId){ buildSwipeQueue(swipePlaceId); renderSwipeDeck(); } }catch(e){}
+      try{ if(currentScreenId==="screen-profile") renderProfilePreviewCard(); }catch(e){}
+      try{ if(currentScreenId==="screen-public-profile") renderPublicProfile(); }catch(e){}
+    }
+
+    function applySharedSnapshot(snapshot, viewer){
+      if(!snapshot || typeof snapshot !== "object") return;
+      if(snapshot.profiles) setProfilesDataLocal(snapshot.profiles);
+      if(snapshot.going) setRawGoingDataLocal(snapshot.going);
+      if(snapshot.goingMeta) setGoingMetaDataLocal(snapshot.goingMeta);
+      if(snapshot.interested) setInterestedDataLocal(snapshot.interested);
+      if(snapshot.likes) setLikesDataLocal(snapshot.likes);
+      if(snapshot.messages) setMessagesDataLocal(snapshot.messages);
+
+      if(viewer && viewer.authenticated && viewer.email && userAuthSession && userAuthSession.sessionToken){
+        persistUserAuthSession({
+          sessionToken: userAuthSession.sessionToken,
+          email: viewer.email,
+          username: viewer.username || (userAuthSession && userAuthSession.username) || "",
+          expiresAt: viewer.expiresAt || (userAuthSession && userAuthSession.expiresAt) || "",
+          signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
+        });
+      }
+
+      const preferredUserName = String(
+        (viewer && viewer.authenticated && viewer.username) ||
+        (userAuthSession && userAuthSession.username) ||
+        localStorage.getItem("tonightly_username") ||
+        currentUserName ||
+        ""
+      ).trim();
+
+      if(preferredUserName){
+        currentUserName = preferredUserName;
+        localStorage.setItem("tonightly_username", preferredUserName);
+        const profiles = getProfilesData();
+        const existing = profiles[preferredUserName] || {};
+        const privateEmail = getCurrentUserEmail();
+        if(privateEmail){
+          profiles[preferredUserName] = {...existing, email: privateEmail};
+          setProfilesDataLocal(profiles);
+        }
+      }
+
+      refreshUiAfterSharedSync();
+    }
+
+    async function syncSharedSnapshot(options={}){
+      if(!await ensureSharedBackendAvailable()) return false;
+      if(!sharedBackendState.shared) return false;
+
+      if(syncSharedSnapshot._promise) return syncSharedSnapshot._promise;
+      syncSharedSnapshot._promise = (async () => {
+        try{
+          const data = await postSharedBackend({
+            action:"shared_snapshot",
+            sessionToken: (userAuthSession && userAuthSession.sessionToken) || ""
+          });
+          if(data && data.ok && data.snapshot){
+            applySharedSnapshot(data.snapshot, data.viewer || null);
+            return true;
+          }
+          return false;
+        }catch(e){
+          if(!options.silent) toast("Couldn't sync the shared beta right now.");
+          return false;
+        }finally{
+          syncSharedSnapshot._promise = null;
+        }
+      })();
+      return syncSharedSnapshot._promise;
+    }
+
+    async function refreshUserSession(options={}){
+      if(!isUserSession()) return false;
+      if(!await ensureSharedBackendAvailable()) return isUserSession();
+      if(!sharedBackendState.userAuth) return isUserSession();
+
+      try{
+        const data = await postSharedBackend({
+          action:"user_session_status",
+          sessionToken: userAuthSession.sessionToken
+        });
+        if(data && data.ok && data.authenticated){
+          persistUserAuthSession({
+            sessionToken: userAuthSession.sessionToken,
+            email: data.email || userAuthSession.email,
+            username: data.username || userAuthSession.username || "",
+            expiresAt: data.expiresAt || userAuthSession.expiresAt || "",
+            signedInAt: userAuthSession.signedInAt || new Date().toISOString()
+          });
+          return true;
+        }
+        clearUserAuthSession();
+        if(!options.silent) toast("Your Link2Nite session expired. Verify your email again.");
+        return false;
+      }catch(e){
+        if(!options.silent) toast("Couldn't validate your Link2Nite session right now.");
+        return isUserSession();
+      }
+    }
+
+    async function ensureUserSignedInForEmail(email, options={}){
+      const normalizedEmail = normalizeEmail(email);
+      if(!isValidEmail(normalizedEmail)){
+        if(!options.silent) toast("Enter a valid email to sync with the shared beta.");
+        return false;
+      }
+
+      const sessionOk = await refreshUserSession({silent:true});
+      if(sessionOk && normalizeEmail((userAuthSession && userAuthSession.email) || "") === normalizedEmail){
+        return true;
+      }
+
+      if(sharedAuthPromptBusy) return false;
+      sharedAuthPromptBusy = true;
+      try{
+        if(!await ensureSharedBackendAvailable() || !sharedBackendState.userAuth){
+          if(!options.silent) toast("Shared sign-in is not live on this deployment yet.");
+          return false;
+        }
+
+        const requestData = await postSharedBackend({
+          action:"user_auth_request_code",
+          email: normalizedEmail
+        });
+        if(!options.silent && requestData && requestData.message){
+          toast(requestData.message);
+        }
+
+        const code = window.prompt(`Enter the 6-digit code sent to ${normalizedEmail}`, "");
+        if(!code){
+          if(!options.silent) toast("Sign-in canceled.");
+          return false;
+        }
+
+        const data = await postSharedBackend({
+          action:"user_auth_verify_code",
+          email: normalizedEmail,
+          code: String(code || "").replace(/\D+/g,"").slice(0,6)
+        });
+        if(data && data.ok && data.authenticated && data.sessionToken){
+          persistUserAuthSession({
+            sessionToken: data.sessionToken,
+            email: data.email || normalizedEmail,
+            username: data.username || "",
+            expiresAt: data.expiresAt || "",
+            signedInAt: new Date().toISOString()
+          });
+          await syncSharedSnapshot({silent:true});
+          return true;
+        }
+
+        if(!options.silent) toast((data && data.error) || "Invalid or expired sign-in code.");
+        return false;
+      }catch(e){
+        if(!options.silent) toast("Couldn't complete email verification right now.");
+        return false;
+      }finally{
+        sharedAuthPromptBusy = false;
+      }
+    }
+
+    async function ensureSharedMutationAuth(options={}){
+      if(isUserSession()) return true;
+      const email = normalizeEmail(options.email || getCurrentUserEmail());
+      if(!email){
+        if(!options.silent) toast("Add a valid email to sync with other people.");
+        return false;
+      }
+      return ensureUserSignedInForEmail(email, options);
+    }
+
+    function queueSharedOperation(task){
+      sharedSyncChain = sharedSyncChain
+        .catch(() => {})
+        .then(async () => {
+          try{
+            const ran = await task();
+            if(ran !== false){
+              await syncSharedSnapshot({silent:true});
+            }
+            return ran;
+          }catch(e){
+            console.warn("[Shared Backend] Operation failed", e);
+            return false;
+          }
+        });
+      return sharedSyncChain;
+    }
+
+    async function pushCurrentProfileToShared(name, profile){
+      if(!name || !profile) return false;
+      if(getProfile(name).isBot === true) return false;
+      if(name !== currentUserName) return false;
+      if(!await ensureSharedMutationAuth({silent:true})) return false;
+
+      const data = await postSharedBackend({
+        action:"shared_profile_upsert",
+        sessionToken: userAuthSession.sessionToken,
+        username: name,
+        profile: getPublicProfilePayload(profile)
+      });
+      if(data && data.ok){
+        persistUserAuthSession({
+          sessionToken: userAuthSession.sessionToken,
+          email: (userAuthSession && userAuthSession.email) || getCurrentUserEmail(),
+          username: data.username || name,
+          expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
+          signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
+        });
+        return true;
+      }
+      throw new Error((data && data.error) || "shared_profile_upsert_failed");
+    }
+
+    async function syncSharedPresence(placeId, state, active){
+      if(!placeId) return false;
+      if(!await ensureSharedMutationAuth({silent:true})) return false;
+      const data = await postSharedBackend({
+        action:"shared_presence_set",
+        sessionToken: userAuthSession.sessionToken,
+        placeId,
+        state,
+        active
+      });
+      if(data && data.ok) return true;
+      throw new Error((data && data.error) || "shared_presence_set_failed");
+    }
+
+    async function syncSharedLike(placeId, targetName, active){
+      if(!placeId || !targetName) return false;
+      const targetProfile = getProfile(targetName);
+      if(targetProfile && targetProfile.isBot === true) return false;
+      if(!await ensureSharedMutationAuth({silent:true})) return false;
+      const data = await postSharedBackend({
+        action:"shared_like_set",
+        sessionToken: userAuthSession.sessionToken,
+        placeId,
+        targetName,
+        active
+      });
+      if(data && data.ok) return true;
+      throw new Error((data && data.error) || "shared_like_set_failed");
+    }
+
+    async function syncSharedMessage(placeId, otherName, text){
+      if(!placeId || !otherName || !text) return false;
+      const targetProfile = getProfile(otherName);
+      if(targetProfile && targetProfile.isBot === true) return false;
+      if(!await ensureSharedMutationAuth({silent:true})) return false;
+      const data = await postSharedBackend({
+        action:"shared_message_add",
+        sessionToken: userAuthSession.sessionToken,
+        placeId,
+        otherName,
+        text
+      });
+      if(data && data.ok) return true;
+      throw new Error((data && data.error) || "shared_message_add_failed");
+    }
+
+    async function logoutUserSession(options={}){
+      const sessionToken = userAuthSession && userAuthSession.sessionToken;
+      clearUserAuthSession();
+      if(!options.skipRemote && sessionToken){
+        try{
+          await postSharedBackend({ action:"user_logout", sessionToken });
+        }catch(_){}
+      }
+      return true;
+    }
+
+    function startSharedPolling(){
+      if(sharedPollingHandle) clearInterval(sharedPollingHandle);
+      sharedPollingHandle = setInterval(() => {
+        syncSharedSnapshot({silent:true});
+      }, SHARED_BACKEND_POLL_MS);
     }
 
     function requireAdminAccess(message="Admin tools are available only after team sign-in in Settings."){
@@ -4716,7 +5153,7 @@ function showScreen(id){
     function finishOnboarding(){ localStorage.setItem("tonightly_onboarding_done","1"); proceedAfterOnboarding(); }
 
     function proceedAfterOnboarding(){
-      const saved=localStorage.getItem("tonightly_username");
+      const saved=String(localStorage.getItem("tonightly_username") || (userAuthSession && userAuthSession.username) || "").trim();
       if(saved){
         currentUserName=saved;
         updateUserLabel();
@@ -4726,7 +5163,7 @@ function showScreen(id){
       } else showScreen("screen-username");
     }
 
-    function saveUsername(){
+    async function saveUsername(){
       const name=($("username-input").value||"").trim();
       const email=normalizeEmail(($("email-input").value||""));
       const ageText=($("age-input").value||"").trim();
@@ -4742,14 +5179,84 @@ function showScreen(id){
       if(!gender){ alert("Select your gender."); return; }
       if(!showMe){ alert("Select who you want to meet."); return; }
 
-      currentUserName=name;
+      const baseProfile = {age, email, vibe, gender, showAge, showMe};
+      let resolvedName = name;
+      const sharedReady = await ensureSharedBackendAvailable();
+
+      if(sharedReady && sharedBackendState.userAuth && sharedBackendState.shared){
+        const verified = await ensureUserSignedInForEmail(email);
+        if(!verified) return;
+
+        try{
+          const data = await postSharedBackend({
+            action:"shared_profile_upsert",
+            sessionToken: userAuthSession.sessionToken,
+            username: name,
+            profile: getPublicProfilePayload(baseProfile)
+          });
+
+          if(!data || !data.ok){
+            if(data && data.code === "username_locked" && data.username){
+              resolvedName = String(data.username || "").trim();
+              persistUserAuthSession({
+                sessionToken: userAuthSession.sessionToken,
+                email: email,
+                username: resolvedName,
+                expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
+                signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
+              });
+              currentUserName = resolvedName;
+              localStorage.setItem("tonightly_username", currentUserName);
+              await syncSharedSnapshot({silent:true});
+              updateUserLabel();
+              showScreen("screen-home");
+              renderPlacesList();
+              renderTonightPlan();
+              toast(`Welcome back, ${resolvedName}.`);
+              return;
+            }
+            toast((data && data.error) || "Couldn't create this shared profile right now.");
+            return;
+          }
+
+          resolvedName = String(data.username || name).trim() || name;
+          persistUserAuthSession({
+            sessionToken: userAuthSession.sessionToken,
+            email: email,
+            username: resolvedName,
+            expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
+            signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
+          });
+        }catch(e){
+          toast("Couldn't create this shared profile right now.");
+          return;
+        }
+      }
+
+      currentUserName=resolvedName;
       localStorage.setItem("tonightly_username", currentUserName);
-      saveProfile(currentUserName,{age, email, vibe, gender, showAge, showMe});
+      const profiles=getProfilesData();
+      const existing=profiles[currentUserName]||{};
+      profiles[currentUserName]={...existing, ...baseProfile, isBot: existing.isBot===true};
+      setProfilesDataLocal(profiles);
+      if(sharedReady && sharedBackendState.shared){
+        await syncSharedSnapshot({silent:true});
+      }
       updateUserLabel();
       tempPhotos=[];
       photoSlots = [null, null, null, null, null, null];
       renderPhotoSlots();
       renderOnboardingPhotosPreview();
+
+      const syncedProfile = getProfile(currentUserName) || {};
+      if(Array.isArray(syncedProfile.photos) && syncedProfile.photos.length){
+        showScreen("screen-home");
+        renderPlacesList();
+        renderTonightPlan();
+        toast(`Welcome back, ${currentUserName}.`);
+        return;
+      }
+
       showScreen("screen-photos-onboarding");
     }
 
@@ -4876,16 +5383,27 @@ function showScreen(id){
       } else label.textContent="";
       updateAdminUIVisibility();
     }
-    function askNewName(){ localStorage.removeItem("tonightly_username"); currentUserName=null; updateUserLabel(); showScreen("screen-username"); }
+    function askNewName(){
+      if(isUserSession()){
+        toast("Sign out if you want to switch to a different account.");
+        return;
+      }
+      localStorage.removeItem("tonightly_username");
+      currentUserName=null;
+      updateUserLabel();
+      showScreen("screen-username");
+    }
 
     const GOING_TONIGHT_META_KEY = "tonightly_going_meta";
     const GOING_TONIGHT_TTL_HOURS = 18;
     const GOING_TONIGHT_TTL_MS = GOING_TONIGHT_TTL_HOURS * 60 * 60 * 1000;
 
     function getRawGoingData(){ try{return JSON.parse(localStorage.getItem("tonightly_going")||"{}");}catch{return{};} }
-    function setRawGoingData(d){ localStorage.setItem("tonightly_going", JSON.stringify(d)); }
+    function setRawGoingDataLocal(d){ localStorage.setItem("tonightly_going", JSON.stringify(d)); }
+    function setRawGoingData(d){ setRawGoingDataLocal(d); }
     function getGoingMetaData(){ try{return JSON.parse(localStorage.getItem(GOING_TONIGHT_META_KEY)||"{}");}catch{return{};} }
-    function setGoingMetaData(d){ localStorage.setItem(GOING_TONIGHT_META_KEY, JSON.stringify(d)); }
+    function setGoingMetaDataLocal(d){ localStorage.setItem(GOING_TONIGHT_META_KEY, JSON.stringify(d)); }
+    function setGoingMetaData(d){ setGoingMetaDataLocal(d); }
     function isGoingTimestampExpired(ts, now){
       return Number.isFinite(ts) && ts > 0 && (now - ts) > GOING_TONIGHT_TTL_MS;
     }
@@ -4955,11 +5473,14 @@ function showScreen(id){
       setGoingMetaData(nextMeta);
     }
     function getInterestedData(){ try{return JSON.parse(localStorage.getItem("tonightly_interested")||"{}");}catch{return{};} }
-    function setInterestedData(d){ localStorage.setItem("tonightly_interested", JSON.stringify(d)); }
+    function setInterestedDataLocal(d){ localStorage.setItem("tonightly_interested", JSON.stringify(d)); }
+    function setInterestedData(d){ setInterestedDataLocal(d); }
     function getLikesData(){ try{return JSON.parse(localStorage.getItem("tonightly_likes")||"{}");}catch{return{};} }
-    function setLikesData(d){ localStorage.setItem("tonightly_likes", JSON.stringify(d)); }
+    function setLikesDataLocal(d){ localStorage.setItem("tonightly_likes", JSON.stringify(d)); }
+    function setLikesData(d){ setLikesDataLocal(d); }
     function getMessagesData(){ try{return JSON.parse(localStorage.getItem("tonightly_messages")||"{}");}catch{return{};} }
-    function setMessagesData(d){ localStorage.setItem("tonightly_messages", JSON.stringify(d)); }
+    function setMessagesDataLocal(d){ localStorage.setItem("tonightly_messages", JSON.stringify(d)); }
+    function setMessagesData(d){ setMessagesDataLocal(d); }
 
     const PUBLIC_REAL_LAUNCH_MODE = true;
     const PUBLIC_REAL_LAUNCH_CLEANUP_VERSION = "2026-07-30-public-launch-v1";
@@ -5364,10 +5885,12 @@ function renderPlacesList(){
       const interestedData=getInterestedData();
       const list=Array.isArray(interestedData[placeId])?interestedData[placeId]:[];
       const idx=list.indexOf(currentUserName);
-      if(idx===-1){ list.push(currentUserName); toast("Saved to My night ✅"); }
+      const isAdding = idx===-1;
+      if(isAdding){ list.push(currentUserName); toast("Saved to My night ✅"); }
       else { list.splice(idx,1); toast("Removed from My night"); }
       interestedData[placeId]=list;
       setInterestedData(interestedData);
+      queueSharedOperation(() => syncSharedPresence(placeId, "interested", isAdding));
       renderPlacesList();
     }
 
@@ -5718,6 +6241,7 @@ function renderGoingForPlace(placeId){
       if(isAdding) list.push(currentUserName); else list.splice(idx,1);
       goingData[currentPlaceId]=list;
       setGoingData(goingData);
+      queueSharedOperation(() => syncSharedPresence(currentPlaceId, "going", isAdding));
       toast(isAdding ? `You're going tonight ✅ Active for about ${GOING_TONIGHT_TTL_HOURS}h.` : "Going tonight removed");
       renderRsvpButtons(currentPlaceId);
       renderGoingForPlace(currentPlaceId);
@@ -5731,9 +6255,11 @@ function renderGoingForPlace(placeId){
       const interestedData=getInterestedData();
       const list=Array.isArray(interestedData[currentPlaceId])?interestedData[currentPlaceId]:[];
       const idx=list.indexOf(currentUserName);
-      if(idx===-1) list.push(currentUserName); else list.splice(idx,1);
+      const isAdding = idx===-1;
+      if(isAdding) list.push(currentUserName); else list.splice(idx,1);
       interestedData[currentPlaceId]=list;
       setInterestedData(interestedData);
+      queueSharedOperation(() => syncSharedPresence(currentPlaceId, "interested", isAdding));
       renderRsvpButtons(currentPlaceId);
       renderPlacesList();
       renderTonightPlan();
@@ -5777,6 +6303,7 @@ function renderGoingForPlace(placeId){
 
       likesData[placeId][currentUserName]=arr;
       setLikesData(likesData);
+      queueSharedOperation(() => syncSharedLike(placeId, targetName, nowLiked));
 
       if(currentPlaceId===placeId) renderGoingForPlace(placeId);
       renderMatches();
@@ -5978,6 +6505,7 @@ function renderGoingForPlace(placeId){
       if(!Array.isArray(msgsData[key])) msgsData[key]=[];
       msgsData[key].push({from: currentUserName, text, ts: Date.now()});
       setMessagesData(msgsData);
+      queueSharedOperation(() => syncSharedMessage(currentChatPlaceId, currentChatOther, text));
 
       input.value="";
       renderChatMessages();
@@ -7248,6 +7776,11 @@ function initApp(){
       }
       ensureAdminAuthAvailable(true);
       refreshAdminSession({silent:true});
+      ensureSharedBackendAvailable(true)
+        .then(() => refreshUserSession({silent:true}))
+        .then(() => syncSharedSnapshot({silent:true}))
+        .catch(() => {});
+      startSharedPolling();
       const onboardingDone=localStorage.getItem("tonightly_onboarding_done");
       if(!onboardingDone){
         onboardingStep=0;
@@ -7256,7 +7789,7 @@ function initApp(){
         showScreen("screen-onboarding");
         return;
       }
-      const savedUser=localStorage.getItem("tonightly_username");
+      const savedUser=String(localStorage.getItem("tonightly_username") || (userAuthSession && userAuthSession.username) || "").trim();
       if(savedUser){
         currentUserName=savedUser;
         updateUserLabel();
@@ -7540,6 +8073,7 @@ function initApp(){
       }
 
       setLikesData(likesData);
+      queueSharedOperation(() => syncSharedLike(swipePlaceId, targetName, true));
 
       // Check for match
       const byPlace=likesData[swipePlaceId]||{};
@@ -7886,6 +8420,7 @@ function initApp(){
       }
 
       setLikesData(likesData);
+      queueSharedOperation(() => syncSharedLike(pid, publicProfileName, nowLiked));
 
       const byPlace=likesData[pid]||{};
       const fromOther=byPlace[publicProfileName]||[];
@@ -7927,9 +8462,11 @@ function initApp(){
       if(!currentUserName){ showScreen("screen-username"); return; }
       const p=getProfile(currentUserName) || {};
       const s=getSettings();
+      const settingsEmailInput = document.getElementById("settings-email");
       document.getElementById("settings-username").textContent = currentUserName;
-      document.getElementById("settings-email").value = p.email || "";
-      document.getElementById("auth-email").value = getAdminSessionEmail() || p.email || "";
+      settingsEmailInput.value = getCurrentUserEmail() || p.email || "";
+      settingsEmailInput.disabled = isUserSession();
+      document.getElementById("auth-email").value = getAdminSessionEmail() || getCurrentUserEmail() || "";
       document.getElementById("auth-code").value = "";
 
       document.getElementById("set-show-age").checked = (p.showAge!==false);
@@ -7954,6 +8491,11 @@ function initApp(){
     }
     function saveSettingsEmail(){
       if(!currentUserName) return;
+      if(isUserSession()){
+        toast("Your verified login email is managed by Link2Nite sign-in. Sign out to use a different email.");
+        if(currentScreenId==="screen-settings") openSettings();
+        return;
+      }
       const email = normalizeEmail(document.getElementById("settings-email").value || "");
       if(!isValidEmail(email)){
         toast("Enter a valid email.");
@@ -8146,6 +8688,10 @@ function initApp(){
     }
 
     function changeName(){
+      if(isUserSession()){
+        toast("Username changes aren't live yet on the shared beta.");
+        return;
+      }
       const newName = prompt("New name:", currentUserName || "");
       if(!newName) return;
 
@@ -8166,8 +8712,9 @@ function initApp(){
       openSettings();
     }
 
-    function logout(){
+    async function logout(){
       logoutAdmin({silent:true, skipRemote:true, skipRefresh:true});
+      await logoutUserSession({silent:true});
       localStorage.removeItem("tonightly_username");
       localStorage.removeItem("tonightly_user");
       localStorage.removeItem("tonightly_onboarded");
