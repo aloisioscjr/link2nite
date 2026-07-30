@@ -4878,8 +4878,82 @@ function showScreen(id){
     }
     function askNewName(){ localStorage.removeItem("tonightly_username"); currentUserName=null; updateUserLabel(); showScreen("screen-username"); }
 
-    function getGoingData(){ try{return JSON.parse(localStorage.getItem("tonightly_going")||"{}");}catch{return{};} }
-    function setGoingData(d){ localStorage.setItem("tonightly_going", JSON.stringify(d)); }
+    const GOING_TONIGHT_META_KEY = "tonightly_going_meta";
+    const GOING_TONIGHT_TTL_HOURS = 18;
+    const GOING_TONIGHT_TTL_MS = GOING_TONIGHT_TTL_HOURS * 60 * 60 * 1000;
+
+    function getRawGoingData(){ try{return JSON.parse(localStorage.getItem("tonightly_going")||"{}");}catch{return{};} }
+    function setRawGoingData(d){ localStorage.setItem("tonightly_going", JSON.stringify(d)); }
+    function getGoingMetaData(){ try{return JSON.parse(localStorage.getItem(GOING_TONIGHT_META_KEY)||"{}");}catch{return{};} }
+    function setGoingMetaData(d){ localStorage.setItem(GOING_TONIGHT_META_KEY, JSON.stringify(d)); }
+    function isGoingTimestampExpired(ts, now){
+      return Number.isFinite(ts) && ts > 0 && (now - ts) > GOING_TONIGHT_TTL_MS;
+    }
+    function normalizeGoingData(){
+      const rawGoing = getRawGoingData();
+      const rawMeta = getGoingMetaData();
+      const now = Date.now();
+      let changed = false;
+      const nextGoing = {};
+      const nextMeta = {};
+
+      Object.entries(rawGoing || {}).forEach(([placeId, rawList]) => {
+        const sourceList = Array.isArray(rawList) ? rawList : [];
+        const uniqueNames = Array.from(new Set(sourceList.filter(Boolean)));
+        if(uniqueNames.length !== sourceList.length) changed = true;
+
+        uniqueNames.forEach(name => {
+          const profile = getProfile(name);
+          const isBot = !!(profile && profile.isBot === true);
+          let ts = Number((rawMeta[placeId] || {})[name] || 0);
+
+          if(!Number.isFinite(ts) || ts <= 0){
+            ts = now;
+            changed = true;
+          }
+
+          if(!isBot && isGoingTimestampExpired(ts, now)){
+            changed = true;
+            return;
+          }
+
+          if(!nextGoing[placeId]) nextGoing[placeId] = [];
+          if(!nextMeta[placeId]) nextMeta[placeId] = {};
+          nextGoing[placeId].push(name);
+          nextMeta[placeId][name] = ts;
+        });
+      });
+
+      if(changed){
+        setRawGoingData(nextGoing);
+        setGoingMetaData(nextMeta);
+      }
+
+      return { goingData: nextGoing, metaData: nextMeta };
+    }
+    function getGoingData(){
+      return normalizeGoingData().goingData;
+    }
+    function setGoingData(d){
+      const existingMeta = getGoingMetaData();
+      const now = Date.now();
+      const nextGoing = {};
+      const nextMeta = {};
+
+      Object.entries(d || {}).forEach(([placeId, rawList]) => {
+        const uniqueNames = Array.from(new Set((Array.isArray(rawList) ? rawList : []).filter(Boolean)));
+        if(!uniqueNames.length) return;
+        nextGoing[placeId] = uniqueNames;
+        nextMeta[placeId] = {};
+        uniqueNames.forEach(name => {
+          const prevTs = Number((existingMeta[placeId] || {})[name] || 0);
+          nextMeta[placeId][name] = Number.isFinite(prevTs) && prevTs > 0 ? prevTs : now;
+        });
+      });
+
+      setRawGoingData(nextGoing);
+      setGoingMetaData(nextMeta);
+    }
     function getInterestedData(){ try{return JSON.parse(localStorage.getItem("tonightly_interested")||"{}");}catch{return{};} }
     function setInterestedData(d){ localStorage.setItem("tonightly_interested", JSON.stringify(d)); }
     function getLikesData(){ try{return JSON.parse(localStorage.getItem("tonightly_likes")||"{}");}catch{return{};} }
@@ -5640,9 +5714,11 @@ function renderGoingForPlace(placeId){
       const goingData=getGoingData();
       const list=Array.isArray(goingData[currentPlaceId])?goingData[currentPlaceId]:[];
       const idx=list.indexOf(currentUserName);
-      if(idx===-1) list.push(currentUserName); else list.splice(idx,1);
+      const isAdding = idx === -1;
+      if(isAdding) list.push(currentUserName); else list.splice(idx,1);
       goingData[currentPlaceId]=list;
       setGoingData(goingData);
+      toast(isAdding ? `You're going tonight ✅ Active for about ${GOING_TONIGHT_TTL_HOURS}h.` : "Going tonight removed");
       renderRsvpButtons(currentPlaceId);
       renderGoingForPlace(currentPlaceId);
       renderPlacesList();
@@ -8133,6 +8209,7 @@ function resetDemoData(){
       const keys=[
         "tonightly_profiles",
         "tonightly_going",
+        "tonightly_going_meta",
         "tonightly_interested",
         "tonightly_likes",
         "tonightly_matches",
