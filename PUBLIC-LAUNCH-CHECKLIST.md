@@ -1,6 +1,6 @@
 # Link2Nite - Public Launch Checklist
 
-Status em 2026-07-30: beta live validado para smoke/manual review, mas ainda nao pronto para lancamento publico real.
+Status em 2026-07-30: beta live validado para smoke/manual review; hardening local do fluxo publico preparado, mas ainda nao pronto para lancamento publico real.
 
 ## 0. Snapshot atual
 
@@ -13,7 +13,7 @@ Ja confirmado no beta live em `https://www.link2nite.com/beta/`:
 
 Ainda bloqueia um lancamento publico real:
 - sessao, dados de usuario, likes, matches, chats e moderacao continuam majoritariamente locais no navegador;
-- fluxo de demo/bots ainda faz parte da experiencia;
+- o fluxo principal de demo/bots foi endurecido localmente para o modo publico real, mas isso ainda precisa de validacao live apos publish;
 - checkout e PRO ainda nao sao produto real;
 - protecoes atuais sao suficientes para beta/manual testing, nao para producao aberta.
 
@@ -34,6 +34,7 @@ Nota:
 
 ### 1.3 Remocao de comportamento de prototipo/demo
 - [ ] Remover ou substituir textos publicos de demo no app.
+- [ ] Validar no live o hardening local que desativa bots/crowd artificiais e limpa artefatos `Launch Smoke`.
 - [ ] Remover dados falsos usados como experiencia principal, ou marcar claramente como beta fechado.
 - [ ] Revisar o uso de bots antes de qualquer abertura publica.
 - [ ] Revisar metricas e moderacao locais que hoje vivem so no navegador.
@@ -77,7 +78,7 @@ Nota:
 ### 3.2 Smoke test de permissao
 - [x] Usuario comum nao ve nenhuma ferramenta admin.
 - [x] Usuario comum nao consegue abrir tools admin nem por navegacao manual.
-- [x] Usuario admin autenticado ve e usa as tools admin esperadas.
+- [ ] Revalidar no live quais tools admin continuam visiveis apos o hardening `launch-demo-only`.
 
 ### 3.3 Smoke test visual
 - [ ] Mobile Chrome Android.
@@ -93,10 +94,10 @@ Nota:
 
 ## 3.5 Pendencias curtas antes de uma demo publica mais limpa
 
-- [ ] Limpar estado local do navegador de demo (`Launch Smoke 1`, `PRO`, etc.) para abrir o beta em estado neutro.
+- [ ] Validar no live que o boot limpa estado local de demo (`Launch Smoke 1`, `PRO`, etc.) e abre o beta em estado neutro.
 - [ ] Rodar uma passada manual em mobile real.
 - [ ] Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
-- [ ] Revisar se bots/demo devem continuar visiveis no fluxo principal para visitantes externos.
+- [ ] Confirmar no live que bots/demo nao voltaram ao fluxo principal para visitantes externos.
 
 ## 4. Melhorias que podem ficar para depois do launch
 

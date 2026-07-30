@@ -1,5 +1,37 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao local (Codex - 2026-07-30, hardening para public launch)
+
+Mudancas locais preparadas em `beta/index.html` para endurecer o app no modo publico real antes do proximo publish:
+
+- `PUBLIC_REAL_LAUNCH_MODE = true` ativado no app.
+- Limpeza automatica de artefatos de demo/smoke no boot:
+  - perfis bot;
+  - perfis `Launch Smoke ...`;
+  - emails `@link2nite.test`;
+  - likes, matches, messages e attendance relacionados a esses perfis;
+  - sessao/localStorage de smoke quando detectada.
+- Fluxo demo desativado no modo publico:
+  - sem `seedDemoCrowd()` no load;
+  - sem `ensureDemoBots()` no load;
+  - sem fallback de bots em `who's going`;
+  - sem fallback de bots no swipe;
+  - sem match fake de 5% ao curtir bot.
+- Ferramentas `launch-demo-only` agora ficam ocultas mesmo para admin autenticado:
+  - `Beta data`
+  - `Demo bots`
+  - `Analytics (MVP)`
+  - `Events (debug)`
+  - `Image Debug`
+  - FABs/paineis de demo/debug
+- Acoes de reset/reseed demo agora abortam com toast no modo publico real.
+- Nota: esse era o estado do live antes do hardening local acima. No estado local atual, os blocos de demo/debug marcados como `launch-demo-only` ficam ocultos mesmo para admin; continuam esperados para admin apenas os blocos operacionais reais, como `Admin (local)`, `Moderation (local)`, `Venue Photos (manual)` e `Team access`.
+
+Importante:
+- Isso e hardening de UX/fluxo do prototipo, nao seguranca de producao.
+- Ainda falta backend/auth persistente para considerar launch publico real seguro.
+- Depois do push, validar novamente no live que o beta sobe sem crowd/bots artificiais e sem estado `Launch Smoke`.
+
 ## Última validação live (Codex — 2026-07-30, beta público + team access)
 
 Validação manual feita no beta live em `https://www.link2nite.com/beta/`, com foco em estado público, imagens de venues e fluxo de `Team access`.
