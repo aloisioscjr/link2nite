@@ -24,6 +24,8 @@ Mudancas locais preparadas em `beta/index.html` para endurecer o app no modo pub
   - `Events (debug)`
   - `Image Debug`
   - FABs/paineis de demo/debug
+- `Team access` nao fica mais visivel para publico no `Settings`.
+- Para abrir o login do owner no build publico atual, usar o gesto discreto: tocar/clicar **7 vezes** no titulo `L2N Link2Nite`; isso revela `Team access` na sessao/dispositivo atual e continua respeitando o login por email autorizado.
 - Acoes de reset/reseed demo agora abortam com toast no modo publico real.
 - Nota: esse era o estado do live antes do hardening local acima. No estado local atual, os blocos de demo/debug marcados como `launch-demo-only` ficam ocultos mesmo para admin; continuam esperados para admin apenas os blocos operacionais reais, como `Admin (local)`, `Moderation (local)`, `Venue Photos (manual)` e `Team access`.
 

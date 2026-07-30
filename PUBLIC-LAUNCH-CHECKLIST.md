@@ -78,6 +78,7 @@ Nota:
 ### 3.2 Smoke test de permissao
 - [x] Usuario comum nao ve nenhuma ferramenta admin.
 - [x] Usuario comum nao consegue abrir tools admin nem por navegacao manual.
+- [ ] Revalidar no live que `Team access` tambem ficou oculto para publico e so aparece pelo gesto discreto + login autorizado.
 - [ ] Revalidar no live quais tools admin continuam visiveis apos o hardening `launch-demo-only`.
 
 ### 3.3 Smoke test visual

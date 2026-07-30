@@ -1635,7 +1635,7 @@
   <div id="app">
     <header>
       <div>
-        <h1><span style="font-weight:700; letter-spacing:-0.5px;">L2N</span> <span style="font-weight:400;">Link2Nite</span></h1>
+        <h1 id="app-title-trigger" onclick="handleTeamAccessTrigger()"><span style="font-weight:700; letter-spacing:-0.5px;">L2N</span> <span style="font-weight:400;">Link2Nite</span></h1>
         <span>Pick the spot, see who's going, and match.</span>
       </div>
       <div style="text-align:right;">
@@ -2200,6 +2200,7 @@
           </div>
           <button class="pill-button secondary small" onclick="saveSettingsEmail()">Save email</button>
 
+          <div id="team-access-card" style="display:none;">
           <div class="settings-row" style="margin-top:18px;">
             <div class="settings-left">
               <div class="settings-label">Team access</div>
@@ -2222,6 +2223,7 @@
             <button id="auth-request-btn" class="pill-button secondary small" onclick="requestAdminCode()">Email me a code</button>
             <button id="auth-verify-btn" class="pill-button small" onclick="verifyAdminCode()">Verify code</button>
             <button id="auth-logout-btn" class="pill-button secondary small" onclick="logoutAdmin()" style="display:none;">Sign out</button>
+          </div>
           </div>
         </div>
 
@@ -4257,6 +4259,39 @@ let currentUserName = null;
       return true;
     }
 
+    let teamAccessPromptUnlocked = false;
+    let teamAccessTapCount = 0;
+    let teamAccessTapTimer = null;
+
+    function isTeamAccessVisible(){
+      return isAdminSession() || teamAccessPromptUnlocked;
+    }
+
+    function renderTeamAccessVisibility(){
+      const card = document.getElementById("team-access-card");
+      if(!card) return;
+      card.style.display = isTeamAccessVisible() ? "" : "none";
+    }
+
+    function handleTeamAccessTrigger(){
+      if(isAdminSession()) return;
+      teamAccessTapCount += 1;
+      clearTimeout(teamAccessTapTimer);
+      teamAccessTapTimer = setTimeout(() => {
+        teamAccessTapCount = 0;
+      }, 2800);
+
+      if(teamAccessTapCount < 7) return;
+      teamAccessTapCount = 0;
+      teamAccessPromptUnlocked = true;
+      clearTimeout(teamAccessTapTimer);
+      renderTeamAccessVisibility();
+      if(currentScreenId === "screen-settings"){
+        renderAdminAuthState();
+      }
+      toast("Team access ready in Settings.");
+    }
+
     adminAuthSession = loadAdminAuthSession();
 
     async function ensureAdminAuthAvailable(force=false){
@@ -4384,6 +4419,7 @@ let currentUserName = null;
       if(authEmail){
         authEmail.disabled = !authReady && !signedIn;
       }
+      renderTeamAccessVisibility();
     }
 
     async function refreshAdminSession(options={}){
@@ -4531,6 +4567,7 @@ let currentUserName = null;
         const hideForLaunch = PUBLIC_REAL_LAUNCH_MODE && el.classList.contains("launch-demo-only");
         el.classList.toggle("admin-hidden", !admin || hideForLaunch);
       });
+      renderTeamAccessVisibility();
       renderAdminAuthState();
       if(!admin){
         const demoPanel=$("demo-panel");
