@@ -4,7 +4,7 @@
 <html lang="en-US">
 <head>
   <meta charset="UTF-8" />
-  <title>Link2Nite — Prototype 10.1</title>
+  <title>Link2Nite</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0b0b12">
@@ -2310,7 +2310,7 @@
           <div class="settings-row">
             <div class="settings-left">
               <div class="settings-label">Match notifications</div>
-              <div class="settings-sub">Shown in-app while beta notifications roll out.</div>
+              <div class="settings-sub">Shown in-app while push notifications roll out.</div>
             </div>
             <label class="switch">
               <input id="set-notify-match" type="checkbox" onchange="updateSettingsFromUI()">
@@ -2321,7 +2321,7 @@
           <div class="settings-row">
             <div class="settings-left">
               <div class="settings-label">Message notifications</div>
-              <div class="settings-sub">Shown in-app while beta notifications roll out.</div>
+              <div class="settings-sub">Shown in-app while push notifications roll out.</div>
             </div>
             <label class="switch">
               <input id="set-notify-msg" type="checkbox" onchange="updateSettingsFromUI()">
@@ -3469,10 +3469,10 @@
 
       const base = {
         plan: "Link2Nite PRO Monthly — <span style='color:#fde68a;'>$14.99/month</span>",
-        fine: "Private beta access. Billing is not enabled yet.",
+        fine: "Checkout is not enabled yet on this build.",
         badge: "🔥 Best value",
         cta: "Unlock PRO access",
-        note: "PRO access is available during private beta while checkout is being finalized."
+        note: "PRO access is temporarily available while checkout is being finalized."
       };
 
       let t = "Unlock Link2Nite PRO";
@@ -3533,8 +3533,8 @@
       }
       if(fineEl){
         fineEl.textContent = (plan==="weekly")
-          ? "Private beta access. Billing is not enabled yet."
-          : "Private beta access. Billing is not enabled yet.";
+          ? "Checkout is not enabled yet on this build."
+          : "Checkout is not enabled yet on this build.";
       }
       if(badge){
         badge.textContent = (plan==="weekly") ? "Flexible" : "🔥 Best value";
@@ -5813,7 +5813,7 @@ function renderGoingForPlace(placeId){
       
       // Check for links
       if(containsLink(text)){
-        toast("Links are blocked in beta for your safety.");
+        toast("Links are blocked in chat for your safety.");
         track("message_blocked_link", { chatId: currentChatPlaceId + "_" + currentChatOther });
         return;
       }
@@ -8502,7 +8502,7 @@ document.addEventListener("DOMContentLoaded", initApp);
       <div class="pay-price" style="margin-top:12px;">
         <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
           <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/month</span></div>
-          <div class="fine" id="pay-fine">Private beta access. Billing is not enabled yet.</div>
+          <div class="fine" id="pay-fine">Checkout is not enabled yet on this build.</div>
         </div>
         <div class="std-badge" id="pay-badge">🔥 Best value</div>
       </div>
@@ -8513,7 +8513,7 @@ document.addEventListener("DOMContentLoaded", initApp);
       </div>
 
       <div class="pay-note" id="pay-note">
-        PRO access is available during private beta while checkout is being finalized.
+        PRO access is temporarily available while checkout is being finalized.
       </div>
     </div>
   </section>
@@ -8554,7 +8554,7 @@ document.addEventListener("DOMContentLoaded", initApp);
       <div class="pay-price" style="margin-top:12px;">
         <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
           <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/month</span></div>
-          <div class="fine" id="pay-fine">Private beta access. Billing is not enabled yet.</div>
+          <div class="fine" id="pay-fine">Checkout is not enabled yet on this build.</div>
         </div>
         <div class="std-badge" id="pay-badge">🔥 Best value</div>
       </div>
