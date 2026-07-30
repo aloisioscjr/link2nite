@@ -99,6 +99,31 @@ Nota:
 - [ ] Desktop Safari ou Edge.
 - [x] Refresh com cache/service worker nao quebra venue images nem telas.
 
+### 3.3.1 Roteiro rapido para device real
+Rodar no Android Chrome e no iPhone Safari:
+
+1. Abrir `https://www.link2nite.com/beta/` em aba nova e fazer refresh forte.
+2. Confirmar que a home abre sem zoom estranho, corte lateral ou nav inferior truncada.
+3. Abrir o primeiro venue (`230 Fifth Rooftop Bar`) e confirmar:
+   - foto visivel;
+   - botoes `Map`, `Website`, `Tickets / reservations`, `Going tonight`, `Swipe (cards)` e `See who's going tonight` dentro da largura.
+4. Abrir `Swipe (cards)` e confirmar:
+   - card inteiro aparece;
+   - botoes `✕`, `♥` e `👤` ficam tocaveis;
+   - nenhum texto passa para fora da tela.
+5. Abrir `⚙️ Settings` e depois `My profile`, verificando:
+   - hero/foto principal sem corte lateral;
+   - campos de bio/fotos visiveis;
+   - scroll vertical normal ate o fim da tela.
+6. Abrir `My night` e `Matches` e confirmar que a nav inferior continua fixa e visivel.
+7. Voltar para `Tonight`, fechar e reabrir o browser, e confirmar que a sessao nao voltou com layout quebrado.
+8. Registrar qualquer erro visivel com:
+   - device;
+   - browser;
+   - tela;
+   - screenshot;
+   - se houve scroll lateral, CTA cortado ou botao impossivel de tocar.
+
 ### 3.4 Smoke test de deploy
 - [x] `beta/index.html` e `link2nite-repo/beta/index.html` estao identicos.
 - [x] `beta/images/venues/` e o espelho em `link2nite-repo/beta/images/venues/` estao sincronizados.

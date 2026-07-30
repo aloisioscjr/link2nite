@@ -151,6 +151,17 @@ Correcao publicada no commit `6f60006` e validada no beta live:
   - `Mobile Chrome Android`;
   - `Mobile Safari iPhone`.
 
+### Proximo passo recomendado apos o preflight mobile
+- Fazer a passada manual em device real seguindo o roteiro curto agora documentado em `PUBLIC-LAUNCH-CHECKLIST.md`:
+  1. abrir o beta em Android Chrome;
+  2. repetir em iPhone Safari;
+  3. validar `Home`, `Venue`, `Swipe`, `Settings`, `My profile`, `My night` e `Matches`;
+  4. registrar screenshot se houver scroll lateral, CTA cortado ou botao dificil de tocar.
+- A ideia e sair dessa etapa com um veredito simples por device:
+  - `passou sem ressalvas`;
+  - `passou com ajuste visual pequeno`;
+  - `bloqueia demo publica`.
+
 ### O que isso resolve e o que ainda nao resolve
 - Resolve o bloqueador de UX/local storage do onboarding com fotos maiores no prototipo.
 - Nao muda o fato principal do launch: perfis, likes, matches e chats continuam locais no navegador; ainda falta backend/persistencia real para lancamento publico amplo.
