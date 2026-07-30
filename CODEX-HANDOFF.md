@@ -87,6 +87,36 @@ Validação manual feita no beta live em `https://www.link2nite.com/beta/`, com 
 - Essa rodada mobile foi viewport emulado no desktop, não teste em device real.
 - Nenhum ficheiro foi alterado durante a rodada final de validação live; foi só verificação operacional.
 
+## Atualizacao publicada (Codex - 2026-07-30, smoke de onboarding/fotos/match/chat)
+
+Correcao publicada no commit `6f60006` e validada no beta live:
+
+- Bug real encontrado no fluxo publico: criar um segundo perfil com foto "normal" podia falhar com `QuotaExceededError` em `localStorage` porque o onboarding novo ainda gravava imagem crua em base64.
+- Correcao aplicada em `beta/index.html` e sincronizada para `link2nite-repo/beta/index.html`:
+  - onboarding e editor de perfil agora usam `compressImageToDataUrl(file)` em vez de `FileReader` cru;
+  - `photoSlots` e `tempPhotos` agora resetam ao iniciar novo onboarding e tambem no `logout()`;
+  - save de onboarding/perfil agora trata erro de quota com mensagem amigavel, em vez de quebrar silenciosamente.
+- Paridade revalidada depois da correcao:
+  - `beta/index.html` e `link2nite-repo/beta/index.html` com o mesmo numero de linhas;
+  - `beta/images/venues/` e espelho continuam com **29** JPGs.
+
+### Confirmado no live apos esse fix
+- Onboarding publico completo com email comum e foto real (`rooftop.png`) funcionou.
+- Segundo onboarding consecutivo tambem funcionou com foto grande:
+  - a tela abriu com slot limpo `+ Add photo Required`;
+  - upload no segundo perfil funcionou;
+  - nao houve `QuotaExceededError` no console.
+- Smoke funcional com duas contas locais no mesmo browser passou:
+  - `Smoke Live A` e `Smoke Live B` marcaram `Going tonight` no `230 Fifth Rooftop Bar`;
+  - `Swipe (cards)` funcionou com perfis reais disponiveis;
+  - like reciproco gerou `💖 Match with Smoke Live B!`;
+  - `Matches` mostrou `You & Smoke Live ...` no venue correto;
+  - `Chat` abriu e a mensagem enviada por `Smoke Live A` ficou visivel tambem para `Smoke Live B`.
+
+### O que isso resolve e o que ainda nao resolve
+- Resolve o bloqueador de UX/local storage do onboarding com fotos maiores no prototipo.
+- Nao muda o fato principal do launch: perfis, likes, matches e chats continuam locais no navegador; ainda falta backend/persistencia real para lancamento publico amplo.
+
 ## Última sessão (Codex — 2026-04-11, imagens em `/beta/`)
 
 Leu este handoff; trechos decisivos: imagens do site ao vivo em `beta/images/venues/` e próximo passo de copiar/baixar por `placeId`. Conferiu `PLACE_IMAGE_DIRECT_MAP` em `beta/index.html` (**29** IDs) vs conteúdo de `beta/images/venues/` (só `230fifth.jpg` antes). Copiou todas as `.jpg` de `images/venues/` para `beta/images/venues/`; completou `jane_ballroom.jpg` renomeando a partir de `Jane Ballroom.jpg`. Checagem local sem faltantes. **Commit:** `34ff6af` — *Add venue images under beta/images/venues for production path* — **push** para `origin/main`, sem incluir mudanças locais já existentes (`Code-gs-COMPLETO.js`, `INSTAGRAM-REELS-ROTEIROS.md`, `instagram-assets/reels/videos-finais/README.txt`, `openclaw-link2nite-reels-workspace/AGENTS.md`). Detalhe narrado em `CURSOR-OTHER-AGENTS-HISTORY.md` (mesma data).

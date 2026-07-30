@@ -11,7 +11,9 @@ Ja confirmado no beta live em `https://www.link2nite.com/beta/`:
 - `Team access` fica oculto para publico e so reaparece pelo gesto discreto + login autorizado;
 - `Team access` com OTP por email funciona para `aloisioscjr@hotmail.com`;
 - apos login owner, ficam visiveis apenas os blocos operacionais reais;
-- `Sign out` volta corretamente para `Public mode` e esconde `Team access` de novo.
+- `Sign out` volta corretamente para `Public mode` e esconde `Team access` de novo;
+- onboarding publico com foto real funciona em contas consecutivas sem herdar slot antigo nem estourar `localStorage`;
+- swipe real, match e chat basico tambem foram revalidados no live com duas contas locais no mesmo browser.
 
 Ainda bloqueia um lancamento publico real:
 - sessao, dados de usuario, likes, matches, chats e moderacao continuam majoritariamente locais no navegador;
@@ -65,18 +67,21 @@ Nota:
 ## 3. Testes obrigatorios antes de abrir ao publico
 
 ### 3.1 Smoke test funcional
-- [ ] Onboarding completo com email comum.
+- [x] Onboarding completo com email comum.
 - [x] Onboarding/login local com email admin autorizado.
 - [x] Logout e retorno ao app.
 - [x] Lista de venues carrega com todas as imagens corretas.
-- [ ] Filtros de venues funcionam.
+- [x] Filtros de venues funcionam.
 - [x] Tela do venue abre, mostra "who's going" e CTA corretos.
 - [x] Tela de swipe abre sem travar no estado vazio.
-- [ ] Swipe real com perfis disponiveis funciona sem travar.
-- [ ] Match aparece no fluxo esperado.
-- [ ] Chat abre e envia mensagens.
+- [x] Swipe real com perfis disponiveis funciona sem travar.
+- [x] Match aparece no fluxo esperado.
+- [x] Chat abre e envia mensagens.
 - [ ] Perfil salva bio, fotos e preferencias.
-- [ ] Settings salva alteracoes sem quebrar sessao.
+- [x] Settings salva alteracoes sem quebrar sessao.
+
+Nota:
+- O editor completo de perfil ainda merece uma passada dedicada, mas onboarding com foto, persistencia basica de settings e chat/match principal ja passaram no live.
 
 ### 3.2 Smoke test de permissao
 - [x] Usuario comum nao ve nenhuma ferramenta admin.
