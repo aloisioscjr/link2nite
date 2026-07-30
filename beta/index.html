@@ -4741,6 +4741,8 @@ function showScreen(id){
       saveProfile(currentUserName,{age, email, vibe, gender, showAge, showMe});
       updateUserLabel();
       tempPhotos=[];
+      photoSlots = [null, null, null, null, null, null];
+      renderPhotoSlots();
       renderOnboardingPhotosPreview();
       showScreen("screen-photos-onboarding");
     }
@@ -4759,15 +4761,16 @@ function showScreen(id){
       if (input) input.click();
     }
 
-    function handleSlotPhotoSelect(input) {
+    async function handleSlotPhotoSelect(input) {
       if (!input.files || !input.files.length) return;
       const file = input.files[0];
-      const reader = new FileReader();
-      reader.onload = e => {
-        photoSlots[currentSlotIndex] = e.target.result;
+      try {
+        photoSlots[currentSlotIndex] = await compressImageToDataUrl(file);
         renderPhotoSlots();
-      };
-      reader.readAsDataURL(file);
+      } catch(err) {
+        console.error("[Onboarding Photos] Upload error", err);
+        toast("Error processing image: " + (err.message || "Unknown error"));
+      }
       input.value = "";
     }
 
@@ -4805,17 +4808,22 @@ function showScreen(id){
       tempPhotos = photoSlots.filter(p => p !== null);
     }
 
-    function handleOnboardingPhotoChange(input){
+    async function handleOnboardingPhotoChange(input){
       if(!input.files || !input.files.length) return;
       const files=Array.from(input.files);
       const max=6;
       let remaining=max-tempPhotos.length;
       if(remaining<=0){ alert("You've already added the maximum of 6 photos."); input.value=""; return; }
-      files.slice(0,remaining).forEach(file=>{
-        const reader=new FileReader();
-        reader.onload=e=>{ tempPhotos.push(e.target.result); renderOnboardingPhotosPreview(); };
-        reader.readAsDataURL(file);
-      });
+      for (const file of files.slice(0,remaining)) {
+        try {
+          const dataUrl = await compressImageToDataUrl(file);
+          tempPhotos.push(dataUrl);
+          renderOnboardingPhotosPreview();
+        } catch(err) {
+          console.error("[Onboarding Photos] Upload error", err);
+          toast("Error processing image: " + (err.message || "Unknown error"));
+        }
+      }
       input.value="";
     }
     function renderOnboardingPhotosPreview(){
@@ -4833,10 +4841,16 @@ function showScreen(id){
       }
       // Use photoSlots if available, otherwise fallback to tempPhotos
       const photosToSave = photoSlots.filter(p => p !== null);
-      if(photosToSave.length === 0 && tempPhotos.length > 0) {
-        saveProfile(currentUserName,{photos: tempPhotos});
-      } else {
-        saveProfile(currentUserName,{photos: photosToSave});
+      try {
+        if(photosToSave.length === 0 && tempPhotos.length > 0) {
+          saveProfile(currentUserName,{photos: tempPhotos});
+        } else {
+          saveProfile(currentUserName,{photos: photosToSave});
+        }
+      } catch(err) {
+        console.error("[Onboarding Photos] Save error", err);
+        toast("These photos are too large to save here. Try fewer or smaller photos.");
+        return;
       }
       showScreen("screen-home");
       renderPlacesList();
@@ -5964,24 +5978,26 @@ function renderGoingForPlace(placeId){
       showScreen("screen-profile");
     }
 
-    function handleProfilePhotoInput(input){
+    async function handleProfilePhotoInput(input){
       if(!input.files || !input.files.length) return;
       const files=Array.from(input.files);
       const max=6;
       let remaining=max-tempPhotos.length;
       if(remaining<=0){ alert("You've already added the maximum of 6 photos."); input.value=""; return; }
-      files.slice(0,remaining).forEach(file=>{
-        const reader=new FileReader();
-        reader.onload=e=>{
-          tempPhotos.push(e.target.result);
-          renderProfilePhotosPreview();
-          // Instant preview: save temporarily for render
+      for (const file of files.slice(0,remaining)) {
+        try {
+          const dataUrl = await compressImageToDataUrl(file);
+          const nextPhotos = tempPhotos.concat(dataUrl);
           const p=getProfile(currentUserName);
-          saveProfile(currentUserName, {...p, photos: tempPhotos});
+          saveProfile(currentUserName, {...p, photos: nextPhotos});
+          tempPhotos = nextPhotos;
+          renderProfilePhotosPreview();
           renderProfilePreviewCard();
-        };
-        reader.readAsDataURL(file);
-      });
+        } catch(err) {
+          console.error("[Profile Photos] Upload error", err);
+          toast("Error processing image: " + (err.message || "Unknown error"));
+        }
+      }
       input.value="";
     }
 
@@ -6010,7 +6026,13 @@ function renderGoingForPlace(placeId){
       const company=$("profile-company").value||"";
       const school=$("profile-school").value||"";
       const instagram=$("profile-instagram").value||"";
-      saveProfile(currentUserName,{bio,location,jobTitle,company,school,instagram,photos:tempPhotos});
+      try {
+        saveProfile(currentUserName,{bio,location,jobTitle,company,school,instagram,photos:tempPhotos});
+      } catch(err) {
+        console.error("[Profile] Save error", err);
+        alert("These profile photos are too large to save. Try fewer or smaller photos.");
+        return;
+      }
       alert("Profile saved.");
       updateUserLabel();
       renderProfilePreviewCard();
@@ -8062,6 +8084,8 @@ function initApp(){
       localStorage.removeItem("tonightly_username");
       localStorage.removeItem("tonightly_user");
       localStorage.removeItem("tonightly_onboarded");
+      tempPhotos=[];
+      photoSlots = [null, null, null, null, null, null];
       currentUserName=null;
       updateAdminUIVisibility();
       showScreen("screen-username");
