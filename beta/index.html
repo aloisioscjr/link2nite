@@ -50,9 +50,13 @@
     .app{
       max-width: var(--max);
       margin: 0 auto;
-      padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 90px);
+      padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 124px);
     }
     .screen{ animation: fadeUp .18s ease both; }
+    #screen-profile,
+    #screen-settings{
+      padding-bottom: calc(env(safe-area-inset-bottom) + 36px);
+    }
     @keyframes fadeUp{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
 
     .card{
@@ -1309,15 +1313,18 @@
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.18);
       background: rgba(0,0,0,.45);
-      color: #fff;
+      color: rgba(248,250,252,.92);
       cursor:pointer;
       display:flex; align-items:center; justify-content:center;
       backdrop-filter: blur(10px);
       flex-shrink:0;
+      font-size: 18px;
+      line-height: 1;
     }
     .std-save.saved{
-      border-color: rgba(248,113,113,.42);
-      background: rgba(248,113,113,.22);
+      border-color: rgba(253,230,138,.42);
+      background: rgba(253,230,138,.18);
+      color: #fde68a;
     }
     .std-hero-bottom{
       position:absolute; left: 12px; right: 12px; bottom: 12px;
@@ -2060,7 +2067,6 @@
 
         </div>
         <button class="pill-button secondary" style="margin:10px 0 0 0;width:100%;" onclick="openSettings()">⚙️ Settings</button>
-        <a href="landing.html" class="pill-button secondary" style="margin:10px 0 0 0;width:100%;text-align:center;text-decoration:none;display:block;">← Back to landing</a>
 
 
         <div class="card profile-preview" id="profile-preview-card">
@@ -5243,8 +5249,13 @@ function renderPlacesList(){
 
               <div class="std-hero-top">
                 ${hotBadge}
-                <button class="std-save ${isSaved?'saved':''}" onclick="event.stopPropagation(); toggleInterestedForPlace('${escapeAttr(place.id)}');" title="Save">
-                  ${isSaved ? "🔖" : "📑"}
+                <button
+                  class="std-save ${isSaved?'saved':''}"
+                  onclick="event.stopPropagation(); toggleInterestedForPlace('${escapeAttr(place.id)}');"
+                  title="${isSaved ? "Saved to My night" : "Save to My night"}"
+                  aria-label="${isSaved ? "Saved to My night" : "Save to My night"}"
+                  aria-pressed="${isSaved ? "true" : "false"}">
+                  ${isSaved ? "★" : "☆"}
                 </button>
               </div>
 
@@ -5279,8 +5290,8 @@ function renderPlacesList(){
       const interestedData=getInterestedData();
       const list=Array.isArray(interestedData[placeId])?interestedData[placeId]:[];
       const idx=list.indexOf(currentUserName);
-      if(idx===-1){ list.push(currentUserName); toast("Saved ✅"); }
-      else { list.splice(idx,1); toast("Removido"); }
+      if(idx===-1){ list.push(currentUserName); toast("Saved to My night ✅"); }
+      else { list.splice(idx,1); toast("Removed from My night"); }
       interestedData[placeId]=list;
       setInterestedData(interestedData);
       renderPlacesList();
