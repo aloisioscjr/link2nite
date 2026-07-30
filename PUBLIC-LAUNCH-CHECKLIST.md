@@ -77,11 +77,12 @@ Nota:
 - [x] Swipe real com perfis disponiveis funciona sem travar.
 - [x] Match aparece no fluxo esperado.
 - [x] Chat abre e envia mensagens.
-- [ ] Perfil salva bio, fotos e preferencias.
+- [x] Perfil salva bio, fotos e preferencias.
 - [x] Settings salva alteracoes sem quebrar sessao.
 
 Nota:
-- O editor completo de perfil ainda merece uma passada dedicada, mas onboarding com foto, persistencia basica de settings e chat/match principal ja passaram no live.
+- Passada dedicada concluida no beta live em 2026-07-30: `Smoke Live B` salvou bio, location, work, company, school, Instagram e uma 2a foto (`rooftop.png`), e o perfil reabriu apos reload com os mesmos campos e 2 fotos.
+- Preferences tambem foram revalidadas apos reload no mesmo smoke: `Who you want to see = Everyone` (valor interno `both`) e `Max distance = 25 mi`.
 
 ### 3.2 Smoke test de permissao
 - [x] Usuario comum nao ve nenhuma ferramenta admin.

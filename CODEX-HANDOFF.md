@@ -113,6 +113,24 @@ Correcao publicada no commit `6f60006` e validada no beta live:
   - `Matches` mostrou `You & Smoke Live ...` no venue correto;
   - `Chat` abriu e a mensagem enviada por `Smoke Live A` ficou visivel tambem para `Smoke Live B`.
 
+### Confirmado no live no smoke dedicado do editor de perfil
+- O item pendente do checklist `Perfil salva bio, fotos e preferencias.` foi revalidado no beta live em `2026-07-30`.
+- Fluxo usado:
+  - conta publica `Smoke Live B`;
+  - abertura da tela real `My profile`;
+  - preenchimento de bio, `location`, `jobTitle`, `company`, `school` e `instagram`;
+  - upload de mais uma foto (`rooftop.png`), ficando com **2** fotos no perfil.
+- Resultado confirmado apos reload:
+  - `My profile` reabriu com os mesmos valores preenchidos;
+  - `location` apareceu como `Chelsea`;
+  - o perfil continuou com **2** previews / **2** dots de foto.
+- Preferences tambem foram rechecadas na mesma conta:
+  - `Who you want to see` mudou para `Everyone` (valor interno `both`);
+  - `Max distance` mudou para `25 mi`;
+  - ambos persistiram apos reload.
+- Observacao operacional:
+  - o browser automation ficou preso numa aba logo apos o `alert()` nativo do save, mas a reabertura do beta em nova aba confirmou persistencia real dos dados; isso pareceu friccao do runtime de automacao, nao perda de dados do app.
+
 ### O que isso resolve e o que ainda nao resolve
 - Resolve o bloqueador de UX/local storage do onboarding com fotos maiores no prototipo.
 - Nao muda o fato principal do launch: perfis, likes, matches e chats continuam locais no navegador; ainda falta backend/persistencia real para lancamento publico amplo.
