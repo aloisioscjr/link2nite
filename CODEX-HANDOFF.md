@@ -131,6 +131,26 @@ Correcao publicada no commit `6f60006` e validada no beta live:
 - Observacao operacional:
   - o browser automation ficou preso numa aba logo apos o `alert()` nativo do save, mas a reabertura do beta em nova aba confirmou persistencia real dos dados; isso pareceu friccao do runtime de automacao, nao perda de dados do app.
 
+### Preflight mobile adicional (Codex - 2026-07-30, viewport QA em Chrome)
+- Rodada extra feita em Chrome com viewport explicito, **nao** em device fisico:
+  - `390x844` (faixa iPhone 12/13);
+  - `412x915` (faixa Android alta).
+- Telas checadas:
+  - `Home`;
+  - `Venue` (`230 Fifth Rooftop Bar`);
+  - `Swipe`;
+  - `My profile`;
+  - `My night`;
+  - `Matches`;
+  - `Settings`.
+- Resultado dessa rodada:
+  - sem overflow horizontal nas telas testadas (`overflowX = 0`);
+  - nav inferior permaneceu inteira e dentro da viewport nas duas larguras;
+  - hero/cards/CTAs principais continuaram dentro da largura util.
+- Isso **reduz risco** de layout quebrado em mobile, mas **nao substitui** os itens ainda pendentes:
+  - `Mobile Chrome Android`;
+  - `Mobile Safari iPhone`.
+
 ### O que isso resolve e o que ainda nao resolve
 - Resolve o bloqueador de UX/local storage do onboarding com fotos maiores no prototipo.
 - Nao muda o fato principal do launch: perfis, likes, matches e chats continuam locais no navegador; ainda falta backend/persistencia real para lancamento publico amplo.

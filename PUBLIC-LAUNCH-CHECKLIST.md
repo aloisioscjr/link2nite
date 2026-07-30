@@ -92,6 +92,7 @@ Nota:
 
 ### 3.3 Smoke test visual
 - [x] Viewport mobile `390x844` no Chrome desktop sem overflow horizontal.
+- [x] Preflight adicional em Chrome com viewport `390x844` e `412x915`: `Home`, `Venue`, `Swipe`, `My profile`, `My night`, `Matches` e `Settings` sem overflow horizontal.
 - [ ] Mobile Chrome Android.
 - [ ] Mobile Safari iPhone.
 - [x] Desktop Chrome.
