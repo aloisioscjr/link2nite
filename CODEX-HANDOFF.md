@@ -1,8 +1,8 @@
 # Link2Nite - Codex Handoff
 
-## Atualizacao local (Codex - 2026-07-30, hardening para public launch)
+## Atualizacao publicada (Codex - 2026-07-30, hardening para public launch)
 
-Mudancas locais preparadas em `beta/index.html` para endurecer o app no modo publico real antes do proximo publish:
+Mudancas aplicadas em `beta/index.html`, sincronizadas para o espelho e validadas no beta live:
 
 - `PUBLIC_REAL_LAUNCH_MODE = true` ativado no app.
 - Limpeza automatica de artefatos de demo/smoke no boot:
@@ -27,51 +27,65 @@ Mudancas locais preparadas em `beta/index.html` para endurecer o app no modo pub
 - `Team access` nao fica mais visivel para publico no `Settings`.
 - Para abrir o login do owner no build publico atual, usar o gesto discreto: tocar/clicar **7 vezes** no titulo `L2N Link2Nite`; isso revela `Team access` na sessao/dispositivo atual e continua respeitando o login por email autorizado.
 - Acoes de reset/reseed demo agora abortam com toast no modo publico real.
-- Nota: esse era o estado do live antes do hardening local acima. No estado local atual, os blocos de demo/debug marcados como `launch-demo-only` ficam ocultos mesmo para admin; continuam esperados para admin apenas os blocos operacionais reais, como `Admin (local)`, `Moderation (local)`, `Venue Photos (manual)` e `Team access`.
+- Estado esperado apos publish: os blocos de demo/debug marcados como `launch-demo-only` ficam ocultos mesmo para admin; continuam esperados para admin apenas os blocos operacionais reais, como `Venue tools - add a new venue/event`, `Admin (local)`, `Moderation (local)` e `Venue Photos (manual)`.
 
 Importante:
 - Isso e hardening de UX/fluxo do prototipo, nao seguranca de producao.
 - Ainda falta backend/auth persistente para considerar launch publico real seguro.
-- Depois do push, validar novamente no live que o beta sobe sem crowd/bots artificiais e sem estado `Launch Smoke`.
+- O beta live ja foi revalidado sem crowd/bots artificiais no fluxo publico principal.
 
 ## Última validação live (Codex — 2026-07-30, beta público + team access)
 
-Validação manual feita no beta live em `https://www.link2nite.com/beta/`, com foco em estado público, imagens de venues e fluxo de `Team access`.
+Validação manual feita no beta live em `https://www.link2nite.com/beta/`, com foco em estado público, imagens de venues, fluxo de `Team access` e smoke visual mobile.
 
-### Confirmado no live
+### Confirmado no live - estado público
 - O beta carregou com UI pública limpa nas áreas `Tonight`, `My night`, `Matches` e `Settings`.
+- O título público aparece como `Link2Nite`.
 - As ferramentas administrativas **não** aparecem para público deslogado.
-- O detalhe do venue `230 Fifth Rooftop Bar` já mostra labels em inglês:
+- `Team access` não aparece no `Settings` público por padrão.
+- O detalhe do venue `230 Fifth Rooftop Bar` mostra labels em inglês:
   - `Music:`
   - `Map`
   - `Website`
   - `Tickets / reservations`
 - As **29** imagens de venues em `/beta/images/venues/` carregaram corretamente no beta live após percorrer o feed.
+- O fluxo público principal não voltou a depender de crowd/bots artificiais:
+  - `who's going` sem fallback fake;
+  - swipe sem injeção de demo crowd;
+  - estados vazios honestos quando não há perfis.
 - O endpoint de auth do Apps Script respondeu com:
   - `{"ok":true,"supportsAdminAuth":true,"feature":"admin_auth"}`
 
-### Confirmado no live — fluxo admin
+### Confirmado no live - fluxo owner/admin
 - Pedido de código para `aloisioscjr@hotmail.com` funcionou no beta live com a mensagem:
   - `If this email is authorized, a sign-in code was sent.`
-- O código OTP recebido foi aceito.
+- O código OTP foi aceito.
 - Após verificação, o app mudou para:
   - `Admin unlocked`
   - `Signed in as aloisioscjr@hotmail.com. Admin tools are unlocked on this device.`
-- Blocos admin ficaram visíveis após login:
-  - `Beta data`
-  - `Demo bots`
+- O gesto discreto de tocar/clicar **7 vezes** no título `L2N Link2Nite` revelou corretamente o `Team access`.
+- Blocos operacionais visíveis após login:
+  - `Venue tools - add a new venue/event`
   - `Admin (local)`
   - `Moderation (local)`
-  - `Analytics (MVP)`
-  - `Events (debug)`
-- `Sign out` também foi validado com sucesso:
+  - `Venue Photos (manual)`
+- Blocos `launch-demo-only` permaneceram ocultos após o hardening.
+- `Sign out` foi validado com sucesso:
   - toast `Team access signed out.`
   - retorno para `Public mode`
   - ocultação dos blocos admin novamente
+  - `Team access` volta a ficar escondido após sign out
+
+### Confirmado no live - smoke visual mobile
+- Smoke visual feito em viewport mobile `390x844` no Chrome:
+  - sem overflow horizontal em `Home`, `Settings`, `Venue detail` e `Swipe`;
+  - navegação principal funcional;
+  - CTA e labels do venue aparecem corretamente;
+  - estado vazio do swipe aparece sem quebrar o layout.
 
 ### Observação importante
-- O browser de teste ainda tinha estado local salvo do smoke account (`Launch Smoke 1`, `PRO` etc.). Isso **não** foi vazamento admin, mas vale limpar `localStorage` / dados locais do navegador de demo antes de uma apresentação pública mais neutra.
-- Nenhum ficheiro foi alterado nesta rodada de validação; foi só teste live.
+- Essa rodada mobile foi viewport emulado no desktop, não teste em device real.
+- Nenhum ficheiro foi alterado durante a rodada final de validação live; foi só verificação operacional.
 
 ## Última sessão (Codex — 2026-04-11, imagens em `/beta/`)
 

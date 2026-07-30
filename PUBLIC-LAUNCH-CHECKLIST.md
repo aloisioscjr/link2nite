@@ -1,6 +1,6 @@
 # Link2Nite - Public Launch Checklist
 
-Status em 2026-07-30: beta live validado para smoke/manual review; hardening local do fluxo publico preparado, mas ainda nao pronto para lancamento publico real.
+Status em 2026-07-30: beta live revalidado apos publish; hardening do fluxo publico confirmado no live, mas ainda nao pronto para lancamento publico real.
 
 ## 0. Snapshot atual
 
@@ -8,12 +8,14 @@ Ja confirmado no beta live em `https://www.link2nite.com/beta/`:
 - cards de venues carregam com as imagens corretas em `/beta/images/venues/`;
 - detalhe de venue principal ja esta em ingles (`Music:`, `Map`, `Website`, `Tickets / reservations`);
 - usuario publico nao ve ferramentas admin;
+- `Team access` fica oculto para publico e so reaparece pelo gesto discreto + login autorizado;
 - `Team access` com OTP por email funciona para `aloisioscjr@hotmail.com`;
-- `Sign out` volta corretamente para `Public mode`.
+- apos login owner, ficam visiveis apenas os blocos operacionais reais;
+- `Sign out` volta corretamente para `Public mode` e esconde `Team access` de novo.
 
 Ainda bloqueia um lancamento publico real:
 - sessao, dados de usuario, likes, matches, chats e moderacao continuam majoritariamente locais no navegador;
-- o fluxo principal de demo/bots foi endurecido localmente para o modo publico real, mas isso ainda precisa de validacao live apos publish;
+- o fluxo principal de demo/bots foi endurecido e revalidado no live, mas o app ainda depende de logica local de prototipo;
 - checkout e PRO ainda nao sao produto real;
 - protecoes atuais sao suficientes para beta/manual testing, nao para producao aberta.
 
@@ -34,7 +36,7 @@ Nota:
 
 ### 1.3 Remocao de comportamento de prototipo/demo
 - [ ] Remover ou substituir textos publicos de demo no app.
-- [ ] Validar no live o hardening local que desativa bots/crowd artificiais e limpa artefatos `Launch Smoke`.
+- [x] Validar no live o hardening que desativa bots/crowd artificiais no fluxo publico principal.
 - [ ] Remover dados falsos usados como experiencia principal, ou marcar claramente como beta fechado.
 - [ ] Revisar o uso de bots antes de qualquer abertura publica.
 - [ ] Revisar metricas e moderacao locais que hoje vivem so no navegador.
@@ -69,7 +71,8 @@ Nota:
 - [x] Lista de venues carrega com todas as imagens corretas.
 - [ ] Filtros de venues funcionam.
 - [x] Tela do venue abre, mostra "who's going" e CTA corretos.
-- [ ] Swipe funciona sem travar.
+- [x] Tela de swipe abre sem travar no estado vazio.
+- [ ] Swipe real com perfis disponiveis funciona sem travar.
 - [ ] Match aparece no fluxo esperado.
 - [ ] Chat abre e envia mensagens.
 - [ ] Perfil salva bio, fotos e preferencias.
@@ -78,10 +81,11 @@ Nota:
 ### 3.2 Smoke test de permissao
 - [x] Usuario comum nao ve nenhuma ferramenta admin.
 - [x] Usuario comum nao consegue abrir tools admin nem por navegacao manual.
-- [ ] Revalidar no live que `Team access` tambem ficou oculto para publico e so aparece pelo gesto discreto + login autorizado.
-- [ ] Revalidar no live quais tools admin continuam visiveis apos o hardening `launch-demo-only`.
+- [x] Revalidado no live que `Team access` fica oculto para publico e so aparece pelo gesto discreto + login autorizado.
+- [x] Revalidado no live quais tools admin continuam visiveis apos o hardening `launch-demo-only`.
 
 ### 3.3 Smoke test visual
+- [x] Viewport mobile `390x844` no Chrome desktop sem overflow horizontal.
 - [ ] Mobile Chrome Android.
 - [ ] Mobile Safari iPhone.
 - [x] Desktop Chrome.
@@ -91,14 +95,14 @@ Nota:
 ### 3.4 Smoke test de deploy
 - [x] `beta/index.html` e `link2nite-repo/beta/index.html` estao identicos.
 - [x] `beta/images/venues/` e o espelho em `link2nite-repo/beta/images/venues/` estao sincronizados.
-- [ ] Beta live confere com a copia local apos publish.
+- [x] Beta live confere com a copia local apos publish.
 
 ## 3.5 Pendencias curtas antes de uma demo publica mais limpa
 
 - [ ] Validar no live que o boot limpa estado local de demo (`Launch Smoke 1`, `PRO`, etc.) e abre o beta em estado neutro.
 - [ ] Rodar uma passada manual em mobile real.
 - [ ] Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
-- [ ] Confirmar no live que bots/demo nao voltaram ao fluxo principal para visitantes externos.
+- [x] Confirmar no live que bots/demo nao voltaram ao fluxo principal para visitantes externos.
 
 ## 4. Melhorias que podem ficar para depois do launch
 
