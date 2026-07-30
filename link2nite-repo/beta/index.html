@@ -5170,13 +5170,13 @@ function renderPlacesList(){
 
       let extraParts=[];
       if(place.price) extraParts.push(place.price);
-      if(place.music) extraParts.push("Som: "+place.music);
+      if(place.music) extraParts.push("Music: "+place.music);
       if(place.dressCode) extraParts.push("Dress code: "+place.dressCode);
-      if(place.mapsUrl) extraParts.push(`📍 <a href="${place.mapsUrl}" target="_blank" style="color:#a5b4fc;text-decoration:underline;">Mapa</a>`);
-      if(place.website) extraParts.push(`🔗 <a href="${place.website}" target="_blank" style="color:#a5b4fc;text-decoration:underline;">Site</a>`);
+      if(place.mapsUrl) extraParts.push(`📍 <a href="${place.mapsUrl}" target="_blank" style="color:#a5b4fc;text-decoration:underline;">Map</a>`);
+      if(place.website) extraParts.push(`🔗 <a href="${place.website}" target="_blank" style="color:#a5b4fc;text-decoration:underline;">Website</a>`);
 let extraHtml=extraParts.join(" · ");
       if(place.ticketUrl){
-        extraHtml += (extraHtml ? " · " : "") + `<a href="${place.ticketUrl}" target="_blank" style="color:#a5b4fc;text-decoration:underline;">Tickets / reservas</a>`;
+        extraHtml += (extraHtml ? " · " : "") + `<a href="${place.ticketUrl}" target="_blank" style="color:#a5b4fc;text-decoration:underline;">Tickets / reservations</a>`;
       }
       $("place-extra").innerHTML=extraHtml;
 
@@ -5668,11 +5668,11 @@ function renderGoingForPlace(placeId){
 
     function buildBotReplyText(botName,userName,place,lastUserMsg){
       const txt=(lastUserMsg||"").toLowerCase();
-      if(txt.includes("hora")||txt.includes("que horas")||txt.includes("quando"))
+      if(txt.includes("hora")||txt.includes("que horas")||txt.includes("quando")||txt.includes("when")||txt.includes("what time")||txt.includes("time"))
         return `Good question! I’ll probably get there around 10pm. What time are you thinking?`;
-      if(txt.includes("onde")||txt.includes("ponto")||txt.includes("encontrar"))
+      if(txt.includes("onde")||txt.includes("ponto")||txt.includes("encontrar")||txt.includes("where")||txt.includes("meet")||txt.includes("meeting spot")||txt.includes("find you"))
         return `We can set a meeting spot near the main bar inside—what do you think?`;
-      if(txt.includes("primeira")||txt.includes("vez"))
+      if(txt.includes("primeira")||txt.includes("vez")||txt.includes("first time")||txt.includes("never been"))
         return `It's new for me too 😂 So let's find out the vibe together.`;
 
       const openers=[
