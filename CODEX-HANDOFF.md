@@ -1,5 +1,44 @@
 # Link2Nite - Codex Handoff
 
+## Última validação live (Codex — 2026-07-30, beta público + team access)
+
+Validação manual feita no beta live em `https://www.link2nite.com/beta/`, com foco em estado público, imagens de venues e fluxo de `Team access`.
+
+### Confirmado no live
+- O beta carregou com UI pública limpa nas áreas `Tonight`, `My night`, `Matches` e `Settings`.
+- As ferramentas administrativas **não** aparecem para público deslogado.
+- O detalhe do venue `230 Fifth Rooftop Bar` já mostra labels em inglês:
+  - `Music:`
+  - `Map`
+  - `Website`
+  - `Tickets / reservations`
+- As **29** imagens de venues em `/beta/images/venues/` carregaram corretamente no beta live após percorrer o feed.
+- O endpoint de auth do Apps Script respondeu com:
+  - `{"ok":true,"supportsAdminAuth":true,"feature":"admin_auth"}`
+
+### Confirmado no live — fluxo admin
+- Pedido de código para `aloisioscjr@hotmail.com` funcionou no beta live com a mensagem:
+  - `If this email is authorized, a sign-in code was sent.`
+- O código OTP recebido foi aceito.
+- Após verificação, o app mudou para:
+  - `Admin unlocked`
+  - `Signed in as aloisioscjr@hotmail.com. Admin tools are unlocked on this device.`
+- Blocos admin ficaram visíveis após login:
+  - `Beta data`
+  - `Demo bots`
+  - `Admin (local)`
+  - `Moderation (local)`
+  - `Analytics (MVP)`
+  - `Events (debug)`
+- `Sign out` também foi validado com sucesso:
+  - toast `Team access signed out.`
+  - retorno para `Public mode`
+  - ocultação dos blocos admin novamente
+
+### Observação importante
+- O browser de teste ainda tinha estado local salvo do smoke account (`Launch Smoke 1`, `PRO` etc.). Isso **não** foi vazamento admin, mas vale limpar `localStorage` / dados locais do navegador de demo antes de uma apresentação pública mais neutra.
+- Nenhum ficheiro foi alterado nesta rodada de validação; foi só teste live.
+
 ## Última sessão (Codex — 2026-04-11, imagens em `/beta/`)
 
 Leu este handoff; trechos decisivos: imagens do site ao vivo em `beta/images/venues/` e próximo passo de copiar/baixar por `placeId`. Conferiu `PLACE_IMAGE_DIRECT_MAP` em `beta/index.html` (**29** IDs) vs conteúdo de `beta/images/venues/` (só `230fifth.jpg` antes). Copiou todas as `.jpg` de `images/venues/` para `beta/images/venues/`; completou `jane_ballroom.jpg` renomeando a partir de `Jane Ballroom.jpg`. Checagem local sem faltantes. **Commit:** `34ff6af` — *Add venue images under beta/images/venues for production path* — **push** para `origin/main`, sem incluir mudanças locais já existentes (`Code-gs-COMPLETO.js`, `INSTAGRAM-REELS-ROTEIROS.md`, `instagram-assets/reels/videos-finais/README.txt`, `openclaw-link2nite-reels-workspace/AGENTS.md`). Detalhe narrado em `CURSOR-OTHER-AGENTS-HISTORY.md` (mesma data).

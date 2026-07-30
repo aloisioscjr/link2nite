@@ -1,13 +1,31 @@
 # Link2Nite - Public Launch Checklist
 
-Status em 2026-07-29: nao pronto para lancamento publico real.
+Status em 2026-07-30: beta live validado para smoke/manual review, mas ainda nao pronto para lancamento publico real.
+
+## 0. Snapshot atual
+
+Ja confirmado no beta live em `https://www.link2nite.com/beta/`:
+- cards de venues carregam com as imagens corretas em `/beta/images/venues/`;
+- detalhe de venue principal ja esta em ingles (`Music:`, `Map`, `Website`, `Tickets / reservations`);
+- usuario publico nao ve ferramentas admin;
+- `Team access` com OTP por email funciona para `aloisioscjr@hotmail.com`;
+- `Sign out` volta corretamente para `Public mode`.
+
+Ainda bloqueia um lancamento publico real:
+- sessao, dados de usuario, likes, matches, chats e moderacao continuam majoritariamente locais no navegador;
+- fluxo de demo/bots ainda faz parte da experiencia;
+- checkout e PRO ainda nao sao produto real;
+- protecoes atuais sao suficientes para beta/manual testing, nao para producao aberta.
 
 ## 1. Bloqueadores de launch
 
 ### 1.1 Autenticacao e acesso admin
-- [ ] Trocar o gate de admin por email no front-end por autenticacao real no servidor.
+- [ ] Endurecer a autenticacao admin para producao real.
 - [ ] Remover dependencia de `localStorage` para definir sessao, privilegios e estado do usuario.
 - [ ] Garantir que ferramentas administrativas nao possam ser reativadas via DevTools.
+
+Nota:
+- O beta live ja usa OTP por email via Apps Script e allowlist autorizada, mas a sessao ainda e orientada ao prototipo e nao deve ser tratada como auth de producao.
 
 ### 1.2 Persistencia real de dados
 - [ ] Mover perfis, likes, matches, mensagens e presenca em venues para backend.
@@ -45,11 +63,11 @@ Status em 2026-07-29: nao pronto para lancamento publico real.
 
 ### 3.1 Smoke test funcional
 - [ ] Onboarding completo com email comum.
-- [ ] Onboarding/login local com email admin autorizado.
-- [ ] Logout e retorno ao app.
-- [ ] Lista de venues carrega com todas as imagens corretas.
+- [x] Onboarding/login local com email admin autorizado.
+- [x] Logout e retorno ao app.
+- [x] Lista de venues carrega com todas as imagens corretas.
 - [ ] Filtros de venues funcionam.
-- [ ] Tela do venue abre, mostra "who's going" e CTA corretos.
+- [x] Tela do venue abre, mostra "who's going" e CTA corretos.
 - [ ] Swipe funciona sem travar.
 - [ ] Match aparece no fluxo esperado.
 - [ ] Chat abre e envia mensagens.
@@ -57,21 +75,28 @@ Status em 2026-07-29: nao pronto para lancamento publico real.
 - [ ] Settings salva alteracoes sem quebrar sessao.
 
 ### 3.2 Smoke test de permissao
-- [ ] Usuario comum nao ve nenhuma ferramenta admin.
-- [ ] Usuario comum nao consegue abrir tools admin nem por navegacao manual.
-- [ ] Usuario admin autenticado ve e usa as tools admin esperadas.
+- [x] Usuario comum nao ve nenhuma ferramenta admin.
+- [x] Usuario comum nao consegue abrir tools admin nem por navegacao manual.
+- [x] Usuario admin autenticado ve e usa as tools admin esperadas.
 
 ### 3.3 Smoke test visual
 - [ ] Mobile Chrome Android.
 - [ ] Mobile Safari iPhone.
-- [ ] Desktop Chrome.
+- [x] Desktop Chrome.
 - [ ] Desktop Safari ou Edge.
-- [ ] Refresh com cache/service worker nao quebra venue images nem telas.
+- [x] Refresh com cache/service worker nao quebra venue images nem telas.
 
 ### 3.4 Smoke test de deploy
-- [ ] `beta/index.html` e `link2nite-repo/beta/index.html` estao identicos.
-- [ ] `beta/images/venues/` e o espelho em `link2nite-repo/beta/images/venues/` estao sincronizados.
+- [x] `beta/index.html` e `link2nite-repo/beta/index.html` estao identicos.
+- [x] `beta/images/venues/` e o espelho em `link2nite-repo/beta/images/venues/` estao sincronizados.
 - [ ] Beta live confere com a copia local apos publish.
+
+## 3.5 Pendencias curtas antes de uma demo publica mais limpa
+
+- [ ] Limpar estado local do navegador de demo (`Launch Smoke 1`, `PRO`, etc.) para abrir o beta em estado neutro.
+- [ ] Rodar uma passada manual em mobile real.
+- [ ] Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
+- [ ] Revisar se bots/demo devem continuar visiveis no fluxo principal para visitantes externos.
 
 ## 4. Melhorias que podem ficar para depois do launch
 
