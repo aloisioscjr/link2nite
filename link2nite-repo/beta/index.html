@@ -3010,7 +3010,7 @@
         loading="lazy"
         decoding="async"
         ${corsAttrs}
-        data-place-id="${escapeAttr(placeId || placeName)}"
+        data-place-id="${escapeAttr((place && place.id) || placeName)}"
         data-place-name="${placeName}"
         data-original-url="${originalUrl}"
         data-direct-url="${directUrlEscaped}"
