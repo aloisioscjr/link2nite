@@ -2544,8 +2544,38 @@
     let imageStats = {
       total: 0,
       loaded: 0,
-      failed: []
+      failed: [],
+      statusByPlace: {}
     };
+
+    function createEmptyImageStats(){
+      return {
+        total: 0,
+        loaded: 0,
+        failed: [],
+        statusByPlace: {}
+      };
+    }
+
+    function ensureImageStatsShape(stats){
+      if(!stats || typeof stats !== "object") return createEmptyImageStats();
+      if(!Array.isArray(stats.failed)) stats.failed = [];
+      if(!stats.statusByPlace || typeof stats.statusByPlace !== "object") stats.statusByPlace = {};
+      if(typeof stats.total !== "number") stats.total = 0;
+      if(typeof stats.loaded !== "number") stats.loaded = 0;
+      return stats;
+    }
+
+    function recomputeImageStats(stats){
+      const safeStats = ensureImageStatsShape(stats);
+      const statuses = Object.values(safeStats.statusByPlace);
+      const loadedCount = statuses.filter(status => status === "loaded").length;
+      safeStats.loaded = loadedCount;
+      safeStats.failed = safeStats.failed
+        .filter(item => safeStats.statusByPlace[item.placeId || item.name] === "failed")
+        .slice(-10);
+      return safeStats;
+    }
     
     // Direct image URLs pointing to local venue photos.
     // Deployed under /beta/, so pattern is /beta/images/venues/<placeId>.jpg
@@ -2980,6 +3010,7 @@
         loading="lazy"
         decoding="async"
         ${corsAttrs}
+        data-place-id="${escapeAttr(placeId || placeName)}"
         data-place-name="${placeName}"
         data-original-url="${originalUrl}"
         data-direct-url="${directUrlEscaped}"
@@ -2996,13 +3027,14 @@
     // Global handlers for image loading
     window.handleImageError = function(img){
       try {
-        const stats = window.imageStats || {total: 0, loaded: 0, failed: []};
+        const stats = ensureImageStatsShape(window.imageStats || imageStats);
         window.imageStats = stats;
         
         const directUrl = img.getAttribute("data-direct-url") || "";
         const proxyUrl = img.getAttribute("data-proxy-url") || "";
         const proxy2Url = img.getAttribute("data-proxy2-url") || "";
         const placeholderUrl = img.getAttribute("data-placeholder-url") || PLACE_IMAGE_PLACEHOLDER;
+        const placeId = img.getAttribute("data-place-id") || img.getAttribute("data-place-name") || "unknown";
         const placeName = img.getAttribute("data-place-name") || "Unknown";
         const originalUrl = img.getAttribute("data-original-url") || "";
         const currentSrc = img.src || "";
@@ -3016,12 +3048,18 @@
           console.log("[Image] Local path failed, using placeholder for", placeName);
           img.src = placeholderUrl;
           img.setAttribute("data-attempt", "999");
-          stats.failed.push({
+          stats.statusByPlace[placeId] = "failed";
+          const failedEntry = {
+            placeId,
             name: placeName,
             url: originalUrl,
             fallback: "placeholder (local)"
-          });
-          if(stats.failed.length > 10) stats.failed.shift();
+          };
+          const existingIdx = stats.failed.findIndex(item => item.placeId === placeId);
+          if(existingIdx >= 0) stats.failed[existingIdx] = failedEntry;
+          else stats.failed.push(failedEntry);
+          recomputeImageStats(stats);
+          window.imageStats = stats;
           return;
         }
         
@@ -3030,36 +3068,44 @@
           console.log("[Image] Trying proxy 1 for", placeName);
           img.setAttribute("data-attempt", "1");
           img.src = proxyUrl;
-          stats.failed.push({
+          stats.statusByPlace[placeId] = "failed";
+          const failedEntry = {
+            placeId,
             name: placeName,
             url: originalUrl,
             fallback: "proxy1"
-          });
-          if(stats.failed.length > 10) stats.failed.shift();
+          };
+          const existingIdx = stats.failed.findIndex(item => item.placeId === placeId);
+          if(existingIdx >= 0) stats.failed[existingIdx] = failedEntry;
+          else stats.failed.push(failedEntry);
         } else if(attempt === 1 && proxy2Url){
           // Try proxy 2
           console.log("[Image] Trying proxy 2 for", placeName);
           img.setAttribute("data-attempt", "2");
           img.src = proxy2Url;
-          const idx = stats.failed.findIndex(f => f.name === placeName && f.fallback === "proxy1");
+          stats.statusByPlace[placeId] = "failed";
+          const idx = stats.failed.findIndex(f => f.placeId === placeId);
           if(idx >= 0) stats.failed[idx].fallback = "proxy2";
         } else {
           // Use placeholder
           console.log("[Image] Using placeholder for", placeName);
           img.src = placeholderUrl;
-          const idx = stats.failed.findIndex(f => f.name === placeName && (f.fallback === "proxy1" || f.fallback === "proxy2"));
+          stats.statusByPlace[placeId] = "failed";
+          const idx = stats.failed.findIndex(f => f.placeId === placeId);
           if(idx >= 0){
             stats.failed[idx].fallback = "placeholder";
           } else {
             stats.failed.push({
+              placeId,
               name: placeName,
               url: originalUrl,
               fallback: "placeholder"
             });
-            if(stats.failed.length > 10) stats.failed.shift();
           }
           img.onerror = null; // Prevent infinite loop
         }
+        recomputeImageStats(stats);
+        window.imageStats = stats;
       } catch(e) {
         console.error("[Image Error Handler]", e);
         // Fallback to placeholder if anything goes wrong
@@ -3070,8 +3116,9 @@
     
     window.handleImageLoad = function(img){
       try {
-        const stats = window.imageStats || {total: 0, loaded: 0, failed: []};
+        const stats = ensureImageStatsShape(window.imageStats || imageStats);
         const currentSrc = img.src || "";
+        const placeId = img.getAttribute("data-place-id") || img.getAttribute("data-place-name") || "unknown";
         const placeName = img.getAttribute("data-place-name") || "Unknown";
         
         // Check if this is not the placeholder and image actually loaded
@@ -3080,14 +3127,16 @@
            currentSrc !== PLACE_IMAGE_PLACEHOLDER &&
            img.complete && 
            img.naturalWidth > 0){
-          stats.loaded++;
+          stats.statusByPlace[placeId] = "loaded";
+          recomputeImageStats(stats);
           window.imageStats = stats;
           console.log("[Image Loaded ✓]", placeName, "Size:", img.naturalWidth + "x" + img.naturalHeight);
           
           // Remove from failed list if it was there
-          const failedIdx = stats.failed.findIndex(f => f.name === placeName);
+          const failedIdx = stats.failed.findIndex(f => f.placeId === placeId);
           if(failedIdx >= 0){
             stats.failed.splice(failedIdx, 1);
+            recomputeImageStats(stats);
             window.imageStats = stats;
           }
         } else {
@@ -6632,7 +6681,7 @@ function renderGoingForPlace(placeId){
       container.innerHTML = `
         <div style="margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-            <div style="color:#e2e8f0;font-weight:500;">Total de bots:</div>
+            <div style="color:#e2e8f0;font-weight:500;">Total bots:</div>
             <div style="color:#fde68a;font-weight:600;">${stats.totalBots}</div>
           </div>
           <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
@@ -6758,7 +6807,7 @@ function renderGoingForPlace(placeId){
       lines.push(`
         <div class="swipe-limit" style="margin-top:0;">
           <div class="left">
-            <div class="k">Resumo</div>
+            <div class="k">Summary</div>
             <div class="v">Paywall: <b>${totalPay}</b> • PRO: <b>${totalPro}</b> • Swipes: <b>${totalSwipes}</b> • Matches: <b>${totalMatches}</b> • Chats: <b>${totalChats}</b></div>
           </div>
           <div class="std-badge">${isPro() ? "PRO" : "FREE"}</div>
@@ -6771,7 +6820,7 @@ function renderGoingForPlace(placeId){
 
       lines.push(`
         <div style="margin-top:12px;">
-          <div class="section-title" style="font-size:14px;">Funil (snapshot)</div>
+          <div class="section-title" style="font-size:14px;">Funnel (snapshot)</div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
             <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:14px;border:1px solid rgba(148,163,184,.14);background:rgba(148,163,184,.06);">
               <div style="font-weight:900;color:#e2e8f0;">Swipes</div><div style="font-weight:900;color:#e2e8f0;">${totalSwipes}</div>
@@ -6783,10 +6832,10 @@ function renderGoingForPlace(placeId){
               <div style="font-weight:900;color:#e2e8f0;">Matches</div><div style="font-weight:900;color:#e2e8f0;">${totalMatches}</div>
             </div>
             <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:14px;border:1px solid rgba(148,163,184,.14);background:rgba(148,163,184,.06);">
-              <div style="font-weight:900;color:#e2e8f0;">Chats abertos</div><div style="font-weight:900;color:#e2e8f0;">${totalChats}</div>
+              <div style="font-weight:900;color:#e2e8f0;">Open chats</div><div style="font-weight:900;color:#e2e8f0;">${totalChats}</div>
             </div>
             <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:14px;border:1px solid rgba(148,163,184,.14);background:rgba(148,163,184,.06);">
-              <div style="font-weight:900;color:#e2e8f0;">Vou (toggles)</div><div style="font-weight:900;color:#e2e8f0;">${totalGoing}</div>
+              <div style="font-weight:900;color:#e2e8f0;">Going toggles</div><div style="font-weight:900;color:#e2e8f0;">${totalGoing}</div>
             </div>
           </div>
         </div>
@@ -6866,11 +6915,7 @@ lines.push(`
 
 function initApp(){
       // Initialize image stats
-      imageStats = {
-        total: 0,
-        loaded: 0,
-        failed: []
-      };
+      imageStats = createEmptyImageStats();
       window.imageStats = imageStats;
       
       // Test if direct URLs work - log first URL for debugging
@@ -7691,12 +7736,14 @@ function initApp(){
       const statsEl = document.getElementById("image-debug-stats");
       if(!statsEl) return;
       
-      const stats = window.imageStats || imageStats;
+      const stats = recomputeImageStats(ensureImageStatsShape(window.imageStats || imageStats));
+      window.imageStats = stats;
       const total = stats.total || 0;
       const loaded = stats.loaded || 0;
       const failed = stats.failed || [];
       const failedCount = failed.length;
       const successRate = total > 0 ? Math.round((loaded / total) * 100) : 0;
+      const pendingCount = Math.max(0, total - loaded - failedCount);
       
       let html = `
         <div style="padding:10px;border-radius:14px;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.14);margin-bottom:12px;">
@@ -7736,10 +7783,17 @@ function initApp(){
             </div>
           </div>
         `;
-      } else {
+      } else if(total > 0 && loaded >= total) {
         html += `
           <div style="padding:10px;border-radius:14px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);margin-top:12px;">
-            <div style="color:#22c55e;font-weight:700;">✅ All images loaded successfully!</div>
+            <div style="color:#22c55e;font-weight:700;">✅ All venue images loaded successfully.</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div style="padding:10px;border-radius:14px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);margin-top:12px;">
+            <div style="color:#93c5fd;font-weight:700;">Still checking venue images.</div>
+            <div style="color:#cbd5e1;font-size:12px;margin-top:4px;">Pending: <b>${pendingCount}</b> of <b>${total}</b>.</div>
           </div>
         `;
       }
@@ -7842,7 +7896,8 @@ function toggleDemoPanel(){
       p.style.display = isVisible ? "none" : "block";
       if(!isVisible){
         // Update quick stats
-        const stats = window.imageStats || imageStats;
+        const stats = recomputeImageStats(ensureImageStatsShape(window.imageStats || imageStats));
+        window.imageStats = stats;
         const total = stats.total || 0;
         const loaded = stats.loaded || 0;
         const failed = (stats.failed || []).length;
@@ -7852,7 +7907,7 @@ function toggleDemoPanel(){
           quickEl.innerHTML = `
             <div style="margin-bottom:8px;"><b>Total:</b> ${total} venues</div>
             <div style="margin-bottom:8px;"><b>Loaded:</b> ${loaded}</div>
-            <div style="margin-bottom:8px;"><b>Falharam:</b> ${failed}</div>
+            <div style="margin-bottom:8px;"><b>Failed:</b> ${failed}</div>
             <div><b>Rate:</b> <span style="color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'}">${successRate}%</span></div>
           `;
         }
