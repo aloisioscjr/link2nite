@@ -4273,6 +4273,14 @@ let currentUserName = null;
       card.style.display = isTeamAccessVisible() ? "" : "none";
     }
 
+    function collapseTeamAccessPrompt(){
+      teamAccessPromptUnlocked = false;
+      teamAccessTapCount = 0;
+      clearTimeout(teamAccessTapTimer);
+      teamAccessTapTimer = null;
+      renderTeamAccessVisibility();
+    }
+
     function handleTeamAccessTrigger(){
       if(isAdminSession()) return;
       teamAccessTapCount += 1;
@@ -4450,6 +4458,7 @@ let currentUserName = null;
           return true;
         }
         clearAdminAuthSession();
+        collapseTeamAccessPrompt();
         updateAdminUIVisibility();
         if(!options.silent) toast("Your team access session expired. Sign in again to unlock admin tools.");
         return false;
@@ -4535,6 +4544,7 @@ let currentUserName = null;
     async function logoutAdmin(options={}){
       const sessionToken = adminAuthSession && adminAuthSession.sessionToken;
       clearAdminAuthSession();
+      collapseTeamAccessPrompt();
       updateAdminUIVisibility();
       if(!options.silent) toast("Team access signed out.");
 
