@@ -3106,6 +3106,7 @@
         }
         recomputeImageStats(stats);
         window.imageStats = stats;
+        updateImageDebugQuickStats();
       } catch(e) {
         console.error("[Image Error Handler]", e);
         // Fallback to placeholder if anything goes wrong
@@ -3139,6 +3140,7 @@
             recomputeImageStats(stats);
             window.imageStats = stats;
           }
+          updateImageDebugQuickStats();
         } else {
           console.log("[Image Load - Invalid]", placeName, "complete:", img.complete, "width:", img.naturalWidth, "src:", currentSrc.substring(0, 60));
         }
@@ -7731,19 +7733,37 @@ function initApp(){
       }).join("");
     }
     
+    function updateImageDebugQuickStats(){
+      const stats = recomputeImageStats(ensureImageStatsShape(window.imageStats || imageStats));
+      window.imageStats = stats;
+      const total = stats.total || 0;
+      const loaded = stats.loaded || 0;
+      const failedCount = (stats.failed || []).length;
+      const successRate = total > 0 ? Math.round((loaded / total) * 100) : 0;
+      const pendingCount = Math.max(0, total - loaded - failedCount);
+      const quickEl = document.getElementById("image-debug-quick-stats");
+      if(quickEl){
+        quickEl.innerHTML = `
+          <div style="margin-bottom:8px;"><b>Total:</b> ${total} venues</div>
+          <div style="margin-bottom:8px;"><b>Loaded:</b> ${loaded}</div>
+          <div style="margin-bottom:8px;"><b>Failed:</b> ${failedCount}</div>
+          <div style="margin-bottom:8px;"><b>Pending:</b> ${pendingCount}</div>
+          <div><b>Rate:</b> <span style="color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'}">${successRate}%</span></div>
+        `;
+      }
+      return stats;
+    }
+
     function renderImageDebug(){
       if(!isAdminSession()) return;
       const statsEl = document.getElementById("image-debug-stats");
       if(!statsEl) return;
       
-      const stats = recomputeImageStats(ensureImageStatsShape(window.imageStats || imageStats));
-      window.imageStats = stats;
+      const stats = updateImageDebugQuickStats();
       const total = stats.total || 0;
       const loaded = stats.loaded || 0;
       const failed = stats.failed || [];
       const failedCount = failed.length;
-      const successRate = total > 0 ? Math.round((loaded / total) * 100) : 0;
-      const pendingCount = Math.max(0, total - loaded - failedCount);
       
       let html = `
         <div style="padding:10px;border-radius:14px;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.14);margin-bottom:12px;">
@@ -7895,22 +7915,7 @@ function toggleDemoPanel(){
       const isVisible = p.style.display !== "none";
       p.style.display = isVisible ? "none" : "block";
       if(!isVisible){
-        // Update quick stats
-        const stats = recomputeImageStats(ensureImageStatsShape(window.imageStats || imageStats));
-        window.imageStats = stats;
-        const total = stats.total || 0;
-        const loaded = stats.loaded || 0;
-        const failed = (stats.failed || []).length;
-        const successRate = total > 0 ? Math.round((loaded / total) * 100) : 0;
-        const quickEl = document.getElementById("image-debug-quick-stats");
-        if(quickEl){
-          quickEl.innerHTML = `
-            <div style="margin-bottom:8px;"><b>Total:</b> ${total} venues</div>
-            <div style="margin-bottom:8px;"><b>Loaded:</b> ${loaded}</div>
-            <div style="margin-bottom:8px;"><b>Failed:</b> ${failed}</div>
-            <div><b>Rate:</b> <span style="color:${successRate >= 80 ? '#22c55e' : successRate >= 50 ? '#fde68a' : '#ef4444'}">${successRate}%</span></div>
-          `;
-        }
+        updateImageDebugQuickStats();
       }
     }
 
