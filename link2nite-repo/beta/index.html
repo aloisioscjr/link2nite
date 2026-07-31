@@ -1728,7 +1728,7 @@
             <div class="verify-actions">
               <button class="pill-button secondary small" type="button" onclick="requestOnboardingPhoneCode()">Send SMS code</button>
             </div>
-            <div class="verify-inline-hint">We text a 6-digit code to validate the phone number for safety.</div>
+            <div class="verify-inline-hint">We use your phone for safety. When SMS is live on this deployment, we text a 6-digit code to validate it.</div>
           </div>
           <div class="input-group">
             <label>SMS verification code</label>
@@ -1736,7 +1736,7 @@
             <div class="verify-actions">
               <button class="pill-button secondary small" type="button" onclick="verifyOnboardingPhoneCode()">Verify phone</button>
             </div>
-            <div id="phone-verify-status" class="verify-status">Phone verification required before account creation.</div>
+            <div id="phone-verify-status" class="verify-status">Phone is required. SMS verification appears when it is live on this deployment.</div>
           </div>
           <div class="input-group">
             <label>Age <span style="color:#f97373;">(required)</span></label>
@@ -1777,7 +1777,7 @@
           </div>
           <button class="pill-button" onclick="saveUsername()">Continue</button>
           <p class="footer-hint">
-            Email and phone must be verified before the account is created.<br />
+            Email must be verified before the account is created. Phone is required, and SMS verification appears when it is live on this deployment.<br />
             Age, gender, and preferences are required for the app logic.
           </p>
         </div>
@@ -5013,6 +5013,7 @@ let currentUserName = null;
         action:"shared_profile_upsert",
         sessionToken: userAuthSession.sessionToken,
         username: name,
+        phone: (userAuthSession && userAuthSession.phone) || "",
         profile: getPublicProfilePayload(profile)
       });
       if(data && data.ok){
@@ -5020,6 +5021,8 @@ let currentUserName = null;
           sessionToken: userAuthSession.sessionToken,
           email: (userAuthSession && userAuthSession.email) || getCurrentUserEmail(),
           username: data.username || name,
+          phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || "",
+          phoneVerified: data && data.phoneVerified === true,
           expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
           signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
         });
@@ -5116,6 +5119,10 @@ let currentUserName = null;
       );
     }
 
+    function isOnboardingPhoneVerificationRequired(){
+      return !!sharedBackendState.phoneAuth;
+    }
+
     function renderOnboardingVerificationState(){
       const emailStatus = document.getElementById("email-verify-status");
       const phoneStatus = document.getElementById("phone-verify-status");
@@ -5141,9 +5148,13 @@ let currentUserName = null;
         phoneStatus.className = "verify-status";
         if(!phone){
           phoneStatus.textContent = "Enter your phone number first.";
-        } else if(!sharedBackendState.phoneAuth){
+        } else if(!isOnboardingPhoneVerificationRequired()){
           phoneStatus.classList.add("warn");
-          phoneStatus.textContent = "SMS verification is not live on this deployment yet.";
+          if(isOnboardingEmailVerified()){
+            phoneStatus.textContent = `SMS verification is not live on this deployment yet. We'll save ${maskPhone(phone)} without SMS for now.`;
+          } else {
+            phoneStatus.textContent = "Verify your email first. Your phone will still be saved even though SMS is not live yet.";
+          }
         } else if(!isOnboardingEmailVerified()){
           phoneStatus.textContent = "Verify your email before sending an SMS code.";
         } else if(isOnboardingPhoneVerified()){
@@ -5246,8 +5257,8 @@ let currentUserName = null;
         toast("Verify your email first.");
         return;
       }
-      if(!await ensureSharedBackendAvailable() || !sharedBackendState.phoneAuth){
-        toast("SMS verification is not live on this deployment yet.");
+      if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
+        toast("SMS verification is not live on this deployment yet. We'll save your phone without SMS for now.");
         renderOnboardingVerificationState();
         return;
       }
@@ -5280,6 +5291,11 @@ let currentUserName = null;
       }
       if(!isOnboardingEmailVerified()){
         toast("Verify your email first.");
+        return;
+      }
+      if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
+        toast("SMS verification is not live on this deployment yet, so this step is optional for now.");
+        renderOnboardingVerificationState();
         return;
       }
       if(code.length !== 6){
@@ -5514,11 +5530,6 @@ function showScreen(id){
           renderOnboardingVerificationState();
           return;
         }
-        if(!sharedBackendState.phoneAuth){
-          toast("SMS verification is not live on this deployment yet.");
-          renderOnboardingVerificationState();
-          return;
-        }
       }
 
       if(!isOnboardingEmailVerified()){
@@ -5527,7 +5538,7 @@ function showScreen(id){
         return;
       }
 
-      if(!isOnboardingPhoneVerified()){
+      if(isOnboardingPhoneVerificationRequired() && !isOnboardingPhoneVerified()){
         toast("Verify your phone by SMS before creating the account.");
         renderOnboardingVerificationState();
         return;
@@ -5545,6 +5556,7 @@ function showScreen(id){
             action:"shared_profile_upsert",
             sessionToken: userAuthSession.sessionToken,
             username: name,
+            phone,
             profile: getPublicProfilePayload(baseProfile)
           });
 
@@ -5555,8 +5567,8 @@ function showScreen(id){
                 sessionToken: userAuthSession.sessionToken,
                 email: email,
                 username: resolvedName,
-                phone: (userAuthSession && userAuthSession.phone) || phone,
-                phoneVerified: userAuthSession && userAuthSession.phoneVerified === true,
+                phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
+                phoneVerified: data ? data.phoneVerified === true : userAuthSession && userAuthSession.phoneVerified === true,
                 expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
                 signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
               });
@@ -5579,8 +5591,8 @@ function showScreen(id){
             sessionToken: userAuthSession.sessionToken,
             email: email,
             username: resolvedName,
-            phone: (userAuthSession && userAuthSession.phone) || phone,
-            phoneVerified: userAuthSession && userAuthSession.phoneVerified === true,
+            phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
+            phoneVerified: data && data.phoneVerified === true,
             expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
             signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
           });

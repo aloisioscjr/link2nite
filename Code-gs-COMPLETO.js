@@ -991,6 +991,11 @@ function handleSharedProfileUpsert_(data) {
 
     var desiredUsername = String(data.username || "").trim();
     if (!desiredUsername) return { ok: false, error: "Choose a display name first.", code: "missing_username" };
+    var rawRequestedPhone = String(data.phone || "").trim();
+    var requestedPhone = rawRequestedPhone ? normalizePhoneE164_(rawRequestedPhone) : "";
+    if (rawRequestedPhone && !requestedPhone) {
+      return { ok: false, error: "Enter a valid phone number.", code: "invalid_phone" };
+    }
 
     var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
     var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
@@ -1003,6 +1008,7 @@ function handleSharedProfileUpsert_(data) {
     var accountRecords = getAccountRecords_(accountsSheet);
     var accountByEmail = findAccountRecordByEmail_(accountRecords, sessionRecord.email) || accountRecord;
     var accountByUsername = findAccountRecordByUsername_(accountRecords, desiredUsername);
+    var byPhone = requestedPhone ? findAccountRecordByPhone_(accountRecords, requestedPhone) : null;
 
     if (accountByUsername && accountByUsername.email !== sessionRecord.email) {
       return {
@@ -1018,6 +1024,14 @@ function handleSharedProfileUpsert_(data) {
         error: "This verified email is already linked to @" + accountByEmail.username + ".",
         code: "username_locked",
         username: accountByEmail.username
+      };
+    }
+
+    if (byPhone && byPhone.email !== sessionRecord.email) {
+      return {
+        ok: false,
+        error: "That phone number is already linked to another account.",
+        code: "phone_in_use"
       };
     }
 
@@ -1043,13 +1057,17 @@ function handleSharedProfileUpsert_(data) {
     nextProfile.isBot = false;
 
     var nowIso = new Date().toISOString();
+    var existingPhone = normalizePhoneE164_(accountByEmail ? accountByEmail.phone : sessionRecord.phone);
+    var existingPhoneVerified = accountByEmail ? accountByEmail.phoneVerified === true : sessionRecord.phoneVerified === true;
+    var nextPhone = requestedPhone || existingPhone;
+    var nextPhoneVerified = !!(nextPhone && existingPhoneVerified && existingPhone && existingPhone === nextPhone);
     var updatedAccount = upsertAccountRecord_(
       accountsSheet,
       accountByEmail || null,
       sessionRecord.email,
       username,
-      accountByEmail ? accountByEmail.phone : sessionRecord.phone,
-      accountByEmail ? accountByEmail.phoneVerified === true : sessionRecord.phoneVerified === true,
+      nextPhone,
+      nextPhoneVerified,
       accountByEmail ? (accountByEmail.createdAt || nowIso) : nowIso,
       nowIso
     );
@@ -1062,8 +1080,8 @@ function handleSharedProfileUpsert_(data) {
       token,
       sessionRecord.email,
       username,
-      updatedAccount ? updatedAccount.phone : sessionRecord.phone,
-      updatedAccount ? updatedAccount.phoneVerified === true : sessionRecord.phoneVerified === true
+      updatedAccount ? updatedAccount.phone : nextPhone,
+      updatedAccount ? updatedAccount.phoneVerified === true : nextPhoneVerified
     );
 
     return {
