@@ -322,6 +322,11 @@
     .verify-status.ok { color:#86efac; }
     .verify-status.warn { color:#fbbf24; }
     .verify-status.err { color:#fca5a5; }
+    .pill-button.is-busy {
+      opacity:.72;
+      pointer-events:none;
+      cursor:wait;
+    }
     .verify-inline-hint {
       font-size:11px;
       color:#94a3b8;
@@ -1679,19 +1684,19 @@
       <section id="screen-onboarding" class="screen">
         <div class="card">
           <div class="onboard-emoji" id="onboard-emoji">🎧</div>
-          <div class="onboard-title" id="onboard-title">Match with people going to the same spot</div>
+          <div class="onboard-title" id="onboard-title">Dê match com pessoas que vão ao mesmo lugar</div>
           <div class="onboard-sub" id="onboard-sub">
-            Instead of swiping random people across the whole city, focus on those who already chose the same bar, rooftop, or lounge.
+            Em vez de dar swipe em pessoas aleatórias pela cidade toda, foque em quem já escolheu o mesmo bar, rooftop ou lounge.
           </div>
           <ul class="onboard-list" id="onboard-list">
-            <li>See who's going tonight</li>
-            <li>Like who catches your eye</li>
-            <li>If it’s a match, you already have an opener: tonight’s plan</li>
+            <li>Veja quem vai sair hoje</li>
+            <li>Curta quem chamar sua atenção</li>
+            <li>Se der match, o assunto já existe: o plano da noite</li>
           </ul>
           <div class="dots" id="onboard-dots"></div>
           <div class="onboard-bottom">
-            <button class="pill-button" id="onboard-main-btn" onclick="nextOnboarding()">Next</button>
-            <div class="onboard-skip" onclick="skipOnboarding()">Skip intro</div>
+            <button class="pill-button" id="onboard-main-btn" onclick="nextOnboarding()">Próximo</button>
+            <div class="onboard-skip" onclick="skipOnboarding()">Pular introdução</div>
           </div>
         </div>
       </section>
@@ -1700,85 +1705,86 @@
         <div class="card">
           <div class="top-banner">
             <span class="emoji">✨</span>
-            <span>Let's set up your mini profile.</span>
+            <span>Vamos montar seu mini perfil.</span>
           </div>
           <div class="input-group">
-            <label>Name you want to show</label>
-            <input type="text" id="username-input" placeholder="e.g., Ana, Lucas, Gabi..." />
+            <label>Nome que você quer mostrar</label>
+            <input type="text" id="username-input" placeholder="ex.: Ana, Lucas, Gabi..." />
           </div>
           <div class="input-group">
-            <label>Email <span style="color:#f97373;">(required)</span></label>
-            <input type="email" id="email-input" placeholder="e.g., you@example.com" oninput="handleOnboardingIdentityInputChange()" />
+            <label>E-mail <span style="color:#f97373;">(obrigatório)</span></label>
+            <input type="email" id="email-input" placeholder="ex.: voce@exemplo.com" oninput="handleOnboardingIdentityInputChange()" />
             <div class="verify-actions">
-              <button class="pill-button secondary small" type="button" onclick="requestOnboardingEmailCode()">Send email code</button>
+              <button class="pill-button secondary small" id="onboarding-email-send-btn" type="button" onclick="requestOnboardingEmailCode()">Enviar código por e-mail</button>
             </div>
-            <div class="verify-inline-hint">We email a 6-digit code before the account can be created.</div>
+            <div class="verify-inline-hint">Enviamos um código de 6 dígitos por e-mail antes de criar a conta.</div>
           </div>
           <div class="input-group">
-            <label>Email verification code</label>
-            <input type="text" id="email-code-input" inputmode="numeric" maxlength="6" placeholder="6-digit email code" />
+            <label>Código de verificação do e-mail</label>
+            <input type="text" id="email-code-input" inputmode="numeric" maxlength="6" placeholder="Código de 6 dígitos do e-mail" />
             <div class="verify-actions">
-              <button class="pill-button secondary small" type="button" onclick="verifyOnboardingEmailCode()">Verify email</button>
+              <button class="pill-button secondary small" id="onboarding-email-verify-btn" type="button" onclick="verifyOnboardingEmailCode()">Verificar e-mail</button>
             </div>
-            <div id="email-verify-status" class="verify-status">Email verification required before account creation.</div>
+            <div id="email-verify-status" class="verify-status">É preciso verificar o e-mail antes de criar a conta.</div>
           </div>
           <div class="input-group">
-            <label>Phone <span style="color:#f97373;">(required)</span></label>
-            <input type="tel" id="phone-input" placeholder="e.g., (917) 555-0123" oninput="handleOnboardingIdentityInputChange()" />
+            <label>Telefone <span style="color:#f97373;">(obrigatório)</span></label>
+            <input type="tel" id="phone-input" placeholder="ex.: (917) 555-0123" oninput="handleOnboardingIdentityInputChange()" />
             <div class="verify-actions">
-              <button class="pill-button secondary small" type="button" onclick="requestOnboardingPhoneCode()">Send SMS code</button>
+              <button class="pill-button secondary small" id="onboarding-phone-send-btn" type="button" onclick="requestOnboardingPhoneCode()">Enviar código por SMS</button>
             </div>
-            <div class="verify-inline-hint">We use your phone for safety. When SMS is live on this deployment, we text a 6-digit code to validate it.</div>
+            <div class="verify-inline-hint">Usamos seu telefone por segurança. Quando o SMS estiver ativo nesta versão, enviaremos um código de 6 dígitos para validar.</div>
           </div>
           <div class="input-group">
-            <label>SMS verification code</label>
-            <input type="text" id="phone-code-input" inputmode="numeric" maxlength="6" placeholder="6-digit SMS code" />
+            <label>Código de verificação por SMS</label>
+            <input type="text" id="phone-code-input" inputmode="numeric" maxlength="6" placeholder="Código de 6 dígitos do SMS" />
             <div class="verify-actions">
-              <button class="pill-button secondary small" type="button" onclick="verifyOnboardingPhoneCode()">Verify phone</button>
+              <button class="pill-button secondary small" id="onboarding-phone-verify-btn" type="button" onclick="verifyOnboardingPhoneCode()">Verificar telefone</button>
             </div>
-            <div id="phone-verify-status" class="verify-status">Phone is required. SMS verification appears when it is live on this deployment.</div>
+            <div id="phone-verify-status" class="verify-status">O telefone é obrigatório. A verificação por SMS aparece quando estiver ativa nesta versão.</div>
           </div>
           <div class="input-group">
-            <label>Age <span style="color:#f97373;">(required)</span></label>
-            <input type="text" id="age-input" placeholder="e.g., 28" />
+            <label>Idade <span style="color:#f97373;">(obrigatória)</span></label>
+            <input type="text" id="age-input" placeholder="ex.: 28" />
           </div>
           <div class="input-group">
-            <label>Gender</label>
+            <label>Gênero</label>
             <select id="gender-input">
-              <option value="">Select your gender</option>
-              <option value="woman">Woman</option>
-              <option value="man">Man</option>
-              <option value="other">Other / Prefer not to say</option>
+              <option value="">Selecione seu gênero</option>
+              <option value="woman">Mulher</option>
+              <option value="man">Homem</option>
+              <option value="other">Outro / Prefiro não dizer</option>
             </select>
           </div>
           <div class="input-group">
-            <label>Who you want to meet</label>
+            <label>Quem você quer conhecer</label>
             <select id="showme-input">
-              <option value="">Choose an option</option>
-              <option value="women">Women</option>
-              <option value="men">Men</option>
-              <option value="both">Men and women</option>
+              <option value="">Escolha uma opção</option>
+              <option value="women">Mulheres</option>
+              <option value="men">Homens</option>
+              <option value="both">Homens e mulheres</option>
             </select>
           </div>
           <div class="input-group">
-            <label>Your favorite vibe</label>
+            <label>Sua vibe favorita</label>
             <select id="vibe-input">
-              <option value="">Choose (or leave blank)</option>
-              <option value="Rooftops & views">Rooftops & views</option>
-              <option value="Drinks & chat">Drinks & chat</option>
-              <option value="DJ & dance floor">DJ & dance floor</option>
-              <option value="Live music">Live music</option>
-              <option value="Anything, I just want to go out">Anything, I just want to go out</option>
+              <option value="">Escolha (ou deixe em branco)</option>
+              <option value="Rooftops & views">Rooftops e vistas</option>
+              <option value="Drinks & chat">Drinks e conversa</option>
+              <option value="DJ & dance floor">DJ e pista</option>
+              <option value="Live music">Música ao vivo</option>
+              <option value="Anything, I just want to go out">Tanto faz, só quero sair</option>
             </select>
           </div>
           <div class="checkbox-row">
             <input type="checkbox" id="show-age-input" checked />
-            <span>Show my age on my profile.</span>
+            <span>Mostrar minha idade no perfil.</span>
           </div>
-          <button class="pill-button" onclick="saveUsername()">Continue</button>
+          <button class="pill-button" id="onboarding-continue-btn" onclick="saveUsername()">Continuar</button>
+          <div id="onboarding-submit-status" class="verify-status"></div>
           <p class="footer-hint">
-            Email must be verified before the account is created. Phone is required, and SMS verification appears when it is live on this deployment.<br />
-            Age, gender, and preferences are required for the app logic.
+            O e-mail precisa ser verificado antes de criar a conta. O telefone é obrigatório, e a verificação por SMS aparece quando estiver ativa nesta versão.<br />
+            Idade, gênero e preferências são necessários para a lógica do app.
           </p>
         </div>
       </section>
@@ -1787,10 +1793,10 @@
         <div class="card">
           <div class="top-banner">
             <span class="emoji">📷</span>
-            <span>Now pick your photos.</span>
+            <span>Agora escolha suas fotos.</span>
           </div>
           <p class="section-sub">
-            Add at least one profile photo. You can add up to 6 to show your style.
+            Adicione pelo menos uma foto de perfil. Você pode colocar até 6 para mostrar seu estilo.
           </p>
           
           <input type="file" id="photos-onboarding-input" accept="image/*" style="display:none;" onchange="handleSlotPhotoSelect(this)" />
@@ -1798,37 +1804,38 @@
           <div class="photo-slots-grid" id="photo-slots-container">
             <div class="photo-slot main-photo" data-slot="0" onclick="triggerPhotoSlot(0)">
               <span class="slot-icon">+</span>
-              <span class="slot-label">Add photo</span>
-              <span class="slot-required">Required</span>
+              <span class="slot-label">Adicionar foto</span>
+              <span class="slot-required">Obrigatória</span>
             </div>
             <div class="photo-slot" data-slot="1" onclick="triggerPhotoSlot(1)">
               <span class="slot-icon">+</span>
-              <span class="slot-label">Add photo</span>
+              <span class="slot-label">Adicionar foto</span>
             </div>
             <div class="photo-slot" data-slot="2" onclick="triggerPhotoSlot(2)">
               <span class="slot-icon">+</span>
-              <span class="slot-label">Add photo</span>
+              <span class="slot-label">Adicionar foto</span>
             </div>
             <div class="photo-slot" data-slot="3" onclick="triggerPhotoSlot(3)">
               <span class="slot-icon">+</span>
-              <span class="slot-label">Add photo</span>
+              <span class="slot-label">Adicionar foto</span>
             </div>
             <div class="photo-slot" data-slot="4" onclick="triggerPhotoSlot(4)">
               <span class="slot-icon">+</span>
-              <span class="slot-label">Add photo</span>
+              <span class="slot-label">Adicionar foto</span>
             </div>
             <div class="photo-slot" data-slot="5" onclick="triggerPhotoSlot(5)">
               <span class="slot-icon">+</span>
-              <span class="slot-label">Add photo</span>
+              <span class="slot-label">Adicionar foto</span>
             </div>
           </div>
           
           <p class="photo-hint">
-            Tip: use clear photos, face visible, and if you want, one from a rooftop, bar, or trip.
+            Dica: use fotos claras, com o rosto visível e, se quiser, uma em rooftop, bar ou viagem.
           </p>
-          <button class="pill-button" onclick="finishPhotosOnboarding()">Save photos and continue</button>
+          <button class="pill-button" id="photos-onboarding-save-btn" onclick="finishPhotosOnboarding()">Salvar fotos e continuar</button>
+          <div id="photos-onboarding-status" class="verify-status"></div>
           <p class="footer-hint">
-            You can edit photos and your profile later in “view profile”.
+            Você pode editar as fotos e o perfil depois em "ver perfil".
           </p>
         </div>
       </section>
@@ -2166,47 +2173,48 @@
           <div class="profile-fields-grid">
             <div class="input-group">
               <label>Bio</label>
-              <textarea id="profile-bio" placeholder="Tell a bit about you, your vibe, what you're looking for..."></textarea>
-              <div class="small-muted">Tip: short, specific, fun.</div>
+              <textarea id="profile-bio" placeholder="Conte um pouco sobre você, sua vibe e o que está procurando..."></textarea>
+              <div class="small-muted">Dica: curto, específico e divertido.</div>
             </div>
 
             <div class="input-group">
-              <label>Location (city / neighborhood)</label>
+              <label>Localização (cidade / bairro)</label>
               <input type="text" id="profile-location" placeholder="Ex.: Manhattan, Midtown, Lower East Side..." />
             </div>
 
             <div class="input-group">
-              <label>Work (title)</label>
-              <input type="text" id="profile-jobTitle" placeholder="e.g., Project Manager, Engineer..." />
+              <label>Trabalho (cargo)</label>
+              <input type="text" id="profile-jobTitle" placeholder="ex.: Project Manager, Engineer..." />
             </div>
 
             <div class="input-group">
-              <label>Company</label>
+              <label>Empresa</label>
               <input type="text" id="profile-company" placeholder="Ex.: Sperry Rail, startup, etc." />
             </div>
 
             <div class="input-group">
-              <label>College / school</label>
-              <input type="text" id="profile-school" placeholder="e.g., MBA, current school..." />
+              <label>Faculdade / escola</label>
+              <input type="text" id="profile-school" placeholder="ex.: MBA, faculdade atual..." />
             </div>
 
             <div class="input-group">
-              <label>Instagram (no @)</label>
-              <input type="text" id="profile-instagram" placeholder="e.g., myuser" />
+              <label>Instagram (sem @)</label>
+              <input type="text" id="profile-instagram" placeholder="ex.: meuusuario" />
             </div>
 
             <div class="input-group">
-              <label>Profile photos (up to 6)</label>
+              <label>Fotos do perfil (até 6)</label>
               <input type="file" id="profile-photo-input" accept="image/*" multiple onchange="handleProfilePhotoInput(this)" />
               <div id="profile-photos-preview" class="photo-grid"></div>
-              <p class="photo-hint">The first photo becomes your main photo (card).</p>
+              <p class="photo-hint">A primeira foto vira sua foto principal no card.</p>
             </div>
 
-            <button class="pill-button" onclick="saveProfileFromProfileScreen()">Save profile</button>
+            <button class="pill-button" id="profile-save-btn" onclick="saveProfileFromProfileScreen()">Salvar perfil</button>
+            <div id="profile-save-status" class="verify-status"></div>
           </div>
 
           <p class="footer-hint">
-            The top area is your profile card that people see at venues.
+            A área de cima é o card do seu perfil que as pessoas veem nos venues.
           </p>
         </div>
 
@@ -4203,15 +4211,15 @@ let currentUserName = null;
 
     let onboardingStep = 0;
     const onboardingSlides = [
-      { emoji:"🎧", title:"Match with people going to the same spot",
-        sub:"Instead of swiping random people across the whole city, focus on those who already chose the same bar, rooftop, or lounge.",
-        bullets:["See who's going tonight","Like who catches your eye","If it’s a match, you already have an opener: tonight’s plan"] },
-      { emoji:"📍", title:"See what’s hot tonight",
-        sub:"Before you head out, see which venues are packed with interesting people.",
-        bullets:["See how many people marked “going tonight” at each venue","Discover new bars, rooftops, and lounges","Keep an eye on the place that’s about to pop off"] },
-      { emoji:"💬", title:"Set the meet without the runaround",
-        sub:"No weeks of chatting without meeting. If it’s a match, you’re already going to the same spot.",
-        bullets:["Start the convo with the venue and the night","Pick where to meet inside","If it’s a vibe, plan the after"] }
+      { emoji:"🎧", title:"Dê match com pessoas que vão ao mesmo lugar",
+        sub:"Em vez de dar swipe em pessoas aleatórias pela cidade toda, foque em quem já escolheu o mesmo bar, rooftop ou lounge.",
+        bullets:["Veja quem vai sair hoje","Curta quem chamar sua atenção","Se der match, o assunto já existe: o plano da noite"] },
+      { emoji:"📍", title:"Veja o que está bombando hoje",
+        sub:"Antes de sair, veja quais venues estão cheios de pessoas interessantes.",
+        bullets:["Veja quantas pessoas marcaram “vou hoje” em cada venue","Descubra bares, rooftops e lounges novos","Fique de olho no lugar que está prestes a lotar"] },
+      { emoji:"💬", title:"Marque o encontro sem enrolação",
+        sub:"Nada de semanas conversando sem se ver. Se deu match, vocês já vão ao mesmo lugar.",
+        bullets:["Comece o papo falando do venue e da noite","Escolha onde se encontrar lá dentro","Se a vibe bater, planejem o after"] }
     ];
 
     let currentFilter = "all";
@@ -5123,6 +5131,62 @@ let currentUserName = null;
       return !!sharedBackendState.phoneAuth;
     }
 
+    function setBusyButtonState(buttonId, isBusy, idleText, busyText){
+      const button = $(buttonId);
+      if(!button) return;
+      button.disabled = !!isBusy;
+      button.classList.toggle("is-busy", !!isBusy);
+      button.textContent = isBusy ? busyText : idleText;
+    }
+
+    function setInlineStatus(statusId, text="", tone=""){
+      const status = $(statusId);
+      if(!status) return;
+      status.className = "verify-status";
+      if(tone) status.classList.add(tone);
+      status.textContent = text || "";
+    }
+
+    function waitForUiFrame(){
+      return new Promise(resolve => setTimeout(resolve, 24));
+    }
+
+    function hasAtLeastOneProfilePhoto(profile){
+      return !!(profile && Array.isArray(profile.photos) && profile.photos.some(Boolean));
+    }
+
+    function userNeedsPhotoOnboarding(username){
+      if(!username) return false;
+      return !hasAtLeastOneProfilePhoto(getProfile(username) || {});
+    }
+
+    function resetOnboardingPhotoDraft(){
+      tempPhotos = [];
+      photoSlots = [null, null, null, null, null, null];
+      renderPhotoSlots();
+      renderOnboardingPhotosPreview();
+    }
+
+    function openHomeScreen(){
+      showScreen("screen-home");
+      renderPlacesList();
+      renderTonightPlan();
+    }
+
+    function routeSignedInUser(){
+      if(!currentUserName){
+        showScreen("screen-username");
+        return;
+      }
+      if(userNeedsPhotoOnboarding(currentUserName)){
+        resetOnboardingPhotoDraft();
+        setInlineStatus("photos-onboarding-status");
+        showScreen("screen-photos-onboarding");
+        return;
+      }
+      openHomeScreen();
+    }
+
     function renderOnboardingVerificationState(){
       const emailStatus = document.getElementById("email-verify-status");
       const phoneStatus = document.getElementById("phone-verify-status");
@@ -5132,56 +5196,60 @@ let currentUserName = null;
       if(emailStatus){
         emailStatus.className = "verify-status";
         if(!email){
-          emailStatus.textContent = "Enter your email first.";
+          emailStatus.textContent = "Digite seu e-mail primeiro.";
         } else if(isOnboardingEmailVerified()){
           emailStatus.classList.add("ok");
-          emailStatus.textContent = `Email verified for ${email}.`;
+          emailStatus.textContent = `E-mail verificado para ${email}.`;
         } else if(onboardingVerificationState.emailRequestedFor === email){
           emailStatus.classList.add("warn");
-          emailStatus.textContent = `Code sent to ${email}. Enter the 6-digit code to continue.`;
+          emailStatus.textContent = `Código enviado para ${email}. Digite os 6 dígitos para continuar.`;
         } else {
-          emailStatus.textContent = "Email verification required before account creation.";
+          emailStatus.textContent = "É preciso verificar o e-mail antes de criar a conta.";
         }
       }
 
       if(phoneStatus){
         phoneStatus.className = "verify-status";
         if(!phone){
-          phoneStatus.textContent = "Enter your phone number first.";
+          phoneStatus.textContent = "Digite seu telefone primeiro.";
         } else if(!isOnboardingPhoneVerificationRequired()){
           phoneStatus.classList.add("warn");
           if(isOnboardingEmailVerified()){
-            phoneStatus.textContent = `SMS verification is not live on this deployment yet. We'll save ${maskPhone(phone)} without SMS for now.`;
+            phoneStatus.textContent = `A verificação por SMS ainda não está ativa nesta versão. Vamos salvar ${maskPhone(phone)} sem SMS por enquanto.`;
           } else {
-            phoneStatus.textContent = "Verify your email first. Your phone will still be saved even though SMS is not live yet.";
+            phoneStatus.textContent = "Verifique seu e-mail primeiro. Seu telefone ainda será salvo mesmo sem SMS ativo.";
           }
         } else if(!isOnboardingEmailVerified()){
-          phoneStatus.textContent = "Verify your email before sending an SMS code.";
+          phoneStatus.textContent = "Verifique seu e-mail antes de pedir o código por SMS.";
         } else if(isOnboardingPhoneVerified()){
           phoneStatus.classList.add("ok");
-          phoneStatus.textContent = `Phone verified for ${maskPhone(phone)}.`;
+          phoneStatus.textContent = `Telefone verificado para ${maskPhone(phone)}.`;
         } else if(onboardingVerificationState.phoneRequestedFor === phone){
           phoneStatus.classList.add("warn");
-          phoneStatus.textContent = `SMS code sent to ${maskPhone(phone)}. Enter the 6-digit code to continue.`;
+          phoneStatus.textContent = `Código por SMS enviado para ${maskPhone(phone)}. Digite os 6 dígitos para continuar.`;
         } else {
-          phoneStatus.textContent = "Phone verification required before account creation.";
+          phoneStatus.textContent = "É preciso verificar o telefone antes de criar a conta.";
         }
       }
     }
 
     function handleOnboardingIdentityInputChange(){
       renderOnboardingVerificationState();
+      setInlineStatus("onboarding-submit-status");
     }
 
     async function requestOnboardingEmailCode(){
       const email = getOnboardingEmailValue();
       if(!isValidEmail(email)){
-        toast("Enter a valid email first.");
+        toast("Digite primeiro um e-mail válido.");
         return;
       }
+      setBusyButtonState("onboarding-email-send-btn", true, "Enviar código por e-mail", "Enviando...");
+      setInlineStatus("email-verify-status", `Enviando código para ${email}...`, "warn");
       if(!await ensureSharedBackendAvailable() || !sharedBackendState.userAuth || !sharedBackendState.shared){
-        toast("Account verification is not live on this deployment yet.");
+        toast("A verificação de conta ainda não está ativa nesta versão.");
         renderOnboardingVerificationState();
+        setBusyButtonState("onboarding-email-send-btn", false, "Enviar código por e-mail", "Enviando...");
         return;
       }
 
@@ -5191,14 +5259,18 @@ let currentUserName = null;
           email
         });
         if(!data || !data.ok){
-          toast((data && data.error) || "Couldn't send the email code right now.");
+          toast((data && data.error) || "Não foi possível enviar o código de e-mail agora.");
+          renderOnboardingVerificationState();
           return;
         }
         onboardingVerificationState.emailRequestedFor = email;
         renderOnboardingVerificationState();
-        toast((data && data.message) || `Email code sent to ${email}.`);
+        toast((data && data.message) || `Código enviado para ${email}.`);
       }catch(e){
-        toast("Couldn't send the email code right now.");
+        toast("Não foi possível enviar o código de e-mail agora.");
+        renderOnboardingVerificationState();
+      } finally {
+        setBusyButtonState("onboarding-email-send-btn", false, "Enviar código por e-mail", "Enviando...");
       }
     }
 
@@ -5207,13 +5279,16 @@ let currentUserName = null;
       const codeInput = document.getElementById("email-code-input");
       const code = String((codeInput && codeInput.value) || "").replace(/\D+/g,"").slice(0,6);
       if(!isValidEmail(email)){
-        toast("Enter a valid email first.");
+        toast("Digite primeiro um e-mail válido.");
         return;
       }
       if(code.length !== 6){
-        toast("Enter the 6-digit email code.");
+        toast("Digite o código de 6 dígitos do e-mail.");
         return;
       }
+      setBusyButtonState("onboarding-email-verify-btn", true, "Verificar e-mail", "Verificando...");
+      setInlineStatus("email-verify-status", `Verificando ${email}...`, "warn");
+      await waitForUiFrame();
 
       try{
         const data = await postSharedBackend({
@@ -5238,28 +5313,35 @@ let currentUserName = null;
           if(codeInput) codeInput.value = "";
           await syncSharedSnapshot({silent:true});
           renderOnboardingVerificationState();
-          toast("Email verified.");
+          toast("E-mail verificado.");
           return;
         }
-        toast((data && data.error) || "Invalid or expired email code.");
+        toast((data && data.error) || "Código de e-mail inválido ou expirado.");
+        renderOnboardingVerificationState();
       }catch(e){
-        toast("Couldn't verify the email code right now.");
+        toast("Não foi possível verificar o código de e-mail agora.");
+        renderOnboardingVerificationState();
+      } finally {
+        setBusyButtonState("onboarding-email-verify-btn", false, "Verificar e-mail", "Verificando...");
       }
     }
 
     async function requestOnboardingPhoneCode(){
       const phone = getOnboardingPhoneValue();
       if(!phone){
-        toast("Enter a valid phone number first.");
+        toast("Digite primeiro um telefone válido.");
         return;
       }
       if(!isOnboardingEmailVerified()){
-        toast("Verify your email first.");
+        toast("Verifique seu e-mail primeiro.");
         return;
       }
+      setBusyButtonState("onboarding-phone-send-btn", true, "Enviar código por SMS", "Enviando...");
+      setInlineStatus("phone-verify-status", `Enviando código para ${maskPhone(phone)}...`, "warn");
       if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
-        toast("SMS verification is not live on this deployment yet. We'll save your phone without SMS for now.");
+        toast("A verificação por SMS ainda não está ativa nesta versão. Vamos salvar seu telefone sem SMS por enquanto.");
         renderOnboardingVerificationState();
+        setBusyButtonState("onboarding-phone-send-btn", false, "Enviar código por SMS", "Enviando...");
         return;
       }
 
@@ -5270,14 +5352,18 @@ let currentUserName = null;
           phone
         });
         if(!data || !data.ok){
-          toast((data && data.error) || "Couldn't send the SMS code right now.");
+          toast((data && data.error) || "Não foi possível enviar o código por SMS agora.");
+          renderOnboardingVerificationState();
           return;
         }
         onboardingVerificationState.phoneRequestedFor = phone;
         renderOnboardingVerificationState();
-        toast((data && data.message) || `SMS code sent to ${maskPhone(phone)}.`);
+        toast((data && data.message) || `Código por SMS enviado para ${maskPhone(phone)}.`);
       }catch(e){
-        toast("Couldn't send the SMS code right now.");
+        toast("Não foi possível enviar o código por SMS agora.");
+        renderOnboardingVerificationState();
+      } finally {
+        setBusyButtonState("onboarding-phone-send-btn", false, "Enviar código por SMS", "Enviando...");
       }
     }
 
@@ -5286,22 +5372,25 @@ let currentUserName = null;
       const codeInput = document.getElementById("phone-code-input");
       const code = String((codeInput && codeInput.value) || "").replace(/\D+/g,"").slice(0,6);
       if(!phone){
-        toast("Enter a valid phone number first.");
+        toast("Digite primeiro um telefone válido.");
         return;
       }
       if(!isOnboardingEmailVerified()){
-        toast("Verify your email first.");
+        toast("Verifique seu e-mail primeiro.");
         return;
       }
       if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
-        toast("SMS verification is not live on this deployment yet, so this step is optional for now.");
+        toast("A verificação por SMS ainda não está ativa nesta versão, então esta etapa é opcional por enquanto.");
         renderOnboardingVerificationState();
         return;
       }
       if(code.length !== 6){
-        toast("Enter the 6-digit SMS code.");
+        toast("Digite o código de 6 dígitos do SMS.");
         return;
       }
+      setBusyButtonState("onboarding-phone-verify-btn", true, "Verificar telefone", "Verificando...");
+      setInlineStatus("phone-verify-status", `Verificando ${maskPhone(phone)}...`, "warn");
+      await waitForUiFrame();
 
       try{
         const data = await postSharedBackend({
@@ -5323,12 +5412,16 @@ let currentUserName = null;
           onboardingVerificationState.phoneRequestedFor = phone;
           if(codeInput) codeInput.value = "";
           renderOnboardingVerificationState();
-          toast("Phone verified.");
+          toast("Telefone verificado.");
           return;
         }
-        toast((data && data.error) || "Invalid or expired SMS code.");
+        toast((data && data.error) || "Código de SMS inválido ou expirado.");
+        renderOnboardingVerificationState();
       }catch(e){
-        toast("Couldn't verify the SMS code right now.");
+        toast("Não foi possível verificar o código de SMS agora.");
+        renderOnboardingVerificationState();
+      } finally {
+        setBusyButtonState("onboarding-phone-verify-btn", false, "Verificar telefone", "Verificando...");
       }
     }
 
@@ -5355,9 +5448,9 @@ let currentUserName = null;
     }
 
     function genderLabel(g){
-      if(g==="man") return "Man";
-      if(g==="woman") return "Woman";
-      if(g==="other") return "Other";
+      if(g==="man") return "Homem";
+      if(g==="woman") return "Mulher";
+      if(g==="other") return "Outro";
       return "";
     }
 
@@ -5481,7 +5574,7 @@ function showScreen(id){
       $("onboard-sub").textContent=slide.sub;
       $("onboard-list").innerHTML=slide.bullets.map(b=>`<li>${b}</li>`).join("");
       $("onboard-dots").innerHTML=onboardingSlides.map((_,idx)=>`<div class="dot ${idx===onboardingStep?"active":""}"></div>`).join("");
-      $("onboard-main-btn").textContent= onboardingStep===onboardingSlides.length-1 ? "Start" : "Next";
+      $("onboard-main-btn").textContent= onboardingStep===onboardingSlides.length-1 ? "Começar" : "Próximo";
     }
     function nextOnboarding(){ if(onboardingStep<onboardingSlides.length-1){ onboardingStep++; updateOnboardingView(); } else finishOnboarding(); }
     function skipOnboarding(){ finishOnboarding(); }
@@ -5496,9 +5589,7 @@ function showScreen(id){
       if(saved){
         currentUserName=saved;
         updateUserLabel();
-        showScreen("screen-home");
-        renderPlacesList();
-        renderTonightPlan();
+        routeSignedInUser();
       } else showScreen("screen-username");
     }
 
@@ -5511,125 +5602,158 @@ function showScreen(id){
       const showMe=($("showme-input").value||"").trim();
       const vibe=($("vibe-input").value||"").trim();
       const showAge=!!$("show-age-input").checked;
+      setBusyButtonState("onboarding-continue-btn", true, "Continuar", "Continuando...");
+      setInlineStatus("onboarding-submit-status", "Criando sua conta...", "warn");
+      await waitForUiFrame();
 
-      if(!name){ alert("Add at least a name or nickname 😉"); return; }
-      if(!isValidEmail(email)){ alert("Enter a valid email."); return; }
-      if(!phone){ alert("Enter a valid phone number."); return; }
-      const age=parseInt(ageText,10);
-      if(!ageText || isNaN(age) || age<18 || age>99){ alert("Enter a valid age (18+)."); return; }
-      if(!gender){ alert("Select your gender."); return; }
-      if(!showMe){ alert("Select who you want to meet."); return; }
+      try{
+        if(!name){
+          setInlineStatus("onboarding-submit-status", "Adicione pelo menos um nome.", "err");
+          alert("Adicione pelo menos um nome ou apelido 😉");
+          return;
+        }
+        if(!isValidEmail(email)){
+          setInlineStatus("onboarding-submit-status", "Digite um e-mail válido.", "err");
+          alert("Digite um e-mail válido.");
+          return;
+        }
+        if(!phone){
+          setInlineStatus("onboarding-submit-status", "Digite um telefone válido.", "err");
+          alert("Digite um telefone válido.");
+          return;
+        }
+        const age=parseInt(ageText,10);
+        if(!ageText || isNaN(age) || age<18 || age>99){
+          setInlineStatus("onboarding-submit-status", "Digite uma idade válida (18+).", "err");
+          alert("Digite uma idade válida (18+).");
+          return;
+        }
+        if(!gender){
+          setInlineStatus("onboarding-submit-status", "Selecione seu gênero.", "err");
+          alert("Selecione seu gênero.");
+          return;
+        }
+        if(!showMe){
+          setInlineStatus("onboarding-submit-status", "Selecione quem você quer conhecer.", "err");
+          alert("Selecione quem você quer conhecer.");
+          return;
+        }
 
-      const baseProfile = {age, email, vibe, gender, showAge, showMe};
-      let resolvedName = name;
-      const sharedReady = await ensureSharedBackendAvailable();
+        const baseProfile = {age, email, vibe, gender, showAge, showMe};
+        let resolvedName = name;
+        const sharedReady = await ensureSharedBackendAvailable();
 
-      if(PUBLIC_REAL_LAUNCH_MODE){
-        if(!sharedReady || !sharedBackendState.userAuth || !sharedBackendState.shared){
-          toast("This deployment is still missing live account verification. Redeploy the backend first.");
+        if(PUBLIC_REAL_LAUNCH_MODE){
+          if(!sharedReady || !sharedBackendState.userAuth || !sharedBackendState.shared){
+            setInlineStatus("onboarding-submit-status", "A verificação de conta ainda não está ativa nesta versão.", "err");
+            toast("Esta versão ainda está sem a verificação de conta ao vivo. Faça o redeploy do backend primeiro.");
+            renderOnboardingVerificationState();
+            return;
+          }
+        }
+
+        if(!isOnboardingEmailVerified()){
+          setInlineStatus("onboarding-submit-status", "Verifique seu e-mail antes de continuar.", "err");
+          toast("Verifique seu e-mail antes de criar a conta.");
           renderOnboardingVerificationState();
           return;
         }
-      }
 
-      if(!isOnboardingEmailVerified()){
-        toast("Verify your email before creating the account.");
-        renderOnboardingVerificationState();
-        return;
-      }
-
-      if(isOnboardingPhoneVerificationRequired() && !isOnboardingPhoneVerified()){
-        toast("Verify your phone by SMS before creating the account.");
-        renderOnboardingVerificationState();
-        return;
-      }
-
-      if(!await refreshUserSession({silent:true})){
-        toast("Your email verification expired. Request a new code.");
-        renderOnboardingVerificationState();
-        return;
-      }
-
-      if(sharedReady && sharedBackendState.userAuth && sharedBackendState.shared){
-        try{
-          const data = await postSharedBackend({
-            action:"shared_profile_upsert",
-            sessionToken: userAuthSession.sessionToken,
-            username: name,
-            phone,
-            profile: getPublicProfilePayload(baseProfile)
-          });
-
-          if(!data || !data.ok){
-            if(data && data.code === "username_locked" && data.username){
-              resolvedName = String(data.username || "").trim();
-              persistUserAuthSession({
-                sessionToken: userAuthSession.sessionToken,
-                email: email,
-                username: resolvedName,
-                phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
-                phoneVerified: data ? data.phoneVerified === true : userAuthSession && userAuthSession.phoneVerified === true,
-                expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
-                signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
-              });
-              currentUserName = resolvedName;
-              localStorage.setItem("tonightly_username", currentUserName);
-              await syncSharedSnapshot({silent:true});
-              updateUserLabel();
-              showScreen("screen-home");
-              renderPlacesList();
-              renderTonightPlan();
-              toast(`Welcome back, ${resolvedName}.`);
-              return;
-            }
-            toast((data && data.error) || "Couldn't create this shared profile right now.");
-            return;
-          }
-
-          resolvedName = String(data.username || name).trim() || name;
-          persistUserAuthSession({
-            sessionToken: userAuthSession.sessionToken,
-            email: email,
-            username: resolvedName,
-            phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
-            phoneVerified: data && data.phoneVerified === true,
-            expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
-            signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
-          });
-        }catch(e){
-          toast("Couldn't create this shared profile right now.");
+        if(isOnboardingPhoneVerificationRequired() && !isOnboardingPhoneVerified()){
+          setInlineStatus("onboarding-submit-status", "Verifique seu telefone por SMS antes de continuar.", "err");
+          toast("Verifique seu telefone por SMS antes de criar a conta.");
+          renderOnboardingVerificationState();
           return;
         }
-      } else if(PUBLIC_REAL_LAUNCH_MODE){
-        toast("This deployment is not ready for public shared accounts yet.");
-        return;
-      }
 
-      currentUserName=resolvedName;
-      localStorage.setItem("tonightly_username", currentUserName);
-      const profiles=getProfilesData();
-      const existing=profiles[currentUserName]||{};
-      profiles[currentUserName]={...existing, ...baseProfile, isBot: existing.isBot===true};
-      setProfilesDataLocal(profiles);
-      if(sharedReady && sharedBackendState.shared){
-        await syncSharedSnapshot({silent:true});
-      }
-      updateUserLabel();
-      tempPhotos=[];
-      photoSlots = [null, null, null, null, null, null];
-      renderPhotoSlots();
-      renderOnboardingPhotosPreview();
+        if(!await refreshUserSession({silent:true})){
+          setInlineStatus("onboarding-submit-status", "Sua verificação expirou. Peça um novo código.", "err");
+          toast("Sua verificação de e-mail expirou. Peça um novo código.");
+          renderOnboardingVerificationState();
+          return;
+        }
 
-      const syncedProfile = getProfile(currentUserName) || {};
-      if(Array.isArray(syncedProfile.photos) && syncedProfile.photos.length){
-        showScreen("screen-home");
-        renderPlacesList();
-        renderTonightPlan();
-        toast(`Welcome back, ${currentUserName}.`);
-        return;
-      }
+        if(sharedReady && sharedBackendState.userAuth && sharedBackendState.shared){
+          try{
+            const data = await postSharedBackend({
+              action:"shared_profile_upsert",
+              sessionToken: userAuthSession.sessionToken,
+              username: name,
+              phone,
+              profile: getPublicProfilePayload(baseProfile)
+            });
 
-      showScreen("screen-photos-onboarding");
+            if(!data || !data.ok){
+              if(data && data.code === "username_locked" && data.username){
+                resolvedName = String(data.username || "").trim();
+                persistUserAuthSession({
+                  sessionToken: userAuthSession.sessionToken,
+                  email: email,
+                  username: resolvedName,
+                  phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
+                  phoneVerified: data ? data.phoneVerified === true : userAuthSession && userAuthSession.phoneVerified === true,
+                  expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
+                  signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
+                });
+                currentUserName = resolvedName;
+                localStorage.setItem("tonightly_username", currentUserName);
+                await syncSharedSnapshot({silent:true});
+                updateUserLabel();
+                setInlineStatus("onboarding-submit-status", "Conta encontrada. Entrando...", "ok");
+                routeSignedInUser();
+                toast(`Bem-vindo de volta, ${resolvedName}.`);
+                return;
+              }
+              setInlineStatus("onboarding-submit-status", "Não foi possível criar o perfil agora.", "err");
+              toast((data && data.error) || "Não foi possível criar este perfil compartilhado agora.");
+              return;
+            }
+
+            resolvedName = String(data.username || name).trim() || name;
+            persistUserAuthSession({
+              sessionToken: userAuthSession.sessionToken,
+              email: email,
+              username: resolvedName,
+              phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
+              phoneVerified: data && data.phoneVerified === true,
+              expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
+              signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
+            });
+          }catch(e){
+            setInlineStatus("onboarding-submit-status", "Não foi possível criar o perfil agora.", "err");
+            toast("Não foi possível criar este perfil compartilhado agora.");
+            return;
+          }
+        } else if(PUBLIC_REAL_LAUNCH_MODE){
+          setInlineStatus("onboarding-submit-status", "Esta versão ainda não está pronta para contas públicas.", "err");
+          toast("Esta versão ainda não está pronta para contas públicas compartilhadas.");
+          return;
+        }
+
+        currentUserName=resolvedName;
+        localStorage.setItem("tonightly_username", currentUserName);
+        const profiles=getProfilesData();
+        const existing=profiles[currentUserName]||{};
+        profiles[currentUserName]={...existing, ...baseProfile, isBot: existing.isBot===true};
+        setProfilesDataLocal(profiles);
+        if(sharedReady && sharedBackendState.shared){
+          await syncSharedSnapshot({silent:true});
+        }
+        updateUserLabel();
+
+        const syncedProfile = getProfile(currentUserName) || {};
+        if(hasAtLeastOneProfilePhoto(syncedProfile)){
+          setInlineStatus("onboarding-submit-status", "Conta pronta. Entrando...", "ok");
+          toast(`Bem-vindo de volta, ${currentUserName}.`);
+          openHomeScreen();
+          return;
+        }
+
+        setInlineStatus("onboarding-submit-status", "Conta criada. Agora adicione suas fotos.", "warn");
+        routeSignedInUser();
+      } finally {
+        setBusyButtonState("onboarding-continue-btn", false, "Continuar", "Continuando...");
+      }
     }
 
     // Photo slots state
@@ -5654,7 +5778,7 @@ function showScreen(id){
         renderPhotoSlots();
       } catch(err) {
         console.error("[Onboarding Photos] Upload error", err);
-        toast("Error processing image: " + (err.message || "Unknown error"));
+        toast("Erro ao processar a imagem: " + (err.message || "Erro desconhecido"));
       }
       input.value = "";
     }
@@ -5675,7 +5799,7 @@ function showScreen(id){
         if (photoUrl) {
           slot.classList.add('filled');
           slot.innerHTML = `
-            <img src="${photoUrl}" alt="Photo ${idx + 1}" />
+            <img src="${photoUrl}" alt="Foto ${idx + 1}" />
             <button class="remove-photo" onclick="removeSlotPhoto(${idx}, event)">×</button>
           `;
         } else {
@@ -5683,8 +5807,8 @@ function showScreen(id){
           const isMain = idx === 0;
           slot.innerHTML = `
             <span class="slot-icon">+</span>
-            <span class="slot-label">Add photo</span>
-            ${isMain ? '<span class="slot-required">Required</span>' : ''}
+            <span class="slot-label">Adicionar foto</span>
+            ${isMain ? '<span class="slot-required">Obrigatória</span>' : ''}
           `;
         }
       });
@@ -5698,7 +5822,7 @@ function showScreen(id){
       const files=Array.from(input.files);
       const max=6;
       let remaining=max-tempPhotos.length;
-      if(remaining<=0){ alert("You've already added the maximum of 6 photos."); input.value=""; return; }
+      if(remaining<=0){ alert("Você já adicionou o máximo de 6 fotos."); input.value=""; return; }
       for (const file of files.slice(0,remaining)) {
         try {
           const dataUrl = await compressImageToDataUrl(file);
@@ -5706,7 +5830,7 @@ function showScreen(id){
           renderOnboardingPhotosPreview();
         } catch(err) {
           console.error("[Onboarding Photos] Upload error", err);
-          toast("Error processing image: " + (err.message || "Unknown error"));
+          toast("Erro ao processar a imagem: " + (err.message || "Erro desconhecido"));
         }
       }
       input.value="";
@@ -5714,32 +5838,43 @@ function showScreen(id){
     function renderOnboardingPhotosPreview(){
       const c=$("photos-onboarding-preview");
       if(!c) return;
-      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">No photos yet</div>`; return; }
+      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">Nenhuma foto ainda</div>`; return; }
       c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="photo"/></div>`).join("");
     }
-    function finishPhotosOnboarding(){
-      if(!currentUserName){ alert("Fill out the mini profile first."); showScreen("screen-username"); return; }
-      // Check if at least the first slot (required) has a photo
-      if(!photoSlots[0] && !tempPhotos.length){ 
-        toast("Please add at least one profile photo."); 
-        return; 
-      }
-      // Use photoSlots if available, otherwise fallback to tempPhotos
-      const photosToSave = photoSlots.filter(p => p !== null);
+    async function finishPhotosOnboarding(){
+      setBusyButtonState("photos-onboarding-save-btn", true, "Salvar fotos e continuar", "Salvando...");
+      setInlineStatus("photos-onboarding-status", "Salvando suas fotos...", "warn");
+      await waitForUiFrame();
       try {
-        if(photosToSave.length === 0 && tempPhotos.length > 0) {
-          saveProfile(currentUserName,{photos: tempPhotos});
-        } else {
-          saveProfile(currentUserName,{photos: photosToSave});
+        if(!currentUserName){
+          setInlineStatus("photos-onboarding-status", "Preencha seu mini perfil primeiro.", "err");
+          alert("Preencha seu mini perfil primeiro.");
+          showScreen("screen-username");
+          return;
         }
-      } catch(err) {
-        console.error("[Onboarding Photos] Save error", err);
-        toast("These photos are too large to save here. Try fewer or smaller photos.");
-        return;
+        if(!photoSlots[0] && !tempPhotos.length){
+          setInlineStatus("photos-onboarding-status", "Adicione pelo menos uma foto de perfil.", "err");
+          toast("Adicione pelo menos uma foto de perfil.");
+          return;
+        }
+        const photosToSave = photoSlots.filter(p => p !== null);
+        try {
+          if(photosToSave.length === 0 && tempPhotos.length > 0) {
+            saveProfile(currentUserName,{photos: tempPhotos});
+          } else {
+            saveProfile(currentUserName,{photos: photosToSave});
+          }
+        } catch(err) {
+          console.error("[Onboarding Photos] Save error", err);
+          setInlineStatus("photos-onboarding-status", "Essas fotos estão grandes demais para salvar aqui.", "err");
+          toast("Essas fotos estão grandes demais para salvar aqui. Tente menos fotos ou fotos menores.");
+          return;
+        }
+        setInlineStatus("photos-onboarding-status", "Fotos salvas. Entrando...", "ok");
+        openHomeScreen();
+      } finally {
+        setBusyButtonState("photos-onboarding-save-btn", false, "Salvar fotos e continuar", "Salvando...");
       }
-      showScreen("screen-home");
-      renderPlacesList();
-      renderTonightPlan();
     }
 
     function updateUserLabel(){
@@ -6970,7 +7105,7 @@ function renderGoingForPlace(placeId){
       const files=Array.from(input.files);
       const max=6;
       let remaining=max-tempPhotos.length;
-      if(remaining<=0){ alert("You've already added the maximum of 6 photos."); input.value=""; return; }
+      if(remaining<=0){ alert("Você já adicionou o máximo de 6 fotos."); input.value=""; return; }
       for (const file of files.slice(0,remaining)) {
         try {
           const dataUrl = await compressImageToDataUrl(file);
@@ -6982,7 +7117,7 @@ function renderGoingForPlace(placeId){
           renderProfilePreviewCard();
         } catch(err) {
           console.error("[Profile Photos] Upload error", err);
-          toast("Error processing image: " + (err.message || "Unknown error"));
+          toast("Erro ao processar a imagem: " + (err.message || "Erro desconhecido"));
         }
       }
       input.value="";
@@ -6990,21 +7125,22 @@ function renderGoingForPlace(placeId){
 
     function renderProfilePhotosPreview(){
       const c=$("profile-photos-preview");
-      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">No photos yet</div>`; return; }
-      c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="photo"/></div>`).join("");
+      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">Nenhuma foto ainda</div>`; return; }
+      c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="foto"/></div>`).join("");
     }
 
-    function saveProfileFromProfileScreen(){
+    async function saveProfileFromProfileScreen(){
       if(!currentUserName) return;
+      setBusyButtonState("profile-save-btn", true, "Salvar perfil", "Salvando...");
+      setInlineStatus("profile-save-status", "Salvando perfil...", "warn");
+      await waitForUiFrame();
       const bio=$("profile-bio").value||"";
       
       // Check for links in bio
       if(containsLink(bio)){
-        if(!confirm("Links are not allowed in the bio. Remove them and save anyway?")){
-          return;
-        }
-        // Remove links (simple approach - user can edit manually)
-        toast("Please remove links from your bio before saving.");
+        alert("Links não são permitidos na bio. Remova-os antes de salvar.");
+        setBusyButtonState("profile-save-btn", false, "Salvar perfil", "Salvando...");
+        setInlineStatus("profile-save-status", "Remova os links da bio antes de salvar.", "err");
         return;
       }
       
@@ -7017,19 +7153,23 @@ function renderGoingForPlace(placeId){
         saveProfile(currentUserName,{bio,location,jobTitle,company,school,instagram,photos:tempPhotos});
       } catch(err) {
         console.error("[Profile] Save error", err);
-        alert("These profile photos are too large to save. Try fewer or smaller photos.");
+        alert("Essas fotos de perfil estão grandes demais para salvar. Tente menos fotos ou fotos menores.");
+        setBusyButtonState("profile-save-btn", false, "Salvar perfil", "Salvando...");
+        setInlineStatus("profile-save-status", "Não foi possível salvar com essas fotos.", "err");
         return;
       }
-      alert("Profile saved.");
+      setInlineStatus("profile-save-status", "Perfil salvo.", "ok");
+      alert("Perfil salvo.");
       updateUserLabel();
       renderProfilePreviewCard();
+      setBusyButtonState("profile-save-btn", false, "Salvar perfil", "Salvando...");
       goHome();
     }
     
     function validateBioForLinks(textarea){
       if(containsLink(textarea.value)){
         textarea.style.borderColor = "#ef4444";
-        toast("Links are not allowed in the bio.");
+        toast("Links não são permitidos na bio.");
       } else {
         textarea.style.borderColor = "";
       }
@@ -7053,9 +7193,9 @@ function renderGoingForPlace(placeId){
         });
         track("verification_submitted", { userName: currentUserName });
         renderVerificationStatus();
-        toast("Selfie sent! Our team will review it.");
+        toast("Selfie enviada! Nosso time vai revisar.");
       }).catch(err => {
-        toast("Error processing image: " + (err.message || "Unknown error"));
+        toast("Erro ao processar a imagem: " + (err.message || "Erro desconhecido"));
       });
     }
     
@@ -7206,8 +7346,7 @@ function renderGoingForPlace(placeId){
 
     function goHome(){
       if(!currentUserName){ showScreen("screen-username"); return; }
-      showScreen("screen-home");
-      renderPlacesList();
+      routeSignedInUser();
     }
     function openProducer(){
       if(!requireAdminAccess("Venue tools are available only for authorized accounts.")) return;
@@ -8169,9 +8308,7 @@ function initApp(){
       if(savedUser){
         currentUserName=savedUser;
         updateUserLabel();
-        showScreen("screen-home");
-        renderPlacesList();
-        renderTonightPlan();
+        routeSignedInUser();
       } else {
         updateAdminUIVisibility();
         showScreen("screen-username");
