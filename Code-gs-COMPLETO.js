@@ -12,11 +12,14 @@ var AUTH_CODE_COOLDOWN_SECONDS = 60;
 var AUTH_SESSION_TTL_DAYS = 30;
 var USER_AUTH_CODE_TTL_SECONDS = 10 * 60;
 var USER_AUTH_COOLDOWN_SECONDS = 60;
+var USER_PHONE_CODE_TTL_SECONDS = 10 * 60;
+var USER_PHONE_COOLDOWN_SECONDS = 60;
 var USER_SESSION_TTL_DAYS = 30;
 var GOING_TONIGHT_TTL_HOURS = 18;
 var GOING_TONIGHT_TTL_MS = GOING_TONIGHT_TTL_HOURS * 60 * 60 * 1000;
 var PROFILE_JSON_PARTS = 20;
 var PROFILE_JSON_CHUNK_SIZE = 40000;
+var SHARED_ACCOUNTS_SHEET_NAME = "L2N_Accounts";
 var SHARED_PROFILES_SHEET_NAME = "L2N_Profiles";
 var SHARED_PRESENCE_SHEET_NAME = "L2N_Presence";
 var SHARED_LIKES_SHEET_NAME = "L2N_Likes";
@@ -34,6 +37,29 @@ function normalizeEmail_(value) {
 
 function isValidEmail_(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail_(value));
+}
+
+function normalizePhoneE164_(value) {
+  var raw = String(value || "").trim();
+  if (!raw) return "";
+  var digits = raw.replace(/\D+/g, "");
+  if (raw.indexOf("+") === 0) {
+    if (digits.length < 10 || digits.length > 15) return "";
+    return "+" + digits;
+  }
+  if (digits.length === 10) return "+1" + digits;
+  if (digits.length === 11 && digits.charAt(0) === "1") return "+" + digits;
+  return "";
+}
+
+function isValidPhoneE164_(value) {
+  return !!normalizePhoneE164_(value);
+}
+
+function maskPhone_(value) {
+  var normalized = normalizePhoneE164_(value);
+  if (!normalized) return "";
+  return normalized.slice(0, Math.max(0, normalized.length - 4)).replace(/\d/g, "•") + normalized.slice(-4);
 }
 
 function getAdminAllowlist_() {
@@ -253,6 +279,58 @@ function getUserSessionPropertyKey_(token) {
   return "USER_SESSION_" + sha256Hex_(String(token || ""));
 }
 
+function getUserPhoneAuthCodeCacheKey_(phone) {
+  return "USER_PHONE_CODE_" + sha256Hex_(normalizePhoneE164_(phone));
+}
+
+function getUserPhoneCooldownCacheKey_(phone) {
+  return "USER_PHONE_COOLDOWN_" + sha256Hex_(normalizePhoneE164_(phone));
+}
+
+function getSmsConfig_() {
+  var props = PropertiesService.getScriptProperties();
+  return {
+    accountSid: String(props.getProperty("TWILIO_ACCOUNT_SID") || "").trim(),
+    authToken: String(props.getProperty("TWILIO_AUTH_TOKEN") || "").trim(),
+    fromNumber: String(props.getProperty("TWILIO_FROM_NUMBER") || "").trim(),
+    messagingServiceSid: String(props.getProperty("TWILIO_MESSAGING_SERVICE_SID") || "").trim()
+  };
+}
+
+function isSmsAuthConfigured_() {
+  var cfg = getSmsConfig_();
+  return !!(cfg.accountSid && cfg.authToken && (cfg.fromNumber || cfg.messagingServiceSid));
+}
+
+function sendSmsMessage_(to, body) {
+  var cfg = getSmsConfig_();
+  if (!isSmsAuthConfigured_()) {
+    throw new Error("SMS verification is not configured on this deployment.");
+  }
+
+  var url = "https://api.twilio.com/2010-04-01/Accounts/" + encodeURIComponent(cfg.accountSid) + "/Messages.json";
+  var payload = {
+    To: normalizePhoneE164_(to),
+    Body: String(body || "")
+  };
+  if (cfg.messagingServiceSid) payload.MessagingServiceSid = cfg.messagingServiceSid;
+  else payload.From = cfg.fromNumber;
+
+  var options = {
+    method: "post",
+    payload: payload,
+    headers: {
+      Authorization: "Basic " + Utilities.base64Encode(cfg.accountSid + ":" + cfg.authToken)
+    },
+    muteHttpExceptions: true
+  };
+  var response = UrlFetchApp.fetch(url, options);
+  var code = response.getResponseCode();
+  if (code < 200 || code >= 300) {
+    throw new Error("Twilio SMS failed: HTTP " + code + " | " + response.getContentText());
+  }
+}
+
 function getUserSignInEmailHtml_(email, code) {
   var img = WAITLIST_EMAIL_IMAGE_URL;
   return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;padding:0;background-color:#0f172a;font-family:\'Segoe UI\',Tahoma,Geneva,Verdana,sans-serif;">' +
@@ -274,7 +352,7 @@ function getUserSignInEmailHtml_(email, code) {
     '</table></td></tr></table></body></html>';
 }
 
-function storeUserSessionRecord_(token, email, username) {
+function storeUserSessionRecord_(token, email, username, phone, phoneVerified) {
   var props = PropertiesService.getScriptProperties();
   var expiresAt = new Date(Date.now() + USER_SESSION_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
   props.setProperty(
@@ -282,6 +360,8 @@ function storeUserSessionRecord_(token, email, username) {
     JSON.stringify({
       email: normalizeEmail_(email),
       username: String(username || "").trim(),
+      phone: normalizePhoneE164_(phone),
+      phoneVerified: phoneVerified === true,
       createdAt: new Date().toISOString(),
       expiresAt: expiresAt
     })
@@ -307,6 +387,10 @@ function getUserSessionRecord_(token) {
       props.deleteProperty(key);
       return null;
     }
+    parsed.email = normalizeEmail_(parsed.email);
+    parsed.username = String(parsed.username || "").trim();
+    parsed.phone = normalizePhoneE164_(parsed.phone);
+    parsed.phoneVerified = parsed.phoneVerified === true;
     return parsed;
   } catch (err) {
     props.deleteProperty(key);
@@ -371,6 +455,10 @@ function withScriptLock_(callback) {
   }
 }
 
+function getAccountsSheetHeaders_() {
+  return ["email", "username", "phone", "phone_verified", "created_at", "updated_at"];
+}
+
 function getProfilesSheetHeaders_() {
   var headers = ["username", "email"];
   for (var i = 1; i <= PROFILE_JSON_PARTS; i++) {
@@ -391,6 +479,105 @@ function getLikesSheetHeaders_() {
 
 function getMessagesSheetHeaders_() {
   return ["chat_key", "place_id", "from_username", "to_username", "text", "ts"];
+}
+
+function parseAccountRecord_(row) {
+  return {
+    rowNumber: row._rowNumber,
+    email: normalizeEmail_(row.email),
+    username: String(row.username || "").trim(),
+    phone: normalizePhoneE164_(row.phone),
+    phoneVerified: String(row.phone_verified || "").toLowerCase() === "true",
+    createdAt: String(row.created_at || ""),
+    updatedAt: String(row.updated_at || "")
+  };
+}
+
+function getAccountRecords_(sheet) {
+  return readSheetObjects_(sheet)
+    .map(parseAccountRecord_)
+    .filter(function(record) {
+      return !!record.email;
+    });
+}
+
+function findAccountRecordByEmail_(records, email) {
+  var normalized = normalizeEmail_(email);
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].email === normalized) return records[i];
+  }
+  return null;
+}
+
+function findAccountRecordByUsername_(records, username) {
+  var normalized = String(username || "").trim();
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].username === normalized) return records[i];
+  }
+  return null;
+}
+
+function findAccountRecordByPhone_(records, phone) {
+  var normalized = normalizePhoneE164_(phone);
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].phone === normalized) return records[i];
+  }
+  return null;
+}
+
+function writeAccountRecord_(sheet, rowNumber, email, username, phone, phoneVerified, createdAt, updatedAt) {
+  var row = [
+    normalizeEmail_(email),
+    String(username || "").trim(),
+    normalizePhoneE164_(phone),
+    phoneVerified === true ? "true" : "false",
+    createdAt || "",
+    updatedAt || ""
+  ];
+  if (rowNumber) {
+    sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
+  } else {
+    sheet.appendRow(row);
+  }
+}
+
+function upsertAccountRecord_(sheet, existingRecord, email, username, phone, phoneVerified, createdAt, updatedAt) {
+  writeAccountRecord_(
+    sheet,
+    existingRecord ? existingRecord.rowNumber : 0,
+    email,
+    username,
+    phone,
+    phoneVerified,
+    createdAt,
+    updatedAt
+  );
+  return findAccountRecordByEmail_(getAccountRecords_(sheet), email);
+}
+
+function ensureAccountRecordForEmail_(accountsSheet, profilesSheet, email, options) {
+  var normalizedEmail = normalizeEmail_(email);
+  if (!normalizedEmail) return null;
+
+  var opts = options || {};
+  var existingRecord = findAccountRecordByEmail_(getAccountRecords_(accountsSheet), normalizedEmail);
+  if (existingRecord) return existingRecord;
+
+  var legacyProfile = profilesSheet ? findProfileRecordByEmail_(getProfileRecords_(profilesSheet), normalizedEmail) : null;
+  if (!legacyProfile && opts.createIfMissing !== true) return null;
+
+  var nowIso = new Date().toISOString();
+  var createdAt = legacyProfile ? (legacyProfile.createdAt || nowIso) : nowIso;
+  return upsertAccountRecord_(
+    accountsSheet,
+    null,
+    normalizedEmail,
+    legacyProfile ? legacyProfile.username : String(opts.username || "").trim(),
+    opts.phone,
+    opts.phoneVerified === true,
+    createdAt,
+    nowIso
+  );
 }
 
 function splitTextIntoChunks_(text, size, maxParts) {
@@ -511,18 +698,67 @@ function sanitizeProfileForPublic_(profile) {
   return clean;
 }
 
-function getUsernameForUserSession_(sessionRecord, sessionToken) {
-  if (!sessionRecord || !sessionRecord.email) return "";
-  if (sessionRecord.username) return String(sessionRecord.username || "").trim();
+function getResolvedUserSessionIdentity_(sessionRecord, sessionToken) {
+  if (!sessionRecord || !sessionRecord.email) {
+    return {
+      email: "",
+      username: "",
+      phone: "",
+      phoneVerified: false,
+      expiresAt: ""
+    };
+  }
 
+  var currentEmail = normalizeEmail_(sessionRecord.email);
+  var currentUsername = String(sessionRecord.username || "").trim();
+  var currentPhone = normalizePhoneE164_(sessionRecord.phone);
+  var currentPhoneVerified = sessionRecord.phoneVerified === true;
+  var currentExpiresAt = String(sessionRecord.expiresAt || "");
+
+  var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
   var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
-  var records = getProfileRecords_(profilesSheet);
-  var byEmail = findProfileRecordByEmail_(records, sessionRecord.email);
-  if (!byEmail) return "";
+  var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, currentEmail, {
+    createIfMissing: false,
+    username: currentUsername,
+    phone: currentPhone,
+    phoneVerified: currentPhoneVerified
+  });
 
-  storeUserSessionRecord_(sessionToken, sessionRecord.email, byEmail.username);
-  sessionRecord.username = byEmail.username;
-  return byEmail.username;
+  var identity = {
+    email: currentEmail,
+    username: currentUsername,
+    phone: currentPhone,
+    phoneVerified: currentPhoneVerified,
+    expiresAt: currentExpiresAt
+  };
+
+  if (accountRecord) {
+    if (accountRecord.username) identity.username = accountRecord.username;
+    if (accountRecord.phone) identity.phone = accountRecord.phone;
+    identity.phoneVerified = accountRecord.phoneVerified === true;
+  }
+
+  if (
+    sessionToken &&
+    (
+      identity.email !== currentEmail ||
+      identity.username !== currentUsername ||
+      identity.phone !== currentPhone ||
+      identity.phoneVerified !== currentPhoneVerified
+    )
+  ) {
+    storeUserSessionRecord_(sessionToken, identity.email, identity.username, identity.phone, identity.phoneVerified);
+  }
+
+  sessionRecord.email = identity.email;
+  sessionRecord.username = identity.username;
+  sessionRecord.phone = identity.phone;
+  sessionRecord.phoneVerified = identity.phoneVerified;
+  return identity;
+}
+
+function getUsernameForUserSession_(sessionRecord, sessionToken) {
+  return getResolvedUserSessionIdentity_(sessionRecord, sessionToken).username;
 }
 
 function buildChatKey_(placeId, userA, userB) {
@@ -673,21 +909,27 @@ function handleUserVerifyCode_(data) {
   }
 
   cache.remove(getUserAuthCodeCacheKey_(email));
-  var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
-  var records = getProfileRecords_(profilesSheet);
-  var byEmail = findProfileRecordByEmail_(records, email);
-  var username = byEmail ? byEmail.username : "";
-  var sessionToken = createSessionToken_();
-  var expiresAt = storeUserSessionRecord_(sessionToken, email, username);
+  return withScriptLock_(function() {
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, email, { createIfMissing: true });
+    var username = accountRecord ? accountRecord.username : "";
+    var phone = accountRecord ? accountRecord.phone : "";
+    var phoneVerified = accountRecord ? accountRecord.phoneVerified === true : false;
+    var sessionToken = createSessionToken_();
+    var expiresAt = storeUserSessionRecord_(sessionToken, email, username, phone, phoneVerified);
 
-  return {
-    ok: true,
-    authenticated: true,
-    email: email,
-    username: username,
-    sessionToken: sessionToken,
-    expiresAt: expiresAt
-  };
+    return {
+      ok: true,
+      authenticated: true,
+      email: email,
+      username: username,
+      phone: phone,
+      phoneVerified: phoneVerified,
+      sessionToken: sessionToken,
+      expiresAt: expiresAt
+    };
+  });
 }
 
 function handleUserSessionStatus_(data) {
@@ -696,12 +938,14 @@ function handleUserSessionStatus_(data) {
   if (!record) {
     return { ok: true, authenticated: false };
   }
-  var username = getUsernameForUserSession_(record, token);
+  var identity = getResolvedUserSessionIdentity_(record, token);
   return {
     ok: true,
     authenticated: true,
-    email: record.email,
-    username: username,
+    email: identity.email,
+    username: identity.username,
+    phone: identity.phone,
+    phoneVerified: identity.phoneVerified,
     expiresAt: record.expiresAt
   };
 }
@@ -717,10 +961,13 @@ function handleSharedSnapshot_(data) {
   var viewer = { authenticated: false };
 
   if (sessionRecord) {
+    var identity = getResolvedUserSessionIdentity_(sessionRecord, token);
     viewer = {
       authenticated: true,
-      email: sessionRecord.email,
-      username: getUsernameForUserSession_(sessionRecord, token),
+      email: identity.email,
+      username: identity.username,
+      phone: identity.phone,
+      phoneVerified: identity.phoneVerified,
       expiresAt: sessionRecord.expiresAt
     };
   }
@@ -729,6 +976,8 @@ function handleSharedSnapshot_(data) {
     ok: true,
     supportsSharedState: true,
     supportsUserAuth: true,
+    supportsPhoneAuth: isSmsAuthConfigured_(),
+    supportsSmsAuth: isSmsAuthConfigured_(),
     viewer: viewer,
     snapshot: buildSharedSnapshot_()
   };
@@ -743,12 +992,19 @@ function handleSharedProfileUpsert_(data) {
     var desiredUsername = String(data.username || "").trim();
     if (!desiredUsername) return { ok: false, error: "Choose a display name first.", code: "missing_username" };
 
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
     var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
-    var records = getProfileRecords_(profilesSheet);
-    var byEmail = findProfileRecordByEmail_(records, sessionRecord.email);
-    var byUsername = findProfileRecordByUsername_(records, desiredUsername);
+    var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, sessionRecord.email, {
+      createIfMissing: true,
+      username: sessionRecord.username,
+      phone: sessionRecord.phone,
+      phoneVerified: sessionRecord.phoneVerified === true
+    });
+    var accountRecords = getAccountRecords_(accountsSheet);
+    var accountByEmail = findAccountRecordByEmail_(accountRecords, sessionRecord.email) || accountRecord;
+    var accountByUsername = findAccountRecordByUsername_(accountRecords, desiredUsername);
 
-    if (byUsername && byUsername.email !== sessionRecord.email) {
+    if (accountByUsername && accountByUsername.email !== sessionRecord.email) {
       return {
         ok: false,
         error: "That name is already taken. Try a different one.",
@@ -756,17 +1012,29 @@ function handleSharedProfileUpsert_(data) {
       };
     }
 
-    if (byEmail && byEmail.username && byEmail.username !== desiredUsername) {
+    if (accountByEmail && accountByEmail.username && accountByEmail.username !== desiredUsername) {
       return {
         ok: false,
-        error: "This verified email is already linked to @" + byEmail.username + ".",
+        error: "This verified email is already linked to @" + accountByEmail.username + ".",
         code: "username_locked",
-        username: byEmail.username
+        username: accountByEmail.username
       };
     }
 
-    var username = byEmail ? byEmail.username : desiredUsername;
-    var existingProfile = byEmail ? byEmail.profile : (byUsername ? byUsername.profile : {});
+    var username = accountByEmail && accountByEmail.username ? accountByEmail.username : desiredUsername;
+    var profileRecords = getProfileRecords_(profilesSheet);
+    var profileByEmail = findProfileRecordByEmail_(profileRecords, sessionRecord.email);
+    var profileByUsername = findProfileRecordByUsername_(profileRecords, username);
+
+    if (profileByUsername && profileByUsername.email !== sessionRecord.email) {
+      return {
+        ok: false,
+        error: "That name is already taken. Try a different one.",
+        code: "username_taken"
+      };
+    }
+
+    var existingProfile = profileByEmail ? profileByEmail.profile : (profileByUsername ? profileByUsername.profile : {});
     var nextProfile = sanitizePublicProfilePayload_(existingProfile);
     var incomingProfile = sanitizePublicProfilePayload_(data.profile || {});
     Object.keys(incomingProfile).forEach(function(key) {
@@ -775,16 +1043,180 @@ function handleSharedProfileUpsert_(data) {
     nextProfile.isBot = false;
 
     var nowIso = new Date().toISOString();
-    var createdAt = byEmail ? (byEmail.createdAt || nowIso) : nowIso;
-    var rowNumber = byEmail ? byEmail.rowNumber : (byUsername ? byUsername.rowNumber : 0);
+    var updatedAccount = upsertAccountRecord_(
+      accountsSheet,
+      accountByEmail || null,
+      sessionRecord.email,
+      username,
+      accountByEmail ? accountByEmail.phone : sessionRecord.phone,
+      accountByEmail ? accountByEmail.phoneVerified === true : sessionRecord.phoneVerified === true,
+      accountByEmail ? (accountByEmail.createdAt || nowIso) : nowIso,
+      nowIso
+    );
+    var createdAt = profileByEmail
+      ? (profileByEmail.createdAt || nowIso)
+      : (profileByUsername ? (profileByUsername.createdAt || nowIso) : nowIso);
+    var rowNumber = profileByEmail ? profileByEmail.rowNumber : (profileByUsername ? profileByUsername.rowNumber : 0);
     writeProfileRecord_(profilesSheet, rowNumber, username, sessionRecord.email, nextProfile, createdAt, nowIso);
-    storeUserSessionRecord_(token, sessionRecord.email, username);
+    storeUserSessionRecord_(
+      token,
+      sessionRecord.email,
+      username,
+      updatedAccount ? updatedAccount.phone : sessionRecord.phone,
+      updatedAccount ? updatedAccount.phoneVerified === true : sessionRecord.phoneVerified === true
+    );
 
     return {
       ok: true,
       username: username,
+      phone: updatedAccount ? updatedAccount.phone : normalizePhoneE164_(sessionRecord.phone),
+      phoneVerified: updatedAccount ? updatedAccount.phoneVerified === true : sessionRecord.phoneVerified === true,
       updatedAt: nowIso,
       profile: sanitizeProfileForPublic_(nextProfile)
+    };
+  });
+}
+
+function handleUserPhoneRequestCode_(data) {
+  if (!isSmsAuthConfigured_()) {
+    return { ok: false, error: "SMS verification is not configured on this deployment." };
+  }
+
+  var token = String(data.sessionToken || "");
+  var sessionRecord = getUserSessionRecord_(token);
+  if (!sessionRecord) {
+    return { ok: false, error: "Sign in again to verify your phone.", code: "user_session_required" };
+  }
+
+  var phone = normalizePhoneE164_(data.phone);
+  if (!isValidPhoneE164_(phone)) {
+    return { ok: false, error: "Enter a valid phone number." };
+  }
+
+  return withScriptLock_(function() {
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    ensureAccountRecordForEmail_(accountsSheet, profilesSheet, sessionRecord.email, {
+      createIfMissing: true,
+      username: sessionRecord.username,
+      phone: sessionRecord.phone,
+      phoneVerified: sessionRecord.phoneVerified === true
+    });
+
+    var accountRecords = getAccountRecords_(accountsSheet);
+    var byPhone = findAccountRecordByPhone_(accountRecords, phone);
+    if (byPhone && byPhone.email !== normalizeEmail_(sessionRecord.email)) {
+      return {
+        ok: false,
+        error: "That phone number is already linked to another account.",
+        code: "phone_in_use"
+      };
+    }
+
+    var cache = CacheService.getScriptCache();
+    var cooldownKey = getUserPhoneCooldownCacheKey_(phone);
+    if (cache.get(cooldownKey)) {
+      return { ok: false, error: "Please wait a minute before requesting another code." };
+    }
+
+    cache.put(cooldownKey, "1", USER_PHONE_COOLDOWN_SECONDS);
+    var code = generateOtpCode_();
+    cache.put(getUserPhoneAuthCodeCacheKey_(phone), JSON.stringify({
+      codeHash: sha256Hex_(code),
+      expiresAt: Date.now() + USER_PHONE_CODE_TTL_SECONDS * 1000,
+      email: normalizeEmail_(sessionRecord.email)
+    }), USER_PHONE_CODE_TTL_SECONDS);
+
+    try {
+      sendSmsMessage_(phone, "Your Link2Nite verification code is " + code + ". It expires in 10 minutes.");
+    } catch (err) {
+      cache.remove(cooldownKey);
+      cache.remove(getUserPhoneAuthCodeCacheKey_(phone));
+      return { ok: false, error: "Couldn't send the SMS code right now." };
+    }
+
+    return {
+      ok: true,
+      phone: phone,
+      message: "SMS code sent to " + maskPhone_(phone) + "."
+    };
+  });
+}
+
+function handleUserPhoneVerifyCode_(data) {
+  var token = String(data.sessionToken || "");
+  var sessionRecord = getUserSessionRecord_(token);
+  if (!sessionRecord) {
+    return { ok: false, error: "Sign in again to verify your phone.", code: "user_session_required" };
+  }
+
+  var phone = normalizePhoneE164_(data.phone);
+  var code = String(data.code || "").replace(/\D+/g, "").slice(0, 6);
+  if (!isValidPhoneE164_(phone) || code.length !== 6) {
+    return { ok: false, error: "Invalid or expired SMS code." };
+  }
+
+  var cache = CacheService.getScriptCache();
+  var raw = cache.get(getUserPhoneAuthCodeCacheKey_(phone));
+  if (!raw) {
+    return { ok: false, error: "Invalid or expired SMS code." };
+  }
+
+  try {
+    var stored = JSON.parse(raw);
+    if (!stored || !stored.codeHash || !stored.expiresAt || stored.expiresAt < Date.now()) {
+      return { ok: false, error: "Invalid or expired SMS code." };
+    }
+    if (stored.codeHash !== sha256Hex_(code)) {
+      return { ok: false, error: "Invalid or expired SMS code." };
+    }
+    if (normalizeEmail_(stored.email) !== normalizeEmail_(sessionRecord.email)) {
+      return { ok: false, error: "This SMS code belongs to a different account." };
+    }
+  } catch (err) {
+    return { ok: false, error: "Invalid or expired SMS code." };
+  }
+
+  return withScriptLock_(function() {
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, sessionRecord.email, {
+      createIfMissing: true,
+      username: sessionRecord.username,
+      phone: sessionRecord.phone,
+      phoneVerified: sessionRecord.phoneVerified === true
+    });
+    var accountRecords = getAccountRecords_(accountsSheet);
+    var byPhone = findAccountRecordByPhone_(accountRecords, phone);
+    if (byPhone && byPhone.email !== normalizeEmail_(sessionRecord.email)) {
+      return {
+        ok: false,
+        error: "That phone number is already linked to another account.",
+        code: "phone_in_use"
+      };
+    }
+
+    var nowIso = new Date().toISOString();
+    var updatedAccount = upsertAccountRecord_(
+      accountsSheet,
+      accountRecord,
+      sessionRecord.email,
+      accountRecord ? accountRecord.username : sessionRecord.username,
+      phone,
+      true,
+      accountRecord ? (accountRecord.createdAt || nowIso) : nowIso,
+      nowIso
+    );
+
+    cache.remove(getUserPhoneAuthCodeCacheKey_(phone));
+    var username = updatedAccount ? updatedAccount.username : String(sessionRecord.username || "").trim();
+    var expiresAt = storeUserSessionRecord_(token, sessionRecord.email, username, phone, true);
+    return {
+      ok: true,
+      username: username,
+      phone: phone,
+      phoneVerified: true,
+      expiresAt: expiresAt
     };
   });
 }
@@ -1012,6 +1444,8 @@ function doPost(e) {
     if (action === "auth_logout") return jsonResponse_(handleAuthLogout_(data));
     if (action === "user_auth_request_code") return jsonResponse_(handleUserRequestCode_(data));
     if (action === "user_auth_verify_code") return jsonResponse_(handleUserVerifyCode_(data));
+    if (action === "user_phone_request_code") return jsonResponse_(handleUserPhoneRequestCode_(data));
+    if (action === "user_phone_verify_code") return jsonResponse_(handleUserPhoneVerifyCode_(data));
     if (action === "user_session_status") return jsonResponse_(handleUserSessionStatus_(data));
     if (action === "user_logout") return jsonResponse_(handleUserLogout_(data));
     if (action === "shared_snapshot") return jsonResponse_(handleSharedSnapshot_(data));
@@ -1110,6 +1544,8 @@ function doGet(e) {
       supportsUserAuth: true,
       supportsSharedState: true,
       supportsAppBackend: true,
+      supportsPhoneAuth: isSmsAuthConfigured_(),
+      supportsSmsAuth: isSmsAuthConfigured_(),
       feature: String((e && e.parameter && e.parameter.feature) || "app_backend")
     });
   }

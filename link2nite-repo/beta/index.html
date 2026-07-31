@@ -280,7 +280,7 @@
 
     .input-group { margin-bottom: 14px; }
     label { font-size: 13px; color: #e5e7eb; display: block; margin-bottom: 4px; }
-    input[type="text"], select, textarea, input[type="file"] {
+    input[type="text"], input[type="email"], input[type="tel"], select, textarea, input[type="file"] {
       width: 100%;
       padding: 10px 12px;
       border-radius: 12px;
@@ -291,7 +291,7 @@
       outline: none;
       appearance:none;
     }
-    input[type="text"]:focus, select:focus, textarea:focus {
+    input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus, select:focus, textarea:focus {
       border-color: rgba(129, 140, 248, 0.9);
       box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.7);
     }
@@ -303,6 +303,30 @@
       padding: 8px;
       font-size: 12px;
       cursor: pointer;
+    }
+    .verify-actions {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    .verify-actions .pill-button {
+      flex:1 1 140px;
+      margin-top:0;
+    }
+    .verify-status {
+      font-size:12px;
+      margin-top:6px;
+      color:#94a3b8;
+    }
+    .verify-status.ok { color:#86efac; }
+    .verify-status.warn { color:#fbbf24; }
+    .verify-status.err { color:#fca5a5; }
+    .verify-inline-hint {
+      font-size:11px;
+      color:#94a3b8;
+      margin-top:6px;
+      line-height:1.4;
     }
 
     .checkbox-row {
@@ -1684,7 +1708,35 @@
           </div>
           <div class="input-group">
             <label>Email <span style="color:#f97373;">(required)</span></label>
-            <input type="email" id="email-input" placeholder="e.g., you@example.com" />
+            <input type="email" id="email-input" placeholder="e.g., you@example.com" oninput="handleOnboardingIdentityInputChange()" />
+            <div class="verify-actions">
+              <button class="pill-button secondary small" type="button" onclick="requestOnboardingEmailCode()">Send email code</button>
+            </div>
+            <div class="verify-inline-hint">We email a 6-digit code before the account can be created.</div>
+          </div>
+          <div class="input-group">
+            <label>Email verification code</label>
+            <input type="text" id="email-code-input" inputmode="numeric" maxlength="6" placeholder="6-digit email code" />
+            <div class="verify-actions">
+              <button class="pill-button secondary small" type="button" onclick="verifyOnboardingEmailCode()">Verify email</button>
+            </div>
+            <div id="email-verify-status" class="verify-status">Email verification required before account creation.</div>
+          </div>
+          <div class="input-group">
+            <label>Phone <span style="color:#f97373;">(required)</span></label>
+            <input type="tel" id="phone-input" placeholder="e.g., (917) 555-0123" oninput="handleOnboardingIdentityInputChange()" />
+            <div class="verify-actions">
+              <button class="pill-button secondary small" type="button" onclick="requestOnboardingPhoneCode()">Send SMS code</button>
+            </div>
+            <div class="verify-inline-hint">We text a 6-digit code to validate the phone number for safety.</div>
+          </div>
+          <div class="input-group">
+            <label>SMS verification code</label>
+            <input type="text" id="phone-code-input" inputmode="numeric" maxlength="6" placeholder="6-digit SMS code" />
+            <div class="verify-actions">
+              <button class="pill-button secondary small" type="button" onclick="verifyOnboardingPhoneCode()">Verify phone</button>
+            </div>
+            <div id="phone-verify-status" class="verify-status">Phone verification required before account creation.</div>
           </div>
           <div class="input-group">
             <label>Age <span style="color:#f97373;">(required)</span></label>
@@ -1725,8 +1777,8 @@
           </div>
           <button class="pill-button" onclick="saveUsername()">Continue</button>
           <p class="footer-hint">
-            Age, gender, and preferences are required for the app logic.<br />
-            You can hide your age visually if you want.
+            Email and phone must be verified before the account is created.<br />
+            Age, gender, and preferences are required for the app logic.
           </p>
         </div>
       </section>
@@ -4194,7 +4246,8 @@ let currentUserName = null;
     let sharedPollingHandle = null;
     let sharedAuthPromptBusy = false;
     const authSupportState = { checked:false, available:false, checking:false, error:"" };
-    const sharedBackendState = { checked:false, available:false, userAuth:false, shared:false, checking:false, error:"" };
+    const sharedBackendState = { checked:false, available:false, userAuth:false, shared:false, phoneAuth:false, checking:false, error:"" };
+    const onboardingVerificationState = { emailRequestedFor:"", phoneRequestedFor:"" };
     function saveProfile(name, partial){
       const profiles=getProfilesData();
       const existing=profiles[name]||{};
@@ -4222,6 +4275,26 @@ let currentUserName = null;
 
     function isValidEmail(value){
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+    }
+
+    function normalizePhoneE164(value){
+      const raw = String(value || "").trim();
+      if(!raw) return "";
+      const digits = raw.replace(/\D+/g, "");
+      if(raw.startsWith("+")){
+        if(digits.length < 10 || digits.length > 15) return "";
+        return "+" + digits;
+      }
+      if(digits.length === 10) return "+1" + digits;
+      if(digits.length === 11 && digits.startsWith("1")) return "+" + digits;
+      return "";
+    }
+
+    function maskPhone(value){
+      const normalized = normalizePhoneE164(value);
+      if(!normalized) return "";
+      const tail = normalized.slice(-4);
+      return normalized.slice(0, Math.max(0, normalized.length - 4)).replace(/\d/g, "•") + tail;
     }
 
     function getAdminAuthEndpoint(){
@@ -4611,6 +4684,8 @@ let currentUserName = null;
           sessionToken: String(parsed.sessionToken || ""),
           email: normalizeEmail(parsed.email),
           username: String(parsed.username || "").trim(),
+          phone: String(parsed.phone || "").trim(),
+          phoneVerified: parsed.phoneVerified === true,
           expiresAt: expiresAt,
           signedInAt: parsed.signedInAt || ""
         };
@@ -4625,6 +4700,8 @@ let currentUserName = null;
         sessionToken: String(session.sessionToken || ""),
         email: normalizeEmail(session.email),
         username: String(session.username || "").trim(),
+        phone: String(session.phone || "").trim(),
+        phoneVerified: session.phoneVerified === true,
         expiresAt: session.expiresAt || "",
         signedInAt: session.signedInAt || new Date().toISOString()
       };
@@ -4663,6 +4740,7 @@ let currentUserName = null;
         sharedBackendState.available = false;
         sharedBackendState.userAuth = false;
         sharedBackendState.shared = false;
+        sharedBackendState.phoneAuth = false;
         sharedBackendState.checking = false;
         sharedBackendState.error = "missing_endpoint";
         return false;
@@ -4681,11 +4759,13 @@ let currentUserName = null;
         sharedBackendState.available = !!(data && data.ok && (data.supportsSharedState || data.supportsAppBackend));
         sharedBackendState.userAuth = !!(data && data.ok && data.supportsUserAuth);
         sharedBackendState.shared = !!(data && data.ok && data.supportsSharedState);
+        sharedBackendState.phoneAuth = !!(data && data.ok && (data.supportsPhoneAuth || data.supportsSmsAuth));
         sharedBackendState.error = sharedBackendState.available ? "" : "not_deployed";
       }catch(e){
         sharedBackendState.available = false;
         sharedBackendState.userAuth = false;
         sharedBackendState.shared = false;
+        sharedBackendState.phoneAuth = false;
         sharedBackendState.error = "network";
       }
 
@@ -4747,6 +4827,8 @@ let currentUserName = null;
           sessionToken: userAuthSession.sessionToken,
           email: viewer.email,
           username: viewer.username || (userAuthSession && userAuthSession.username) || "",
+          phone: viewer.phone || (userAuthSession && userAuthSession.phone) || "",
+          phoneVerified: viewer.phoneVerified === true || (userAuthSession && userAuthSession.phoneVerified === true),
           expiresAt: viewer.expiresAt || (userAuthSession && userAuthSession.expiresAt) || "",
           signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
         });
@@ -4754,8 +4836,8 @@ let currentUserName = null;
 
       const preferredUserName = String(
         (viewer && viewer.authenticated && viewer.username) ||
-        (userAuthSession && userAuthSession.username) ||
-        localStorage.getItem("tonightly_username") ||
+        (isUserSession() && userAuthSession && userAuthSession.username) ||
+        (!PUBLIC_REAL_LAUNCH_MODE ? localStorage.getItem("tonightly_username") : "") ||
         currentUserName ||
         ""
       ).trim();
@@ -4816,6 +4898,8 @@ let currentUserName = null;
             sessionToken: userAuthSession.sessionToken,
             email: data.email || userAuthSession.email,
             username: data.username || userAuthSession.username || "",
+            phone: data.phone || userAuthSession.phone || "",
+            phoneVerified: data.phoneVerified === true || userAuthSession.phoneVerified === true,
             expiresAt: data.expiresAt || userAuthSession.expiresAt || "",
             signedInAt: userAuthSession.signedInAt || new Date().toISOString()
           });
@@ -5008,6 +5092,230 @@ let currentUserName = null;
       }, SHARED_BACKEND_POLL_MS);
     }
 
+    function getOnboardingEmailValue(){
+      return normalizeEmail((document.getElementById("email-input") || {}).value || "");
+    }
+
+    function getOnboardingPhoneValue(){
+      return normalizePhoneE164((document.getElementById("phone-input") || {}).value || "");
+    }
+
+    function isOnboardingEmailVerified(){
+      const email = getOnboardingEmailValue();
+      return !!(email && isUserSession() && normalizeEmail((userAuthSession && userAuthSession.email) || "") === email);
+    }
+
+    function isOnboardingPhoneVerified(){
+      const phone = getOnboardingPhoneValue();
+      return !!(
+        phone &&
+        isOnboardingEmailVerified() &&
+        userAuthSession &&
+        userAuthSession.phoneVerified === true &&
+        normalizePhoneE164(userAuthSession.phone) === phone
+      );
+    }
+
+    function renderOnboardingVerificationState(){
+      const emailStatus = document.getElementById("email-verify-status");
+      const phoneStatus = document.getElementById("phone-verify-status");
+      const email = getOnboardingEmailValue();
+      const phone = getOnboardingPhoneValue();
+
+      if(emailStatus){
+        emailStatus.className = "verify-status";
+        if(!email){
+          emailStatus.textContent = "Enter your email first.";
+        } else if(isOnboardingEmailVerified()){
+          emailStatus.classList.add("ok");
+          emailStatus.textContent = `Email verified for ${email}.`;
+        } else if(onboardingVerificationState.emailRequestedFor === email){
+          emailStatus.classList.add("warn");
+          emailStatus.textContent = `Code sent to ${email}. Enter the 6-digit code to continue.`;
+        } else {
+          emailStatus.textContent = "Email verification required before account creation.";
+        }
+      }
+
+      if(phoneStatus){
+        phoneStatus.className = "verify-status";
+        if(!phone){
+          phoneStatus.textContent = "Enter your phone number first.";
+        } else if(!sharedBackendState.phoneAuth){
+          phoneStatus.classList.add("warn");
+          phoneStatus.textContent = "SMS verification is not live on this deployment yet.";
+        } else if(!isOnboardingEmailVerified()){
+          phoneStatus.textContent = "Verify your email before sending an SMS code.";
+        } else if(isOnboardingPhoneVerified()){
+          phoneStatus.classList.add("ok");
+          phoneStatus.textContent = `Phone verified for ${maskPhone(phone)}.`;
+        } else if(onboardingVerificationState.phoneRequestedFor === phone){
+          phoneStatus.classList.add("warn");
+          phoneStatus.textContent = `SMS code sent to ${maskPhone(phone)}. Enter the 6-digit code to continue.`;
+        } else {
+          phoneStatus.textContent = "Phone verification required before account creation.";
+        }
+      }
+    }
+
+    function handleOnboardingIdentityInputChange(){
+      renderOnboardingVerificationState();
+    }
+
+    async function requestOnboardingEmailCode(){
+      const email = getOnboardingEmailValue();
+      if(!isValidEmail(email)){
+        toast("Enter a valid email first.");
+        return;
+      }
+      if(!await ensureSharedBackendAvailable() || !sharedBackendState.userAuth || !sharedBackendState.shared){
+        toast("Account verification is not live on this deployment yet.");
+        renderOnboardingVerificationState();
+        return;
+      }
+
+      try{
+        const data = await postSharedBackend({
+          action:"user_auth_request_code",
+          email
+        });
+        if(!data || !data.ok){
+          toast((data && data.error) || "Couldn't send the email code right now.");
+          return;
+        }
+        onboardingVerificationState.emailRequestedFor = email;
+        renderOnboardingVerificationState();
+        toast((data && data.message) || `Email code sent to ${email}.`);
+      }catch(e){
+        toast("Couldn't send the email code right now.");
+      }
+    }
+
+    async function verifyOnboardingEmailCode(){
+      const email = getOnboardingEmailValue();
+      const codeInput = document.getElementById("email-code-input");
+      const code = String((codeInput && codeInput.value) || "").replace(/\D+/g,"").slice(0,6);
+      if(!isValidEmail(email)){
+        toast("Enter a valid email first.");
+        return;
+      }
+      if(code.length !== 6){
+        toast("Enter the 6-digit email code.");
+        return;
+      }
+
+      try{
+        const data = await postSharedBackend({
+          action:"user_auth_verify_code",
+          email,
+          code
+        });
+        if(data && data.ok && data.authenticated && data.sessionToken){
+          persistUserAuthSession({
+            sessionToken: data.sessionToken,
+            email: data.email || email,
+            username: data.username || "",
+            phone: data.phone || "",
+            phoneVerified: data.phoneVerified === true,
+            expiresAt: data.expiresAt || "",
+            signedInAt: new Date().toISOString()
+          });
+          onboardingVerificationState.emailRequestedFor = email;
+          if(data.phone && !document.getElementById("phone-input").value){
+            document.getElementById("phone-input").value = data.phone;
+          }
+          if(codeInput) codeInput.value = "";
+          await syncSharedSnapshot({silent:true});
+          renderOnboardingVerificationState();
+          toast("Email verified.");
+          return;
+        }
+        toast((data && data.error) || "Invalid or expired email code.");
+      }catch(e){
+        toast("Couldn't verify the email code right now.");
+      }
+    }
+
+    async function requestOnboardingPhoneCode(){
+      const phone = getOnboardingPhoneValue();
+      if(!phone){
+        toast("Enter a valid phone number first.");
+        return;
+      }
+      if(!isOnboardingEmailVerified()){
+        toast("Verify your email first.");
+        return;
+      }
+      if(!await ensureSharedBackendAvailable() || !sharedBackendState.phoneAuth){
+        toast("SMS verification is not live on this deployment yet.");
+        renderOnboardingVerificationState();
+        return;
+      }
+
+      try{
+        const data = await postSharedBackend({
+          action:"user_phone_request_code",
+          sessionToken: userAuthSession.sessionToken,
+          phone
+        });
+        if(!data || !data.ok){
+          toast((data && data.error) || "Couldn't send the SMS code right now.");
+          return;
+        }
+        onboardingVerificationState.phoneRequestedFor = phone;
+        renderOnboardingVerificationState();
+        toast((data && data.message) || `SMS code sent to ${maskPhone(phone)}.`);
+      }catch(e){
+        toast("Couldn't send the SMS code right now.");
+      }
+    }
+
+    async function verifyOnboardingPhoneCode(){
+      const phone = getOnboardingPhoneValue();
+      const codeInput = document.getElementById("phone-code-input");
+      const code = String((codeInput && codeInput.value) || "").replace(/\D+/g,"").slice(0,6);
+      if(!phone){
+        toast("Enter a valid phone number first.");
+        return;
+      }
+      if(!isOnboardingEmailVerified()){
+        toast("Verify your email first.");
+        return;
+      }
+      if(code.length !== 6){
+        toast("Enter the 6-digit SMS code.");
+        return;
+      }
+
+      try{
+        const data = await postSharedBackend({
+          action:"user_phone_verify_code",
+          sessionToken: userAuthSession.sessionToken,
+          phone,
+          code
+        });
+        if(data && data.ok){
+          persistUserAuthSession({
+            sessionToken: userAuthSession.sessionToken,
+            email: userAuthSession.email,
+            username: userAuthSession.username || "",
+            phone: data.phone || phone,
+            phoneVerified: data.phoneVerified === true,
+            expiresAt: userAuthSession.expiresAt || "",
+            signedInAt: userAuthSession.signedInAt || new Date().toISOString()
+          });
+          onboardingVerificationState.phoneRequestedFor = phone;
+          if(codeInput) codeInput.value = "";
+          renderOnboardingVerificationState();
+          toast("Phone verified.");
+          return;
+        }
+        toast((data && data.error) || "Invalid or expired SMS code.");
+      }catch(e){
+        toast("Couldn't verify the SMS code right now.");
+      }
+    }
+
     function requireAdminAccess(message="Admin tools are available only after team sign-in in Settings."){
       if(isAdminSession()) return true;
       toast(message);
@@ -5132,6 +5440,17 @@ function showScreen(id){
           renderImageDebug();
         }
       }catch(e){}
+      try{
+        if(id==="screen-username"){
+          if(isUserSession()){
+            const emailInput = document.getElementById("email-input");
+            const phoneInput = document.getElementById("phone-input");
+            if(emailInput && !emailInput.value) emailInput.value = userAuthSession.email || "";
+            if(phoneInput && !phoneInput.value && userAuthSession.phone) phoneInput.value = userAuthSession.phone;
+          }
+          renderOnboardingVerificationState();
+        }
+      }catch(e){}
 }
 
     function setActiveNav(which){
@@ -5153,7 +5472,11 @@ function showScreen(id){
     function finishOnboarding(){ localStorage.setItem("tonightly_onboarding_done","1"); proceedAfterOnboarding(); }
 
     function proceedAfterOnboarding(){
-      const saved=String(localStorage.getItem("tonightly_username") || (userAuthSession && userAuthSession.username) || "").trim();
+      const saved=String(
+        (isUserSession() && userAuthSession && userAuthSession.username) ||
+        (!PUBLIC_REAL_LAUNCH_MODE ? localStorage.getItem("tonightly_username") : "") ||
+        ""
+      ).trim();
       if(saved){
         currentUserName=saved;
         updateUserLabel();
@@ -5166,6 +5489,7 @@ function showScreen(id){
     async function saveUsername(){
       const name=($("username-input").value||"").trim();
       const email=normalizeEmail(($("email-input").value||""));
+      const phone=normalizePhoneE164(($("phone-input").value||""));
       const ageText=($("age-input").value||"").trim();
       const gender=($("gender-input").value||"").trim();
       const showMe=($("showme-input").value||"").trim();
@@ -5174,6 +5498,7 @@ function showScreen(id){
 
       if(!name){ alert("Add at least a name or nickname 😉"); return; }
       if(!isValidEmail(email)){ alert("Enter a valid email."); return; }
+      if(!phone){ alert("Enter a valid phone number."); return; }
       const age=parseInt(ageText,10);
       if(!ageText || isNaN(age) || age<18 || age>99){ alert("Enter a valid age (18+)."); return; }
       if(!gender){ alert("Select your gender."); return; }
@@ -5183,10 +5508,38 @@ function showScreen(id){
       let resolvedName = name;
       const sharedReady = await ensureSharedBackendAvailable();
 
-      if(sharedReady && sharedBackendState.userAuth && sharedBackendState.shared){
-        const verified = await ensureUserSignedInForEmail(email);
-        if(!verified) return;
+      if(PUBLIC_REAL_LAUNCH_MODE){
+        if(!sharedReady || !sharedBackendState.userAuth || !sharedBackendState.shared){
+          toast("This deployment is still missing live account verification. Redeploy the backend first.");
+          renderOnboardingVerificationState();
+          return;
+        }
+        if(!sharedBackendState.phoneAuth){
+          toast("SMS verification is not live on this deployment yet.");
+          renderOnboardingVerificationState();
+          return;
+        }
+      }
 
+      if(!isOnboardingEmailVerified()){
+        toast("Verify your email before creating the account.");
+        renderOnboardingVerificationState();
+        return;
+      }
+
+      if(!isOnboardingPhoneVerified()){
+        toast("Verify your phone by SMS before creating the account.");
+        renderOnboardingVerificationState();
+        return;
+      }
+
+      if(!await refreshUserSession({silent:true})){
+        toast("Your email verification expired. Request a new code.");
+        renderOnboardingVerificationState();
+        return;
+      }
+
+      if(sharedReady && sharedBackendState.userAuth && sharedBackendState.shared){
         try{
           const data = await postSharedBackend({
             action:"shared_profile_upsert",
@@ -5202,6 +5555,8 @@ function showScreen(id){
                 sessionToken: userAuthSession.sessionToken,
                 email: email,
                 username: resolvedName,
+                phone: (userAuthSession && userAuthSession.phone) || phone,
+                phoneVerified: userAuthSession && userAuthSession.phoneVerified === true,
                 expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
                 signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
               });
@@ -5224,6 +5579,8 @@ function showScreen(id){
             sessionToken: userAuthSession.sessionToken,
             email: email,
             username: resolvedName,
+            phone: (userAuthSession && userAuthSession.phone) || phone,
+            phoneVerified: userAuthSession && userAuthSession.phoneVerified === true,
             expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
             signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
           });
@@ -5231,6 +5588,9 @@ function showScreen(id){
           toast("Couldn't create this shared profile right now.");
           return;
         }
+      } else if(PUBLIC_REAL_LAUNCH_MODE){
+        toast("This deployment is not ready for public shared accounts yet.");
+        return;
       }
 
       currentUserName=resolvedName;
@@ -7789,7 +8149,11 @@ function initApp(){
         showScreen("screen-onboarding");
         return;
       }
-      const savedUser=String(localStorage.getItem("tonightly_username") || (userAuthSession && userAuthSession.username) || "").trim();
+      const savedUser=String(
+        (isUserSession() && userAuthSession && userAuthSession.username) ||
+        (!PUBLIC_REAL_LAUNCH_MODE ? localStorage.getItem("tonightly_username") : "") ||
+        ""
+      ).trim();
       if(savedUser){
         currentUserName=savedUser;
         updateUserLabel();
@@ -9072,6 +9436,11 @@ function resetDemoData(){
     window.sendChatMessage=sendChatMessage;
     window.nextOnboarding=nextOnboarding;
     window.skipOnboarding=skipOnboarding;
+    window.handleOnboardingIdentityInputChange=handleOnboardingIdentityInputChange;
+    window.requestOnboardingEmailCode=requestOnboardingEmailCode;
+    window.verifyOnboardingEmailCode=verifyOnboardingEmailCode;
+    window.requestOnboardingPhoneCode=requestOnboardingPhoneCode;
+    window.verifyOnboardingPhoneCode=verifyOnboardingPhoneCode;
     window.setFilter=setFilter;
     window.toggleGoingForCurrent=toggleGoingForCurrent;
     window.toggleInterestedForCurrent=toggleInterestedForCurrent;
