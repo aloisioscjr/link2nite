@@ -4256,10 +4256,16 @@ let currentUserName = null;
     const authSupportState = { checked:false, available:false, checking:false, error:"" };
     const sharedBackendState = { checked:false, available:false, userAuth:false, shared:false, phoneAuth:false, checking:false, error:"" };
     const onboardingVerificationState = { emailRequestedFor:"", phoneRequestedFor:"" };
+    function sanitizeDisplayNameValue(value){
+      return String(value||"").trim().slice(0,80);
+    }
     function saveProfile(name, partial){
       const profiles=getProfilesData();
       const existing=profiles[name]||{};
-      profiles[name]={...existing, ...partial, isBot: existing.isBot===true};
+      const nextProfile={...existing, ...partial, isBot: existing.isBot===true};
+      const displayName=sanitizeDisplayNameValue(nextProfile.displayName || existing.displayName || name);
+      if(displayName) nextProfile.displayName=displayName;
+      profiles[name]=nextProfile;
       setProfilesData(profiles);
       if(name===currentUserName){
         queueSharedOperation(async () => {
@@ -4270,11 +4276,23 @@ let currentUserName = null;
     function getProfile(name){
       const p=getProfilesData();
       const base=p[name]||{};
+      const displayName=sanitizeDisplayNameValue(base.displayName || name);
+      const profileWithName=displayName ? {...base, displayName} : base;
       if(currentUserName && name===currentUserName){
-        const privateEmail = normalizeEmail((userAuthSession && userAuthSession.email) || base.email || "");
-        return privateEmail ? {...base, email: privateEmail} : base;
+        const privateEmail = normalizeEmail((userAuthSession && userAuthSession.email) || profileWithName.email || "");
+        return privateEmail ? {...profileWithName, email: privateEmail} : profileWithName;
       }
-      return base;
+      return profileWithName;
+    }
+
+    function getProfileDisplayName(name){
+      if(!name) return "";
+      const profile=getProfile(name);
+      return sanitizeDisplayNameValue((profile && profile.displayName) || name) || String(name||"").trim();
+    }
+
+    function getCurrentUserDisplayName(){
+      return getProfileDisplayName(currentUserName);
     }
 
     function normalizeEmail(value){
@@ -4801,7 +4819,7 @@ let currentUserName = null;
     function getPublicProfilePayload(profile){
       const source = profile && typeof profile === "object" ? profile : {};
       const payload = {};
-      ["age","vibe","gender","showAge","showMe","bio","location","jobTitle","company","school","instagram"].forEach(key => {
+      ["displayName","age","vibe","gender","showAge","showMe","bio","location","jobTitle","company","school","instagram"].forEach(key => {
         if(source[key] !== undefined) payload[key] = source[key];
       });
       if(Array.isArray(source.photos)) payload.photos = source.photos.slice(0,6);
@@ -5458,7 +5476,7 @@ let currentUserName = null;
       if(!currentUserName) return;
       const p=getProfile(currentUserName);
 
-      $("profile-card-name").textContent=currentUserName;
+      $("profile-card-name").textContent=getCurrentUserDisplayName();
       $("profile-card-age").textContent=(p.showAge!==false && p.age) ? p.age : "";
       
       // Add verification badge
@@ -5639,7 +5657,7 @@ function showScreen(id){
           return;
         }
 
-        const baseProfile = {age, email, vibe, gender, showAge, showMe};
+        const baseProfile = {displayName: name, age, email, vibe, gender, showAge, showMe};
         let resolvedName = name;
         const sharedReady = await ensureSharedBackendAvailable();
 
@@ -5701,7 +5719,7 @@ function showScreen(id){
                 updateUserLabel();
                 setInlineStatus("onboarding-submit-status", "Conta encontrada. Entrando...", "ok");
                 routeSignedInUser();
-                toast(`Bem-vindo de volta, ${resolvedName}.`);
+                toast(`Bem-vindo de volta, ${getProfileDisplayName(resolvedName)}.`);
                 return;
               }
               setInlineStatus("onboarding-submit-status", "Não foi possível criar o perfil agora.", "err");
@@ -5744,7 +5762,7 @@ function showScreen(id){
         const syncedProfile = getProfile(currentUserName) || {};
         if(hasAtLeastOneProfilePhoto(syncedProfile)){
           setInlineStatus("onboarding-submit-status", "Conta pronta. Entrando...", "ok");
-          toast(`Bem-vindo de volta, ${currentUserName}.`);
+          toast(`Bem-vindo de volta, ${getCurrentUserDisplayName()}.`);
           openHomeScreen();
           return;
         }
@@ -5880,10 +5898,11 @@ function showScreen(id){
     function updateUserLabel(){
       const label=$("current-user-label");
       if(currentUserName){
+        const displayName=escapeHtml(getCurrentUserDisplayName());
         const adminChip = isAdminSession()
           ? '<span class="user-label-link" onclick="openSettings()">admin unlocked</span>'
           : "";
-        label.innerHTML='You: '+currentUserName+
+        label.innerHTML='You: '+displayName+
           adminChip+
           '<span class="user-label-link" onclick="openProfile()">view profile</span>'+
           '<span class="user-label-link" onclick="askNewName()">change</span>';
@@ -6407,7 +6426,7 @@ function renderPlacesList(){
     }
 
     function initialsFromName(name){
-      const parts=String(name||"?").trim().split(/\s+/).slice(0,2);
+      const parts=getProfileDisplayName(name).split(/\s+/).slice(0,2);
       return parts.map(p=>p[0]||"").join("").toUpperCase() || "?";
     }
 
@@ -6538,6 +6557,7 @@ let extraHtml=extraParts.join(" · ");
       const profiles = getProfilesData() || {};
       const tiles = limitedNames.map(name=>{
         const prof = profiles[name] || {};
+        const displayName = getProfileDisplayName(name);
         const photos = (prof.photos || prof.photoUrls || []);
         const img = (photos && photos.length) ? photos[0] : (prof.photo || prof.avatar || "");
         const age = prof.age || "";
@@ -6563,7 +6583,7 @@ let extraHtml=extraParts.join(" · ");
 
         const initials = initialsFromName(name);
         const avatar = img
-          ? `<div class="profile-mini-avatar"><img src="${escapeAttr(img)}" alt="${escapeAttr(name)}" onerror="this.parentNode.textContent='${initials}';"></div>`
+          ? `<div class="profile-mini-avatar"><img src="${escapeAttr(img)}" alt="${escapeAttr(displayName)}" onerror="this.parentNode.textContent='${initials}';"></div>`
           : `<div class="profile-mini-avatar">${initials}</div>`;
         
         // Check verification status
@@ -6577,7 +6597,7 @@ let extraHtml=extraParts.join(" · ");
             ${avatar}
             <div class="profile-mini-main">
               <div class="profile-mini-top">
-                <div class="profile-mini-name">${escapeHtml(name)}${ageText}${verifiedBadge}</div>
+                <div class="profile-mini-name">${escapeHtml(displayName)}${ageText}${verifiedBadge}</div>
                 <div class="profile-like ${likedClass}" onclick="event.stopPropagation(); toggleLike('${escapeAttr(name)}', this)">♥</div>
               </div>
               <div class="profile-mini-sub">${sub}</div>
@@ -6684,7 +6704,8 @@ function renderGoingForPlace(placeId){
       
       listContainer.innerHTML=filteredList.map(name=>{
         const profile=getProfile(name);
-        const initial=(name.trim()[0]||"?").toUpperCase();
+        const displayName=getProfileDisplayName(name);
+        const initial=(displayName.trim()[0]||"?").toUpperCase();
         const detailsParts=[];
         if(profile.showAge!==false && profile.age) detailsParts.push(String(profile.age));
         const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
@@ -6717,7 +6738,7 @@ function renderGoingForPlace(placeId){
 
         const avatarPhoto=profile.photos && profile.photos.length ? profile.photos[0] : null;
         const avatarHtml=avatarPhoto
-          ? `<div class="avatar-circle with-photo"><img src="${avatarPhoto}" alt="${name}" /></div>`
+          ? `<div class="avatar-circle with-photo"><img src="${avatarPhoto}" alt="${escapeAttr(displayName)}" /></div>`
           : `<div class="avatar-circle">${initial}</div>`;
 
         return `
@@ -6725,7 +6746,7 @@ function renderGoingForPlace(placeId){
             <div class="going-left">
               ${avatarHtml}
               <div class="person-main">
-                <div class="person-name"><span style="text-decoration:underline;cursor:pointer;" onclick="openPublicProfile(\'${name}\',{placeId: currentPlaceId})">${name}</span></div>
+                <div class="person-name"><span style="text-decoration:underline;cursor:pointer;" onclick="openPublicProfile(\'${name}\',{placeId: currentPlaceId})">${escapeHtml(displayName)}</span></div>
                 ${details}
               </div>
             </div>
@@ -6868,17 +6889,18 @@ function renderGoingForPlace(placeId){
         const placeName=place?place.name:"Some venue";
         const neighborhood=place?place.neighborhood:"";
         const profile=getProfile(m.other);
+        const displayName=getProfileDisplayName(m.other);
         const detailsParts=[];
         if(profile.showAge!==false && profile.age) detailsParts.push(String(profile.age));
         const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
         if(profile.vibe) detailsParts.push(profile.vibe);
         if(profile.location) detailsParts.push(profile.location);
-        const detailsText=detailsParts.length?`${m.other} · ${detailsParts.join(" · ")}`:m.other;
+        const detailsText=detailsParts.length?`${displayName} · ${detailsParts.join(" · ")}`:displayName;
         const encodedOther=encodeURIComponent(m.other);
 
         return `
           <div class="match-item">
-            <div class="match-place">You & ${m.other}</div>
+            <div class="match-place">You & ${escapeHtml(displayName)}</div>
             <div class="match-sub">${detailsText}</div>
             <div class="match-sub">Matched at: ${placeName} (${neighborhood})</div>
             <div style="font-size:12px;color:#e5e7eb;margin-bottom:6px;">
@@ -6912,6 +6934,7 @@ function renderGoingForPlace(placeId){
 
       const place=places.find(p=>p.id===placeId);
       const profile=getProfile(otherName);
+      const otherDisplayName=getProfileDisplayName(otherName);
       const detailsParts=[];
       if(profile.showAge!==false && profile.age) detailsParts.push(String(profile.age));
       const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
@@ -6920,7 +6943,7 @@ function renderGoingForPlace(placeId){
       const details=detailsParts.length?` (${detailsParts.join(" · ")})`:"";
       const isBot=profile && profile.isBot;
 
-      $("chat-title").textContent=`You & ${otherName}${details}`;
+      $("chat-title").textContent=`You & ${otherDisplayName}${details}`;
       $("chat-sub").textContent=place ? `Chat about ${place.name} (${place.neighborhood})${isBot?" · simulated profile for testing 🤖":""}.`
                                      : `Chat at this venue${isBot?" · simulated profile for testing 🤖":""}.`;
 
@@ -7020,7 +7043,7 @@ function renderGoingForPlace(placeId){
       const otherProfile=getProfile(currentChatOther);
       const place=places.find(p=>p.id===currentChatPlaceId);
       if(otherProfile && otherProfile.isBot){
-        const reply=buildBotReplyText(currentChatOther, currentUserName, place, text);
+        const reply=buildBotReplyText(currentChatOther, getCurrentUserDisplayName(), place, text);
         msgsData[key].push({from: currentChatOther, text: reply, ts: Date.now()+1});
         setMessagesData(msgsData);
         renderChatMessages();
@@ -8060,6 +8083,7 @@ function renderGoingForPlace(placeId){
       
       const tiles = filteredWho.slice(0,12).map(name=>{
         const prof = profiles[name] || {};
+        const displayName = getProfileDisplayName(name);
         const photos = (prof.photos || prof.photoUrls || []);
         const img = (photos && photos.length) ? photos[0] : (prof.photo || prof.avatar || "");
         const age = prof.age || "";
@@ -8075,9 +8099,9 @@ function renderGoingForPlace(placeId){
         
         return `
           <div class="person-tile" onclick="openPublicProfile('${escapeAttr(name)}')">
-            <img src="${escapeAttr(img)}" alt="${escapeAttr(name)}" onerror="this.style.display='none'">
+            <img src="${escapeAttr(img)}" alt="${escapeAttr(displayName)}" onerror="this.style.display='none'">
             <div class="person-overlay">
-              <div class="person-name">${escapeHtml(name)}${ageText}${verifiedBadge} <span class="mini-pill">📍 ${dist} mi</span></div>
+              <div class="person-name">${escapeHtml(displayName)}${ageText}${verifiedBadge} <span class="mini-pill">📍 ${dist} mi</span></div>
               <div class="person-mini"><span class="mini-pill">❤️ Liked you</span></div>
             </div>
           </div>
@@ -8387,7 +8411,7 @@ function initApp(){
       const p=getProfile(name);
       if(p && Array.isArray(p.photos) && p.photos.length) return p.photos[0];
       // fallback image (colored placeholder)
-      return "https://via.placeholder.com/900x1200.png?text="+encodeURIComponent(name);
+      return "https://via.placeholder.com/900x1200.png?text="+encodeURIComponent(getProfileDisplayName(name));
     }
 
     function profileMetaLine(name){
@@ -8432,6 +8456,7 @@ function initApp(){
       const names = swipeQueue.slice(0, 2);
       names.reverse().forEach((name, idx) => {
         const p=getProfile(name);
+        const displayName=getProfileDisplayName(name);
         const photo=profileMainPhoto(name);
         const meta=profileMetaLine(name);
         const showAge = p.showAge!==false;
@@ -8441,12 +8466,12 @@ function initApp(){
         el.dataset.name=name;
         el.innerHTML=`
           <div class="hero">
-            <img src="${photo}" alt="${name}" />
+            <img src="${photo}" alt="${escapeAttr(displayName)}" />
             <div class="badge-like">LIKE</div>
             <div class="badge-nope">NOPE</div>
             <div class="overlay"></div>
             <div class="info">
-              <div class="name">${name} <span class="age">${ageTxt}</span></div>
+              <div class="name">${escapeHtml(displayName)} <span class="age">${ageTxt}</span></div>
               <div class="meta">${meta || " "}</div><div class="icon-row" style="margin-top:10px;">${buildIconRowHtml(name)}</div>
             </div>
           </div>
@@ -8595,7 +8620,7 @@ function initApp(){
       const isMatch = likedBack && areProfilesCompatible(currentUserName, targetName);
 
       if(isMatch){
-        toast(`💖 Match with ${targetName}!`);
+        toast(`💖 Match with ${getProfileDisplayName(targetName)}!`);
         // Update the matches list
         renderMatches();
       } else {
@@ -8829,6 +8854,7 @@ function initApp(){
     function renderPublicProfile(){
       if(!publicProfileName) return;
       const p = getProfile(publicProfileName) || {};
+      const displayName = getProfileDisplayName(publicProfileName);
       const photos = Array.isArray(p.photos) ? p.photos : [];
 
       // Add verification badge
@@ -8837,7 +8863,7 @@ function initApp(){
         ? `<span style="color:#3b82f6;font-size:14px;margin-left:6px;font-weight:600;">✔ Verified</span>` 
         : "";
       
-      $("public-profile-card-name").innerHTML = publicProfileName + verifiedBadge;
+      $("public-profile-card-name").innerHTML = escapeHtml(displayName) + verifiedBadge;
       $("public-profile-card-age").textContent = (p.showAge!==false && p.age) ? p.age : "";
       $("public-profile-card-gender").textContent = p.gender ? genderLabel(p.gender) : "";
       $("public-profile-card-vibe").textContent = p.vibe || "—";
@@ -8857,7 +8883,7 @@ function initApp(){
       $("public-profile-lastactive").textContent = st.showActive!==false ? active : "";
 
       if(!photos.length){
-        $("public-profile-hero-img").src = "https://via.placeholder.com/900x1200.png?text="+encodeURIComponent(publicProfileName);
+        $("public-profile-hero-img").src = "https://via.placeholder.com/900x1200.png?text="+encodeURIComponent(displayName);
         $("public-profile-photo-dots").innerHTML = "";
       } else {
         if(publicProfilePhotoIndex>=photos.length) publicProfilePhotoIndex=0;
@@ -8940,7 +8966,7 @@ function initApp(){
       const likedBack=Array.isArray(fromOther) && fromOther.includes(currentUserName);
       const isMatch = likedBack && areProfilesCompatible(currentUserName, publicProfileName);
 
-      if(isMatch) toast(`💖 Match with ${publicProfileName}!`);
+      if(isMatch) toast(`💖 Match with ${getProfileDisplayName(publicProfileName)}!`);
       else toast(nowLiked ? "Liked ❤️" : "Unliked");
 
       renderPublicProfile();
@@ -8976,7 +9002,7 @@ function initApp(){
       const p=getProfile(currentUserName) || {};
       const s=getSettings();
       const settingsEmailInput = document.getElementById("settings-email");
-      document.getElementById("settings-username").textContent = currentUserName;
+      document.getElementById("settings-username").textContent = getCurrentUserDisplayName();
       settingsEmailInput.value = getCurrentUserEmail() || p.email || "";
       settingsEmailInput.disabled = isUserSession();
       document.getElementById("auth-email").value = getAdminSessionEmail() || getCurrentUserEmail() || "";

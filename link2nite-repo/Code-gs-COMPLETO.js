@@ -647,6 +647,32 @@ function findProfileRecordByUsername_(records, username) {
   return null;
 }
 
+function sanitizeDisplayName_(value) {
+  return String(value || "").trim().slice(0, 80);
+}
+
+function usernameExistsInRecords_(accountRecords, profileRecords, username) {
+  return !!(
+    findAccountRecordByUsername_(accountRecords || [], username) ||
+    findProfileRecordByUsername_(profileRecords || [], username)
+  );
+}
+
+function generateUniqueUsername_(desiredDisplayName, accountRecords, profileRecords) {
+  var base = sanitizeDisplayName_(desiredDisplayName) || "member";
+  var candidate = base;
+  var suffix = 2;
+  while (usernameExistsInRecords_(accountRecords, profileRecords, candidate)) {
+    candidate = base + " " + suffix;
+    suffix += 1;
+    if (suffix > 9999) {
+      candidate = base + " " + Utilities.getUuid().slice(0, 8);
+      if (!usernameExistsInRecords_(accountRecords, profileRecords, candidate)) break;
+    }
+  }
+  return candidate;
+}
+
 function writeProfileRecord_(sheet, rowNumber, username, email, profile, createdAt, updatedAt) {
   var json = JSON.stringify(profile || {});
   var chunks = splitTextIntoChunks_(json, PROFILE_JSON_CHUNK_SIZE, PROFILE_JSON_PARTS);
@@ -661,6 +687,9 @@ function writeProfileRecord_(sheet, rowNumber, username, email, profile, created
 function sanitizePublicProfilePayload_(profile) {
   var source = profile && typeof profile === "object" ? profile : {};
   var result = {};
+
+  var displayName = sanitizeDisplayName_(source.displayName);
+  if (displayName) result.displayName = displayName;
 
   if (source.age !== undefined && source.age !== null && source.age !== "") {
     var age = parseInt(source.age, 10);
@@ -989,8 +1018,8 @@ function handleSharedProfileUpsert_(data) {
     var sessionRecord = getUserSessionRecord_(token);
     if (!sessionRecord) return { ok: false, error: "Sign in again to sync this profile.", code: "user_session_required" };
 
-    var desiredUsername = String(data.username || "").trim();
-    if (!desiredUsername) return { ok: false, error: "Choose a display name first.", code: "missing_username" };
+    var desiredDisplayName = sanitizeDisplayName_(data.username || data.displayName);
+    if (!desiredDisplayName) return { ok: false, error: "Choose a display name first.", code: "missing_username" };
     var rawRequestedPhone = String(data.phone || "").trim();
     var requestedPhone = rawRequestedPhone ? normalizePhoneE164_(rawRequestedPhone) : "";
     if (rawRequestedPhone && !requestedPhone) {
@@ -1007,25 +1036,7 @@ function handleSharedProfileUpsert_(data) {
     });
     var accountRecords = getAccountRecords_(accountsSheet);
     var accountByEmail = findAccountRecordByEmail_(accountRecords, sessionRecord.email) || accountRecord;
-    var accountByUsername = findAccountRecordByUsername_(accountRecords, desiredUsername);
     var byPhone = requestedPhone ? findAccountRecordByPhone_(accountRecords, requestedPhone) : null;
-
-    if (accountByUsername && accountByUsername.email !== sessionRecord.email) {
-      return {
-        ok: false,
-        error: "That name is already taken. Try a different one.",
-        code: "username_taken"
-      };
-    }
-
-    if (accountByEmail && accountByEmail.username && accountByEmail.username !== desiredUsername) {
-      return {
-        ok: false,
-        error: "This verified email is already linked to @" + accountByEmail.username + ".",
-        code: "username_locked",
-        username: accountByEmail.username
-      };
-    }
 
     if (byPhone && byPhone.email !== sessionRecord.email) {
       return {
@@ -1035,18 +1046,12 @@ function handleSharedProfileUpsert_(data) {
       };
     }
 
-    var username = accountByEmail && accountByEmail.username ? accountByEmail.username : desiredUsername;
     var profileRecords = getProfileRecords_(profilesSheet);
+    var username = accountByEmail && accountByEmail.username
+      ? accountByEmail.username
+      : generateUniqueUsername_(desiredDisplayName, accountRecords, profileRecords);
     var profileByEmail = findProfileRecordByEmail_(profileRecords, sessionRecord.email);
     var profileByUsername = findProfileRecordByUsername_(profileRecords, username);
-
-    if (profileByUsername && profileByUsername.email !== sessionRecord.email) {
-      return {
-        ok: false,
-        error: "That name is already taken. Try a different one.",
-        code: "username_taken"
-      };
-    }
 
     var existingProfile = profileByEmail ? profileByEmail.profile : (profileByUsername ? profileByUsername.profile : {});
     var nextProfile = sanitizePublicProfilePayload_(existingProfile);
@@ -1054,6 +1059,7 @@ function handleSharedProfileUpsert_(data) {
     Object.keys(incomingProfile).forEach(function(key) {
       nextProfile[key] = incomingProfile[key];
     });
+    nextProfile.displayName = desiredDisplayName;
     nextProfile.isBot = false;
 
     var nowIso = new Date().toISOString();
@@ -1087,6 +1093,7 @@ function handleSharedProfileUpsert_(data) {
     return {
       ok: true,
       username: username,
+      displayName: desiredDisplayName,
       phone: updatedAccount ? updatedAccount.phone : normalizePhoneE164_(sessionRecord.phone),
       phoneVerified: updatedAccount ? updatedAccount.phoneVerified === true : sessionRecord.phoneVerified === true,
       updatedAt: nowIso,
