@@ -1565,6 +1565,112 @@
       padding: 14px;
       overflow:hidden;
     }
+    .match-modal{
+      align-items:center;
+      padding:
+        max(18px, calc(env(safe-area-inset-top) + 18px))
+        14px
+        max(18px, calc(env(safe-area-inset-bottom) + 18px));
+      background:
+        radial-gradient(circle at top, rgba(236,72,153,.28), rgba(0,0,0,.82) 54%),
+        rgba(0,0,0,.84);
+    }
+    .match-card{
+      max-width: 420px;
+      padding: 18px 18px 20px;
+      text-align:center;
+      background:
+        radial-gradient(circle at top, rgba(124,58,237,.22), transparent 42%),
+        linear-gradient(180deg, rgba(30,41,59,.96), rgba(2,6,23,.98));
+    }
+    .match-close{
+      position:absolute;
+      top:14px;
+      right:14px;
+    }
+    .match-kicker{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid rgba(244,114,182,.35);
+      background: rgba(244,114,182,.14);
+      color:#fbcfe8;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .match-title{
+      margin-top:14px;
+      font-size:32px;
+      line-height:1;
+      font-weight:950;
+      color:#fff;
+      letter-spacing:.01em;
+    }
+    .match-subtitle{
+      margin:10px auto 0;
+      max-width:300px;
+      color:rgba(226,232,240,.92);
+      font-size:14px;
+      line-height:1.4;
+    }
+    .match-photos{
+      margin:22px 0 18px;
+      display:flex;
+      justify-content:center;
+      align-items:flex-end;
+      gap:14px;
+    }
+    .match-photo-card{
+      position:relative;
+      width:min(38vw,150px);
+      aspect-ratio:3/4;
+      border-radius:26px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:0 20px 40px rgba(0,0,0,.34);
+      background:rgba(15,23,42,.95);
+    }
+    .match-photo-card:first-child{ transform:rotate(-5deg) translateY(6px); }
+    .match-photo-card:last-child{ transform:rotate(5deg); }
+    .match-photo-card img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .match-photo-label{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      padding:26px 12px 12px;
+      background:linear-gradient(180deg, rgba(2,6,23,0), rgba(2,6,23,.9));
+      color:#fff;
+      font-size:16px;
+      font-weight:900;
+      text-shadow:0 2px 14px rgba(0,0,0,.45);
+    }
+    .match-place-note{
+      margin-top:2px;
+      color:rgba(253,224,71,.96);
+      font-size:13px;
+      font-weight:700;
+    }
+    .match-actions{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:18px;
+    }
+    .match-actions .pill-button{
+      width:100%;
+      justify-content:center;
+    }
     .pay-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom: 8px; }
     .pay-title{ font-size: 18px; font-weight: 950; letter-spacing:.2px; color:#f8fafc; line-height:1.15; }
     .pay-sub{ margin-top: 6px; color: rgba(203,213,225,.92); font-size: 13px; line-height:1.35; }
@@ -6647,8 +6753,8 @@ let extraHtml=extraParts.join(" · ");
       // Match if mutual
       const otherLikes = (likes[targetName]||[]);
       if(likedNow && otherLikes.includes(currentUserName)){
-        addMatch(currentUserName, targetName);
-        toast("✨ Match! You both liked each other.");
+        renderMatches();
+        showMatchCelebration(currentPlaceId || (publicProfileContext && publicProfileContext.placeId) || swipePlaceId || null, targetName);
       } else {
         // Simulate bot like/match (5% chance when user likes a bot)
         if(!PUBLIC_REAL_LAUNCH_MODE && likedNow && currentUserName){
@@ -6661,9 +6767,9 @@ let extraHtml=extraParts.join(" · ");
               if(!likes[targetName].includes(currentUserName)){
                 likes[targetName].push(currentUserName);
                 setLikesData(likes);
-                addMatch(currentUserName, targetName);
                 track("bot_match_simulated", {botName: targetName, user: currentUserName});
-                toast("✨ Match! You both liked each other.");
+                renderMatches();
+                showMatchCelebration(currentPlaceId || (publicProfileContext && publicProfileContext.placeId) || swipePlaceId || null, targetName);
               } else {
                 toast("Liked ❤️");
               }
@@ -6832,9 +6938,16 @@ function renderGoingForPlace(placeId){
       likesData[placeId][currentUserName]=arr;
       setLikesData(likesData);
       queueSharedOperation(() => syncSharedLike(placeId, targetName, nowLiked));
+      const byPlace=likesData[placeId]||{};
+      const fromOther=byPlace[targetName]||[];
+      const likedBack=Array.isArray(fromOther) && fromOther.includes(currentUserName);
+      const isMatch = nowLiked && likedBack && areProfilesCompatible(currentUserName, targetName);
 
       if(currentPlaceId===placeId) renderGoingForPlace(placeId);
       renderMatches();
+      if(isMatch){
+        showMatchCelebration(placeId, targetName);
+      }
     }
 
     function computeMatchesForCurrent(){
@@ -8303,6 +8416,10 @@ function initApp(){
       if(modal && modal.parentElement !== document.body) {
         document.body.appendChild(modal);
       }
+      const matchModal = document.getElementById("match-modal");
+      if(matchModal && matchModal.parentElement !== document.body) {
+        document.body.appendChild(matchModal);
+      }
       clearPublicLaunchDemoArtifacts();
       loadCustomPlaces();
       if(!PUBLIC_REAL_LAUNCH_MODE){
@@ -8345,6 +8462,7 @@ function initApp(){
     let swipeQueue = [];
     let swipeTop = null; // {el, profileName}
     let swipePointer = {down:false, startX:0, startY:0, dx:0, dy:0};
+    let matchCelebrationState = { placeId: null, otherName: null };
 
     function toast(msg){
       const t=$("toast");
@@ -8412,6 +8530,49 @@ function initApp(){
       if(p && Array.isArray(p.photos) && p.photos.length) return p.photos[0];
       // fallback image (colored placeholder)
       return "https://via.placeholder.com/900x1200.png?text="+encodeURIComponent(getProfileDisplayName(name));
+    }
+    function closeMatchCelebration(){
+      const modal=$("match-modal");
+      if(!modal) return;
+      modal.classList.add("hidden");
+      modal.style.display="none";
+    }
+    function showMatchCelebration(placeId, otherName){
+      if(!currentUserName || !otherName) return;
+      const modal=$("match-modal");
+      if(!modal) return;
+      matchCelebrationState = { placeId: placeId || null, otherName };
+      const place = placeId ? places.find(p=>p.id===placeId) : null;
+      const myDisplayName = getCurrentUserDisplayName();
+      const otherDisplayName = getProfileDisplayName(otherName);
+      $("match-photo-me").src = profileMainPhoto(currentUserName);
+      $("match-photo-me").alt = myDisplayName;
+      $("match-photo-other").src = profileMainPhoto(otherName);
+      $("match-photo-other").alt = otherDisplayName;
+      $("match-name-me").textContent = myDisplayName;
+      $("match-name-other").textContent = otherDisplayName;
+      $("match-modal-subtitle").textContent = place
+        ? `Vocês curtiram um ao outro em ${place.name}.`
+        : `Você e ${otherDisplayName} curtiram um ao outro.`;
+      $("match-place-note").textContent = place
+        ? `Agora vocês já podem combinar o encontro em ${place.name}.`
+        : "Agora vocês já podem conversar no app.";
+      const primaryBtn=$("match-primary-cta");
+      if(primaryBtn){
+        primaryBtn.style.display = placeId ? "inline-flex" : "none";
+      }
+      modal.style.display="flex";
+      modal.classList.remove("hidden");
+    }
+    function openChatFromMatchCelebration(){
+      const otherName = matchCelebrationState && matchCelebrationState.otherName;
+      const placeId = matchCelebrationState && matchCelebrationState.placeId;
+      closeMatchCelebration();
+      if(placeId && otherName){
+        openChat(placeId, encodeURIComponent(otherName));
+        return;
+      }
+      openMatches();
     }
 
     function profileMetaLine(name){
@@ -8620,9 +8781,8 @@ function initApp(){
       const isMatch = likedBack && areProfilesCompatible(currentUserName, targetName);
 
       if(isMatch){
-        toast(`💖 Match with ${getProfileDisplayName(targetName)}!`);
-        // Update the matches list
         renderMatches();
+        showMatchCelebration(swipePlaceId, targetName);
       } else {
         toast("Liked ❤️");
       }
@@ -8966,7 +9126,7 @@ function initApp(){
       const likedBack=Array.isArray(fromOther) && fromOther.includes(currentUserName);
       const isMatch = likedBack && areProfilesCompatible(currentUserName, publicProfileName);
 
-      if(isMatch) toast(`💖 Match with ${getProfileDisplayName(publicProfileName)}!`);
+      if(isMatch) showMatchCelebration(pid, publicProfileName);
       else toast(nowLiked ? "Liked ❤️" : "Unliked");
 
       renderPublicProfile();
@@ -9816,6 +9976,33 @@ document.addEventListener("DOMContentLoaded", initApp);
 
       <div class="pay-note" id="pay-note">
         Tip: PRO works best when you use "Who's going" to set the meetup fast.
+      </div>
+    </div>
+  </div>
+
+  <div id="match-modal" class="modal match-modal hidden" role="dialog" aria-modal="true" style="display:none;" onclick="if(event.target===this){ closeMatchCelebration(); }">
+    <div class="modal-card match-card">
+      <button class="pay-x match-close" onclick="closeMatchCelebration()">✕</button>
+      <div class="match-kicker">💖 Deu match</div>
+      <div class="match-title">Deu match!</div>
+      <div class="match-subtitle" id="match-modal-subtitle">Agora vocês já podem conversar.</div>
+
+      <div class="match-photos">
+        <div class="match-photo-card">
+          <img id="match-photo-me" src="" alt="Seu perfil" />
+          <div class="match-photo-label" id="match-name-me">Você</div>
+        </div>
+        <div class="match-photo-card">
+          <img id="match-photo-other" src="" alt="Seu match" />
+          <div class="match-photo-label" id="match-name-other">Seu match</div>
+        </div>
+      </div>
+
+      <div class="match-place-note" id="match-place-note">Agora vocês já podem combinar o encontro.</div>
+
+      <div class="match-actions">
+        <button class="pill-button" id="match-primary-cta" onclick="openChatFromMatchCelebration()">Mandar mensagem</button>
+        <button class="pill-button secondary" onclick="closeMatchCelebration()">Continuar</button>
       </div>
     </div>
   </div>
