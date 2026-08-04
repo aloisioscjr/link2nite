@@ -36,7 +36,7 @@
       --pad:16px;
       --max: 520px;
     }
-    html,body{ height:100%; }
+    html,body{ height:100%; max-width:100%; overflow-x:hidden; }
     body{
       background:
         radial-gradient(1200px 800px at 20% -10%, rgba(124,58,237,.26), transparent 55%),
@@ -195,15 +195,15 @@
 
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { background: #050816; color: #f8fafc; display: flex; justify-content: center; }
-    #app { width: 100%; max-width: 480px; min-height: 100vh; background: radial-gradient(circle at top, #1f2937 0, #020617 55%); padding: 16px; display:flex; flex-direction:column; }
+    body { background: #050816; color: #f8fafc; display: flex; justify-content: center; overflow-x:hidden; }
+    #app { width: 100%; max-width: 480px; min-height: 100vh; min-height: 100dvh; background: radial-gradient(circle at top, #1f2937 0, #020617 55%); padding: 16px; display:flex; flex-direction:column; overflow-x:hidden; }
 
     header { padding: 8px 4px 10px; display: flex; align-items: center; justify-content: space-between; }
     header h1 { font-size: 20px; font-weight: 700; }
     header span { font-size: 12px; color: #9ca3af; }
-    main { margin-top: 4px; flex:1; }
+    main { margin-top: 4px; flex:1; min-width:0; }
 
-    .screen { display: none; }
+    .screen { display: none; min-width:0; overflow-x:hidden; }
     .screen.active { display: block; }
 
     .card {
@@ -438,9 +438,10 @@
 
     .back-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       margin-bottom: 10px;
+      min-width: 0;
     }
     .back-row button {
       border-radius: 999px;
@@ -454,6 +455,28 @@
     .back-row h2 {
       font-size: 16px;
       font-weight: 600;
+      flex: 1;
+      min-width: 0;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .bottom-nav button { position: relative; }
+    .nav-badge{
+      position:absolute;
+      top:4px;
+      right:8px;
+      min-width:18px;
+      height:18px;
+      padding:0 5px;
+      border-radius:999px;
+      background: linear-gradient(135deg,#ec4899,#f97316);
+      color:#fff;
+      font-size:10px;
+      font-weight:900;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 8px 18px rgba(236,72,153,.35);
     }
 
     .bottom-nav {
@@ -498,16 +521,28 @@
     .chat-container {
       display:flex;
       flex-direction:column;
-      height: calc(100vh - 120px);
+      min-width:0;
+      min-height: 420px;
+      height: calc(100vh - 210px);
+      max-height: calc(100vh - 210px);
+      overflow:hidden;
+    }
+    @supports (height: 100dvh) {
+      .chat-container {
+        height: calc(100dvh - 210px);
+        max-height: calc(100dvh - 210px);
+      }
     }
     .chat-header { margin-bottom: 8px; }
     .chat-messages {
       flex:1;
       overflow-y:auto;
-      padding: 4px 2px;
+      min-width:0;
+      min-height:0;
+      padding: 4px 2px 12px;
       margin-bottom: 8px;
     }
-    .msg-row { display:flex; margin-bottom:6px; }
+    .msg-row { display:flex; width:100%; min-width:0; margin-bottom:6px; }
     .msg-me { justify-content:flex-end; }
     .msg-other { justify-content:flex-start; }
     .msg-bubble {
@@ -516,6 +551,7 @@
       border-radius:14px;
       font-size:13px;
       line-height:1.3;
+      overflow-wrap:anywhere;
     }
     .msg-bubble.me {
       background: linear-gradient(135deg,#4f46e5,#ec4899);
@@ -530,15 +566,255 @@
       display:flex;
       gap:6px;
       align-items:center;
+      min-width:0;
+      padding-bottom:max(4px, env(safe-area-inset-bottom));
     }
     .chat-input-row input[type="text"] {
       flex:1;
+      min-width:0;
       border-radius:999px;
       border:1px solid rgba(148,163,184,0.6);
       background: rgba(15,23,42,0.9);
       color:#f9fafb;
       padding:8px 10px;
       font-size:14px;
+    }
+    .match-inbox{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .match-section-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .match-count{
+      color:#cbd5e1;
+      font-size:12px;
+      font-weight:700;
+    }
+    .match-strip{
+      display:flex;
+      gap:12px;
+      overflow-x:auto;
+      padding-bottom:4px;
+      scrollbar-width:none;
+    }
+    .match-strip::-webkit-scrollbar{ display:none; }
+    .match-avatar-card{
+      flex:0 0 94px;
+      cursor:pointer;
+    }
+    .match-avatar-frame{
+      position:relative;
+      width:94px;
+      height:118px;
+      border-radius:24px;
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.24);
+      background:rgba(15,23,42,.92);
+      box-shadow:0 16px 36px rgba(0,0,0,.26);
+      margin-bottom:8px;
+    }
+    .match-avatar-frame img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .match-avatar-badge{
+      position:absolute;
+      left:8px;
+      bottom:8px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(2,6,23,.82);
+      border:1px solid rgba(248,250,252,.16);
+      color:#fff;
+      font-size:10px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .match-avatar-name{
+      font-size:13px;
+      font-weight:800;
+      color:#f8fafc;
+      line-height:1.2;
+    }
+    .match-avatar-place{
+      margin-top:4px;
+      color:#94a3b8;
+      font-size:11px;
+      line-height:1.25;
+    }
+    .match-thread-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .match-thread-row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:10px;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.16);
+      background:rgba(2,6,23,.28);
+      cursor:pointer;
+    }
+    .match-thread-media{
+      position:relative;
+      width:58px;
+      height:58px;
+      border-radius:18px;
+      overflow:hidden;
+      flex-shrink:0;
+      background:rgba(15,23,42,.94);
+      border:1px solid rgba(148,163,184,.16);
+    }
+    .match-thread-media img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .match-thread-dot{
+      position:absolute;
+      top:6px;
+      right:6px;
+      width:11px;
+      height:11px;
+      border-radius:999px;
+      background:#ec4899;
+      border:2px solid rgba(2,6,23,.95);
+      display:none;
+    }
+    .match-thread-main{
+      flex:1;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .match-thread-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .match-thread-name{
+      font-size:15px;
+      font-weight:900;
+      color:#f8fafc;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .match-thread-meta{
+      color:#94a3b8;
+      font-size:12px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .match-thread-preview{
+      color:#e2e8f0;
+      font-size:13px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .match-thread-preview.you{ color:#94a3b8; }
+    .match-thread-status{
+      flex-shrink:0;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(15,23,42,.8);
+      color:#e2e8f0;
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .match-thread-status.unread{
+      background:linear-gradient(135deg,#4f46e5,#ec4899);
+      border-color:transparent;
+      color:#fff;
+    }
+    .match-thread-status.new{
+      background:rgba(34,197,94,.16);
+      border-color:rgba(34,197,94,.26);
+      color:#bbf7d0;
+    }
+    .inbox-empty{
+      border-radius:16px;
+      border:1px dashed rgba(148,163,184,.2);
+      padding:12px;
+      color:#94a3b8;
+      font-size:12px;
+      line-height:1.4;
+      background:rgba(2,6,23,.18);
+    }
+    .inbox-alert{
+      position:fixed;
+      top:max(12px, calc(env(safe-area-inset-top) + 12px));
+      left:50%;
+      transform:translateX(-50%);
+      width:min(var(--max), calc(100% - 24px));
+      display:none;
+      align-items:center;
+      gap:12px;
+      padding:12px;
+      border-radius:22px;
+      border:1px solid rgba(148,163,184,.22);
+      background:rgba(2,6,23,.88);
+      backdrop-filter:blur(12px);
+      box-shadow:0 18px 45px rgba(0,0,0,.42);
+      z-index:999998;
+      cursor:pointer;
+    }
+    .inbox-alert-avatar{
+      width:52px;
+      height:52px;
+      border-radius:18px;
+      object-fit:cover;
+      flex-shrink:0;
+      background:rgba(15,23,42,.94);
+      border:1px solid rgba(148,163,184,.2);
+    }
+    .inbox-alert-main{
+      flex:1;
+      min-width:0;
+    }
+    .inbox-alert-title{
+      color:#fff;
+      font-size:14px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .inbox-alert-text{
+      margin-top:4px;
+      color:#cbd5e1;
+      font-size:12px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .inbox-alert-close{
+      flex-shrink:0;
+      width:34px;
+      height:34px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.2);
+      background:rgba(148,163,184,.08);
+      color:#fff;
+      cursor:pointer;
     }
     .chat-input-row button {
       border-radius:999px;
@@ -2693,7 +2969,7 @@
     <div class="bottom-nav">
       <button id="nav-home" class="active" onclick="goHome()">Tonight</button>
       <button id="nav-night" onclick="openTonightPlan()">My night</button>
-      <button id="nav-matches" onclick="openMatches()">Matches</button>
+      <button id="nav-matches" onclick="openMatches()">Matches<span id="nav-matches-badge" class="nav-badge"></span></button>
       <button id="nav-settings" onclick="openSettings()" style="padding: 10px 14px;">⚙️</button>
     </div>
   </div>
@@ -4943,10 +5219,13 @@ let currentUserName = null;
       try{ if(currentScreenId==="screen-swipe" && swipePlaceId){ buildSwipeQueue(swipePlaceId); renderSwipeDeck(); } }catch(e){}
       try{ if(currentScreenId==="screen-profile") renderProfilePreviewCard(); }catch(e){}
       try{ if(currentScreenId==="screen-public-profile") renderPublicProfile(); }catch(e){}
+      try{ updateMatchesNavBadge(); }catch(e){}
     }
 
     function applySharedSnapshot(snapshot, viewer){
       if(!snapshot || typeof snapshot !== "object") return;
+      const previousMessages = getMessagesData();
+      const previousLikes = getLikesData();
       if(snapshot.profiles) setProfilesDataLocal(snapshot.profiles);
       if(snapshot.going) setRawGoingDataLocal(snapshot.going);
       if(snapshot.goingMeta) setGoingMetaDataLocal(snapshot.goingMeta);
@@ -4987,6 +5266,13 @@ let currentUserName = null;
       }
 
       refreshUiAfterSharedSync();
+      processInboxSnapshotDiff(
+        previousMessages,
+        previousLikes,
+        snapshot.messages || getMessagesData(),
+        snapshot.likes || getLikesData(),
+        preferredUserName
+      );
     }
 
     async function syncSharedSnapshot(options={}){
@@ -5644,6 +5930,7 @@ function showScreen(id){
       currentScreenId = id;
       try{ renderProBadges(); }catch(e){}
       try{ updateProUi(); }catch(e){}
+      try{ updateMatchesNavBadge(); }catch(e){}
 
       document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
       $(id).classList.add("active");
@@ -6109,10 +6396,150 @@ function showScreen(id){
     function setInterestedData(d){ setInterestedDataLocal(d); }
     function getLikesData(){ try{return JSON.parse(localStorage.getItem("tonightly_likes")||"{}");}catch{return{};} }
     function setLikesDataLocal(d){ localStorage.setItem("tonightly_likes", JSON.stringify(d)); }
-    function setLikesData(d){ setLikesDataLocal(d); }
+    function setLikesData(d){
+      setLikesDataLocal(d);
+      try{ updateMatchesNavBadge(); }catch(e){}
+    }
     function getMessagesData(){ try{return JSON.parse(localStorage.getItem("tonightly_messages")||"{}");}catch{return{};} }
     function setMessagesDataLocal(d){ localStorage.setItem("tonightly_messages", JSON.stringify(d)); }
-    function setMessagesData(d){ setMessagesDataLocal(d); }
+    function setMessagesData(d){
+      setMessagesDataLocal(d);
+      try{ updateMatchesNavBadge(); }catch(e){}
+    }
+    let inboxAlertState = null;
+    let inboxSnapshotPrimedUser = "";
+    function chatReadMetaKey(userName){
+      return "tonightly_chat_read_meta_" + String(userName || currentUserName || "").trim();
+    }
+    function getChatReadMeta(userName){
+      try{ return JSON.parse(localStorage.getItem(chatReadMetaKey(userName))||"{}"); }catch{ return {}; }
+    }
+    function setChatReadMeta(data, userName){
+      localStorage.setItem(chatReadMetaKey(userName), JSON.stringify(data || {}));
+    }
+    function truncateInboxPreview(text, maxLen=72){
+      const clean = String(text || "").replace(/\s+/g, " ").trim();
+      if(clean.length <= maxLen) return clean;
+      return clean.slice(0, Math.max(0, maxLen - 1)).trimEnd() + "…";
+    }
+    function hideInboxAlert(){
+      const alert = $("inbox-alert");
+      if(!alert) return;
+      alert.style.display = "none";
+      inboxAlertState = null;
+      clearTimeout(hideInboxAlert._timer);
+    }
+    function openInboxAlertAction(){
+      if(!inboxAlertState) return;
+      const action = {...inboxAlertState};
+      hideInboxAlert();
+      if(action.type === "message" && action.placeId && action.otherName){
+        openChat(action.placeId, encodeURIComponent(action.otherName));
+        return;
+      }
+      if(action.type === "match" && action.placeId && action.otherName){
+        openChat(action.placeId, encodeURIComponent(action.otherName));
+        return;
+      }
+      openMatches();
+    }
+    function showInboxAlert(payload){
+      const alert = $("inbox-alert");
+      if(!alert || !payload) return;
+      inboxAlertState = payload;
+      $("inbox-alert-avatar").src = payload.image || profileMainPhoto(payload.otherName || "");
+      $("inbox-alert-avatar").alt = payload.title || "Inbox alert";
+      $("inbox-alert-title").textContent = payload.title || "New activity";
+      $("inbox-alert-text").textContent = payload.text || "";
+      alert.style.display = "flex";
+      clearTimeout(hideInboxAlert._timer);
+      hideInboxAlert._timer = setTimeout(() => hideInboxAlert(), 4800);
+    }
+    function getNewIncomingMessageEvents(previousMessages, nextMessages, userName){
+      const events = [];
+      if(!userName) return events;
+      Object.entries(nextMessages || {}).forEach(([key, list]) => {
+        const parts = String(key || "").split("||");
+        if(parts.length !== 3) return;
+        const [placeId, nameA, nameB] = parts;
+        if(nameA !== userName && nameB !== userName) return;
+        const otherName = nameA === userName ? nameB : nameA;
+        const previousList = Array.isArray((previousMessages || {})[key]) ? previousMessages[key] : [];
+        const previousMaxTs = previousList.reduce((max, msg) => {
+          const ts = Number((msg && msg.ts) || 0);
+          return ts > max ? ts : max;
+        }, 0);
+        (Array.isArray(list) ? list : []).forEach(msg => {
+          const ts = Number((msg && msg.ts) || 0);
+          if(!msg || msg.from === userName || ts <= previousMaxTs) return;
+          events.push({ type:"message", placeId, otherName, text:String(msg.text || ""), ts });
+        });
+      });
+      return events.sort((a,b) => a.ts - b.ts);
+    }
+    function getNewMatchesFromLikes(previousLikes, nextLikes, userName){
+      if(!userName) return [];
+      const previousSet = new Set(
+        computeMatchesForUser(userName, previousLikes).map(item => `${item.placeId}||${item.other}`)
+      );
+      return computeMatchesForUser(userName, nextLikes).filter(item => !previousSet.has(`${item.placeId}||${item.other}`));
+    }
+    function processInboxSnapshotDiff(previousMessages, previousLikes, nextMessages, nextLikes, userName){
+      const normalizedUser = String(userName || "").trim();
+      if(!normalizedUser) return;
+      if(inboxSnapshotPrimedUser !== normalizedUser){
+        inboxSnapshotPrimedUser = normalizedUser;
+        return;
+      }
+      const latestMessage = getNewIncomingMessageEvents(previousMessages, nextMessages, normalizedUser).pop() || null;
+      if(latestMessage){
+        const isCurrentChat =
+          currentScreenId === "screen-chat" &&
+          currentChatPlaceId === latestMessage.placeId &&
+          currentChatOther === latestMessage.otherName;
+        if(!isCurrentChat && getSettings().notifyMsg !== false){
+          const otherDisplayName = getProfileDisplayName(latestMessage.otherName);
+          showInboxAlert({
+            type:"message",
+            placeId: latestMessage.placeId,
+            otherName: latestMessage.otherName,
+            image: profileMainPhoto(latestMessage.otherName),
+            title: `New message from ${otherDisplayName}`,
+            text: truncateInboxPreview(latestMessage.text, 88)
+          });
+        }
+        return;
+      }
+      const latestMatch = getNewMatchesFromLikes(previousLikes, nextLikes, normalizedUser).pop() || null;
+      if(latestMatch && getSettings().notifyMatch !== false){
+        const place = places.find(item => item.id === latestMatch.placeId);
+        const otherDisplayName = getProfileDisplayName(latestMatch.other);
+        showInboxAlert({
+          type:"match",
+          placeId: latestMatch.placeId,
+          otherName: latestMatch.other,
+          image: profileMainPhoto(latestMatch.other),
+          title: `New match with ${otherDisplayName}`,
+          text: place ? `You both matched at ${place.name}.` : "Open your inbox and say hi."
+        });
+      }
+    }
+    function markChatThreadRead(placeId, otherName, userName=currentUserName){
+      if(!placeId || !otherName || !userName) return;
+      const key = chatKey(placeId, userName, otherName);
+      const list = getMessagesData()[key] || [];
+      const lastIncomingTs = list.reduce((max, msg) => {
+        const ts = Number((msg && msg.ts) || 0);
+        if(!msg || msg.from === userName || ts <= max) return max;
+        return ts;
+      }, 0);
+      const readMeta = getChatReadMeta(userName);
+      if(lastIncomingTs > Number(readMeta[key] || 0)){
+        readMeta[key] = lastIncomingTs;
+        setChatReadMeta(readMeta, userName);
+      }
+      try{ updateMatchesNavBadge(); }catch(e){}
+    }
 
     const PUBLIC_REAL_LAUNCH_MODE = true;
     const PUBLIC_REAL_LAUNCH_CLEANUP_VERSION = "2026-07-30-public-launch-v1";
@@ -6950,32 +7377,96 @@ function renderGoingForPlace(placeId){
       }
     }
 
-    function computeMatchesForCurrent(){
+    function computeMatchesForUser(userName, likesSource){
       const matches=[];
-      if(!currentUserName) return matches;
-      const likesData=getLikesData();
+      const normalizedUser = String(userName || "").trim();
+      if(!normalizedUser) return matches;
+      const likesData=likesSource || getLikesData();
       const seen=new Set();
 
       places.forEach(place=>{
         const pid=place.id;
         const byPlace=likesData[pid];
         if(!byPlace) return;
-        const fromCurrent=byPlace[currentUserName];
+        const fromCurrent=byPlace[normalizedUser];
         if(!Array.isArray(fromCurrent)) return;
 
         fromCurrent.forEach(otherName=>{
-          if(otherName===currentUserName) return;
+          if(otherName===normalizedUser) return;
           // Filter out blocked/soft-banned users
           if(shouldFilterUser(otherName)) return;
           const fromOther=byPlace[otherName];
-          if(Array.isArray(fromOther) && fromOther.includes(currentUserName)){
-            if(!areProfilesCompatible(currentUserName, otherName)) return;
+          if(Array.isArray(fromOther) && fromOther.includes(normalizedUser)){
+            if(!areProfilesCompatible(normalizedUser, otherName)) return;
             const key=pid+"||"+otherName;
             if(!seen.has(key)){ seen.add(key); matches.push({placeId:pid, other:otherName}); }
           }
         });
       });
       return matches;
+    }
+    function computeMatchesForCurrent(){
+      return computeMatchesForUser(currentUserName, getLikesData());
+    }
+    function buildMatchInbox(){
+      if(!currentUserName) return { items:[], newMatches:[], messageThreads:[], badgeCount:0 };
+      const messagesData = getMessagesData();
+      const readMeta = getChatReadMeta(currentUserName);
+      const items = computeMatchesForCurrent().map(match => {
+        const place = places.find(item => item.id === match.placeId);
+        const key = chatKey(match.placeId, currentUserName, match.other);
+        const messages = Array.isArray(messagesData[key]) ? messagesData[key].slice().sort((a,b) => Number((a && a.ts) || 0) - Number((b && b.ts) || 0)) : [];
+        const lastMsg = messages[messages.length - 1] || null;
+        const readTs = Number(readMeta[key] || 0);
+        const unreadCount = messages.filter(msg => msg && msg.from !== currentUserName && Number(msg.ts || 0) > readTs).length;
+        const displayName = getProfileDisplayName(match.other);
+        const photo = profileMainPhoto(match.other);
+        const preview = lastMsg
+          ? truncateInboxPreview(`${lastMsg.from === currentUserName ? "You: " : ""}${lastMsg.text || ""}`, 68)
+          : "Start the conversation before tonight.";
+        const details = [];
+        const profile = getProfile(match.other) || {};
+        if(profile.showAge !== false && profile.age) details.push(String(profile.age));
+        const gLabel = genderLabel(profile.gender);
+        if(gLabel) details.push(gLabel);
+        if(profile.vibe) details.push(profile.vibe);
+        return {
+          ...match,
+          key,
+          placeName: place ? place.name : "Venue",
+          placeNeighborhood: place ? place.neighborhood : "",
+          displayName,
+          photo,
+          detailsText: details.join(" · "),
+          lastMsg,
+          preview,
+          unreadCount,
+          lastActivityTs: Number((lastMsg && lastMsg.ts) || 0)
+        };
+      });
+      const newMatches = items
+        .filter(item => !item.lastMsg)
+        .sort((a,b) => a.displayName.localeCompare(b.displayName));
+      const messageThreads = items
+        .filter(item => !!item.lastMsg)
+        .sort((a,b) => b.lastActivityTs - a.lastActivityTs);
+      const badgeCount = newMatches.length + messageThreads.filter(item => item.unreadCount > 0).length;
+      return { items, newMatches, messageThreads, badgeCount };
+    }
+    function updateMatchesNavBadge(){
+      const badge = $("nav-matches-badge");
+      if(!badge) return;
+      if(!currentUserName){
+        badge.style.display = "none";
+        return;
+      }
+      const inbox = buildMatchInbox();
+      if(inbox.badgeCount <= 0){
+        badge.style.display = "none";
+        return;
+      }
+      badge.textContent = inbox.badgeCount > 9 ? "9+" : String(inbox.badgeCount);
+      badge.style.display = "inline-flex";
     }
 
     function renderMatches(){
@@ -6985,8 +7476,8 @@ function renderGoingForPlace(placeId){
         container.innerHTML=`<p class="section-sub">Set up your profile first to see your matches.</p>`;
         return;
       }
-      const matches=computeMatchesForCurrent();
-      if(matches.length===0){
+      const inbox=buildMatchInbox();
+      if(inbox.items.length===0){
         container.innerHTML=`
           <p class="section-sub">
             You're not matched yet.<br />
@@ -6997,32 +7488,64 @@ function renderGoingForPlace(placeId){
         return;
       }
 
-      container.innerHTML=matches.map(m=>{
-        const place=places.find(p=>p.id===m.placeId);
-        const placeName=place?place.name:"Some venue";
-        const neighborhood=place?place.neighborhood:"";
-        const profile=getProfile(m.other);
-        const displayName=getProfileDisplayName(m.other);
-        const detailsParts=[];
-        if(profile.showAge!==false && profile.age) detailsParts.push(String(profile.age));
-        const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
-        if(profile.vibe) detailsParts.push(profile.vibe);
-        if(profile.location) detailsParts.push(profile.location);
-        const detailsText=detailsParts.length?`${displayName} · ${detailsParts.join(" · ")}`:displayName;
-        const encodedOther=encodeURIComponent(m.other);
-
-        return `
-          <div class="match-item">
-            <div class="match-place">You & ${escapeHtml(displayName)}</div>
-            <div class="match-sub">${detailsText}</div>
-            <div class="match-sub">Matched at: ${placeName} (${neighborhood})</div>
-            <div style="font-size:12px;color:#e5e7eb;margin-bottom:6px;">
-              In the full app, this is where you set time, meeting spot, and after.
+      const newMatchesHtml = inbox.newMatches.length
+        ? `<div class="match-strip">${
+            inbox.newMatches.map(item => `
+              <div class="match-avatar-card" onclick="openChat('${escapeAttr(item.placeId)}','${escapeAttr(encodeURIComponent(item.other))}')">
+                <div class="match-avatar-frame">
+                  <img src="${escapeAttr(item.photo)}" alt="${escapeAttr(item.displayName)}" />
+                  <div class="match-avatar-badge">New</div>
+                </div>
+                <div class="match-avatar-name">${escapeHtml(item.displayName)}</div>
+                <div class="match-avatar-place">${escapeHtml(item.placeName)}</div>
+              </div>
+            `).join("")
+          }</div>`
+        : `<div class="inbox-empty">Your newest mutual likes show up here. Open one and send the first message fast.</div>`;
+      const messageThreadsHtml = inbox.messageThreads.length
+        ? `<div class="match-thread-list">${
+            inbox.messageThreads.map(item => {
+              const statusClass = item.unreadCount > 0 ? "match-thread-status unread" : "match-thread-status";
+              const statusText = item.unreadCount > 0 ? "Your turn" : (item.lastMsg && item.lastMsg.from === currentUserName ? "Sent" : "Open");
+              const previewClass = item.lastMsg && item.lastMsg.from === currentUserName ? "match-thread-preview you" : "match-thread-preview";
+              return `
+                <div class="match-thread-row" onclick="openChat('${escapeAttr(item.placeId)}','${escapeAttr(encodeURIComponent(item.other))}')">
+                  <div class="match-thread-media">
+                    <img src="${escapeAttr(item.photo)}" alt="${escapeAttr(item.displayName)}" />
+                    <span class="match-thread-dot" style="${item.unreadCount > 0 ? "display:block;" : ""}"></span>
+                  </div>
+                  <div class="match-thread-main">
+                    <div class="match-thread-top">
+                      <div class="match-thread-name">${escapeHtml(item.displayName)}</div>
+                      <div class="${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="match-thread-meta">${escapeHtml(item.placeName)}${item.detailsText ? ` · ${escapeHtml(item.detailsText)}` : ""}</div>
+                    <div class="${previewClass}">${escapeHtml(item.preview)}</div>
+                  </div>
+                </div>
+              `;
+            }).join("")
+          }</div>`
+        : `<div class="inbox-empty">When a match starts chatting, the conversation appears here with unread status.</div>`;
+      container.innerHTML = `
+        <div class="match-inbox">
+          <div>
+            <div class="match-section-head">
+              <div class="section-title">New matches</div>
+              <div class="match-count">${inbox.newMatches.length}</div>
             </div>
-            <button class="pill-button small" onclick="openChat('${m.placeId}','${encodedOther}')">Open chat</button>
+            ${newMatchesHtml}
           </div>
-        `;
-      }).join("");
+          <div>
+            <div class="match-section-head">
+              <div class="section-title">Messages</div>
+              <div class="match-count">${inbox.messageThreads.length}</div>
+            </div>
+            ${messageThreadsHtml}
+          </div>
+        </div>
+      `;
+      updateMatchesNavBadge();
     }
 
     function openMatches(){
@@ -7053,16 +7576,17 @@ function renderGoingForPlace(placeId){
       const gLabel=genderLabel(profile.gender); if(gLabel) detailsParts.push(gLabel);
       if(profile.vibe) detailsParts.push(profile.vibe);
       if(profile.location) detailsParts.push(profile.location);
-      const details=detailsParts.length?` (${detailsParts.join(" · ")})`:"";
       const isBot=profile && profile.isBot;
 
-      $("chat-title").textContent=`You & ${otherDisplayName}${details}`;
-      $("chat-sub").textContent=place ? `Chat about ${place.name} (${place.neighborhood})${isBot?" · simulated profile for testing 🤖":""}.`
-                                     : `Chat at this venue${isBot?" · simulated profile for testing 🤖":""}.`;
+      $("chat-title").textContent = otherDisplayName;
+      $("chat-sub").textContent = place
+        ? `${detailsParts.length ? detailsParts.join(" · ") + " · " : ""}${place.name} (${place.neighborhood})${isBot ? " · simulated profile for testing 🤖" : ""}.`
+        : `${detailsParts.length ? detailsParts.join(" · ") + " · " : ""}Chat at this venue${isBot ? " · simulated profile for testing 🤖" : ""}.`;
 
       $("chat-input").value="";
       renderChatMessages();
       showScreen("screen-chat");
+      markChatThreadRead(placeId, otherName);
     }
 
     function renderChatMessages(){
@@ -7077,10 +7601,11 @@ function renderGoingForPlace(placeId){
         const isMe=msg.from===currentUserName;
         const rowClass=isMe?"msg-row msg-me":"msg-row msg-other";
         const bubbleClass=isMe?"msg-bubble me":"msg-bubble other";
-        return `<div class="${rowClass}"><div class="${bubbleClass}">${msg.text}</div></div>`;
+        return `<div class="${rowClass}"><div class="${bubbleClass}">${escapeHtml(msg.text)}</div></div>`;
       }).join("");
 
       container.scrollTop=container.scrollHeight;
+      markChatThreadRead(currentChatPlaceId, currentChatOther);
     }
 
     function buildBotReplyText(botName,userName,place,lastUserMsg){
@@ -7152,6 +7677,7 @@ function renderGoingForPlace(placeId){
 
       input.value="";
       renderChatMessages();
+      updateMatchesNavBadge();
 
       const otherProfile=getProfile(currentChatOther);
       const place=places.find(p=>p.id===currentChatPlaceId);
@@ -10005,6 +10531,15 @@ document.addEventListener("DOMContentLoaded", initApp);
         <button class="pill-button secondary" onclick="closeMatchCelebration()">Continuar</button>
       </div>
     </div>
+  </div>
+
+  <div id="inbox-alert" class="inbox-alert" onclick="openInboxAlertAction()">
+    <img id="inbox-alert-avatar" class="inbox-alert-avatar" src="" alt="Inbox alert" />
+    <div class="inbox-alert-main">
+      <div id="inbox-alert-title" class="inbox-alert-title">New activity</div>
+      <div id="inbox-alert-text" class="inbox-alert-text"></div>
+    </div>
+    <button class="inbox-alert-close" onclick="event.stopPropagation(); hideInboxAlert();">✕</button>
   </div>
 
   <script>
