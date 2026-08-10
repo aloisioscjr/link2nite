@@ -1,5 +1,31 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-10, preflight automatizado + fallback publico do paywall)
+
+Mudancas locais aplicadas para endurecer a checagem antes de cada publish:
+
+- `beta/index.html` agora troca o fallback do paywall quando billing nao responder:
+  - `Checkout is not enabled yet on this build.` -> `Checkout is temporarily unavailable right now.`
+  - `Weekly PRO coming soon` / `Monthly PRO coming soon` -> `Weekly PRO temporarily unavailable` / `Monthly PRO temporarily unavailable`
+- Script novo: `smoke-public-preflight.ps1`
+  - valida paridade local;
+  - valida markers obrigatorios do build local;
+  - valida ausencia de strings publicas antigas;
+  - faz request no beta live;
+  - faz request no endpoint live de capabilities.
+
+Leitura operacional disso:
+
+- isso fecha o item da checklist `Criar uma suite minima de smoke tests automatizados`;
+- o mesmo script pode ser usado depois do ultimo mile do Twilio com:
+  - `.\smoke-public-preflight.ps1 -RequirePhoneAuth -RequireSmsAuth`
+- rodada validada em `2026-08-10`:
+  - `.\smoke-public-preflight.ps1` passou contra local + live;
+  - `supportsPayments = true`;
+  - `supportsStripeCheckout = true`;
+  - `supportsPhoneAuth = false`;
+  - `supportsSmsAuth = false`.
+
 ## Atualizacao operacional (Codex - 2026-08-10, limpeza final de copy publica "beta")
 
 Mudanca local aplicada para reduzir a cara de prototipo no fluxo publico:
@@ -355,6 +381,7 @@ cd "C:\Users\aloisio.campos\OneDrive\Documentos\Dating App\web app"
 git status --short --branch
 git log --oneline -3
 .\check-beta-parity.ps1
+.\smoke-public-preflight.ps1
 # Só quando quiser sincronizar o espelho deliberadamente:
 # .\sync-beta-parity.ps1
 ```

@@ -3934,12 +3934,12 @@
     function getPaywallFineText(){
       return isBillingUiEnabled()
         ? "Secure checkout via Stripe. Manage or cancel anytime from billing settings."
-        : "Checkout is not enabled yet on this build.";
+        : "Checkout is temporarily unavailable right now.";
     }
 
     function getPaywallCtaText(plan){
       if(!isBillingUiEnabled()){
-        return plan==="weekly" ? "Weekly PRO coming soon" : "Monthly PRO coming soon";
+        return plan==="weekly" ? "Weekly PRO temporarily unavailable" : "Monthly PRO temporarily unavailable";
       }
       return plan==="weekly" ? "Continue to Weekly checkout" : "Continue to Monthly checkout";
     }

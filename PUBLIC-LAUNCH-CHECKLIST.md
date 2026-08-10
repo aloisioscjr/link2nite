@@ -76,8 +76,22 @@ Nota:
 - [ ] Configurar logs/telemetria reais para erro e uso.
 
 ### 1.6 Qualidade
-- [ ] Criar uma suite minima de smoke tests automatizados.
+- [x] Criar uma suite minima de smoke tests automatizados.
 - [ ] Validar o beta live em mobile e desktop antes do go-live.
+
+Nota:
+- Suite minima criada em `2026-08-10`: `smoke-public-preflight.ps1`
+- O script valida em um comando:
+  - paridade `beta/index.html` <-> `link2nite-repo/beta/index.html`;
+  - marcadores obrigatorios do build local;
+  - ausencia de strings publicas antigas;
+  - HTML live de `https://www.link2nite.com/beta/`;
+  - capabilities live do Apps Script (`admin/user/shared state/payments/stripe`).
+- Primeira passada real concluida em `2026-08-10`:
+  - `smoke-public-preflight.ps1` passou com `supportsPayments = true` e `supportsStripeCheckout = true`;
+  - `supportsPhoneAuth` e `supportsSmsAuth` continuam `false` no deploy live atual.
+- Quando Twilio entrar no deploy publicado, rodar tambem:
+  - `.\smoke-public-preflight.ps1 -RequirePhoneAuth -RequireSmsAuth`
 
 ## 2. O que ainda entrega cara de prototipo hoje
 
