@@ -6084,7 +6084,7 @@ let currentUserName = null;
       setBusyButtonState("onboarding-phone-send-btn", true, "Send SMS code", "Sending...");
       setInlineStatus("phone-verify-status", `Sending code to ${maskPhone(phone)}...`, "warn");
       if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
-        toast("SMS verification is not live on this beta yet. Your phone will still be saved now.");
+        toast("SMS verification is not live on this deployment yet. Your phone will still be saved now.");
         renderOnboardingVerificationState();
         setBusyButtonState("onboarding-phone-send-btn", false, "Send SMS code", "Sending...");
         return;
@@ -6125,7 +6125,7 @@ let currentUserName = null;
         return;
       }
       if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
-        toast("SMS verification is not live on this beta yet. You can continue after email verification.");
+        toast("SMS verification is not live on this deployment yet. You can continue after email verification.");
         renderOnboardingVerificationState();
         return;
       }
