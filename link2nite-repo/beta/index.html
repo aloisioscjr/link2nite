@@ -2115,15 +2115,15 @@
             <div class="verify-actions">
               <button class="pill-button secondary small" id="onboarding-phone-send-btn" type="button" onclick="requestOnboardingPhoneCode()">Send SMS code</button>
             </div>
-            <div class="verify-inline-hint">We use your phone for safety. When SMS is live on this build, we text a 6-digit code to validate it.</div>
+            <div id="phone-verify-hint" class="verify-inline-hint">Phone is required for safety. SMS verification is not live on this beta yet, so we will save your number now and turn on SMS validation as soon as it is available.</div>
           </div>
           <div class="input-group">
-            <label>SMS verification code</label>
+            <label id="phone-code-label">SMS verification code (coming soon)</label>
             <input type="text" id="phone-code-input" inputmode="numeric" maxlength="6" placeholder="6-digit SMS code" />
             <div class="verify-actions">
               <button class="pill-button secondary small" id="onboarding-phone-verify-btn" type="button" onclick="verifyOnboardingPhoneCode()">Verify phone</button>
             </div>
-            <div id="phone-verify-status" class="verify-status">Phone is required. SMS verification appears when it is active on this build.</div>
+            <div id="phone-verify-status" class="verify-status">Phone is required for safety. SMS verification will appear here as soon as it is live on this beta.</div>
           </div>
           <div class="input-group">
             <label>Age <span style="color:#f97373;">(required)</span></label>
@@ -2165,7 +2165,7 @@
           <button class="pill-button" id="onboarding-continue-btn" onclick="saveUsername()">Continue</button>
           <div id="onboarding-submit-status" class="verify-status"></div>
           <p class="footer-hint">
-            Email must be verified before the account can be created. Phone is required, and SMS verification appears when it is active on this build.<br />
+            Email must be verified before the account can be created. Phone is required for safety, and SMS verification will appear here as soon as it is live on this beta.<br />
             Age, gender, and preferences are required for the app logic.
           </p>
         </div>
@@ -5179,6 +5179,7 @@ let currentUserName = null;
 
       sharedBackendState.checked = true;
       sharedBackendState.checking = false;
+      try{ renderOnboardingVerificationState(); }catch(_){}
       return sharedBackendState.available;
     }
 
@@ -5570,6 +5571,45 @@ let currentUserName = null;
       return !hasAtLeastOneProfilePhoto(getProfile(username) || {});
     }
 
+    function renderOnboardingPhoneVerificationUi(){
+      const phoneSendBtn = document.getElementById("onboarding-phone-send-btn");
+      const phoneVerifyBtn = document.getElementById("onboarding-phone-verify-btn");
+      const phoneCodeInput = document.getElementById("phone-code-input");
+      const phoneCodeLabel = document.getElementById("phone-code-label");
+      const phoneHint = document.getElementById("phone-verify-hint");
+      const phoneVerificationLive = isOnboardingPhoneVerificationRequired();
+
+      if(phoneHint){
+        phoneHint.textContent = phoneVerificationLive
+          ? "Phone is required for safety. We text a 6-digit SMS code to validate it before the profile is fully verified."
+          : "Phone is required for safety. SMS verification is not live on this beta yet, so we will save your number now and turn on SMS validation as soon as it is available.";
+      }
+
+      if(phoneCodeLabel){
+        phoneCodeLabel.textContent = phoneVerificationLive
+          ? "SMS verification code"
+          : "SMS verification code (coming soon)";
+      }
+
+      if(phoneCodeInput){
+        phoneCodeInput.disabled = !phoneVerificationLive;
+        phoneCodeInput.placeholder = phoneVerificationLive
+          ? "6-digit SMS code"
+          : "SMS verification will unlock here soon";
+        if(!phoneVerificationLive) phoneCodeInput.value = "";
+      }
+
+      if(phoneSendBtn && !phoneSendBtn.classList.contains("is-busy")){
+        phoneSendBtn.disabled = !phoneVerificationLive;
+        phoneSendBtn.textContent = phoneVerificationLive ? "Send SMS code" : "SMS not live yet";
+      }
+
+      if(phoneVerifyBtn && !phoneVerifyBtn.classList.contains("is-busy")){
+        phoneVerifyBtn.disabled = !phoneVerificationLive;
+        phoneVerifyBtn.textContent = phoneVerificationLive ? "Verify phone" : "SMS not live yet";
+      }
+    }
+
     function resetOnboardingPhotoDraft(){
       tempPhotos = [];
       photoSlots = [null, null, null, null, null, null];
@@ -5603,6 +5643,8 @@ let currentUserName = null;
       const email = getOnboardingEmailValue();
       const phone = getOnboardingPhoneValue();
 
+      renderOnboardingPhoneVerificationUi();
+
       if(emailStatus){
         emailStatus.className = "verify-status";
         if(!email){
@@ -5621,13 +5663,18 @@ let currentUserName = null;
       if(phoneStatus){
         phoneStatus.className = "verify-status";
         if(!phone){
-          phoneStatus.textContent = "Enter your phone first.";
+          if(isOnboardingPhoneVerificationRequired()){
+            phoneStatus.textContent = "Enter your phone first.";
+          } else {
+            phoneStatus.classList.add("warn");
+            phoneStatus.textContent = "Enter your phone number. We will save it now, and SMS verification will unlock here when it goes live.";
+          }
         } else if(!isOnboardingPhoneVerificationRequired()){
           phoneStatus.classList.add("warn");
           if(isOnboardingEmailVerified()){
-            phoneStatus.textContent = `SMS verification is not live on this build yet. We will save ${maskPhone(phone)} without SMS for now.`;
+            phoneStatus.textContent = `Phone ${maskPhone(phone)} will be saved now. SMS verification is not live on this beta yet.`;
           } else {
-            phoneStatus.textContent = "Verify your email first. Your phone will still be saved even while SMS is not active.";
+            phoneStatus.textContent = "Verify your email first. Your phone will still be saved now, and SMS verification will be added here when it goes live.";
           }
         } else if(!isOnboardingEmailVerified()){
           phoneStatus.textContent = "Verify your email before requesting the SMS code.";
@@ -5749,7 +5796,7 @@ let currentUserName = null;
       setBusyButtonState("onboarding-phone-send-btn", true, "Send SMS code", "Sending...");
       setInlineStatus("phone-verify-status", `Sending code to ${maskPhone(phone)}...`, "warn");
       if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
-        toast("SMS verification is not live on this build yet. We will save your phone without SMS for now.");
+        toast("SMS verification is not live on this beta yet. Your phone will still be saved now.");
         renderOnboardingVerificationState();
         setBusyButtonState("onboarding-phone-send-btn", false, "Send SMS code", "Sending...");
         return;
@@ -5790,7 +5837,7 @@ let currentUserName = null;
         return;
       }
       if(!await ensureSharedBackendAvailable() || !isOnboardingPhoneVerificationRequired()){
-        toast("SMS verification is not live on this build yet, so this step is optional for now.");
+        toast("SMS verification is not live on this beta yet. You can continue after email verification.");
         renderOnboardingVerificationState();
         return;
       }
