@@ -4082,7 +4082,7 @@
         toast("Verify your email before managing billing.");
         return false;
       }
-      if(!await ensureSharedBackendAvailable() || !isBillingLive()){
+      if(!await ensureSharedBackendAvailable(true) || !isBillingLive()){
         toast("Billing management is not live on this deployment yet.");
         return false;
       }
@@ -4192,52 +4192,63 @@
 
 function openPaywall(reason){
       if(!PAYWALL_ENABLED) return;
+      const paywallReason = reason || "";
       const prevScreen = currentScreenId || "screen-home";
       localStorage.setItem("paywall_prev_screen", prevScreen);
-      try{ updatePaywallForReason(reason||""); }catch(e){}
+      try{ updatePaywallForReason(paywallReason); }catch(e){}
       try{ selectPlan(getSelectedPlan()); }catch(e){}
       showScreen("screen-paywall");
-      track("paywall_open", {reason: (reason||"unknown"), plan: getSelectedPlan()});
+      if(isUserSession()){
+        ensureSharedBackendAvailable(true)
+          .then((available) => {
+            if(!available) return;
+            try{ updatePaywallForReason(paywallReason); }catch(e){}
+            try{ selectPlan(getSelectedPlan()); }catch(e){}
+          })
+          .catch(() => {});
+      }
+      track("paywall_open", {reason: (paywallReason||"unknown"), plan: getSelectedPlan()});
     }
     function closePaywall(){
       const prevScreen = localStorage.getItem("paywall_prev_screen") || "screen-home";
       track("paywall_close", {});
       showScreen(prevScreen);
     }
-    function activateProDemo(){
+    async function activateProDemo(){
       const plan = getSelectedPlan();
       const reason = localStorage.getItem("paywall_prev_screen") || "unknown";
+      await ensureSharedBackendAvailable(true);
+      try{ updatePaywallForReason(reason); }catch(e){}
+      try{ selectPlan(plan); }catch(e){}
       if(!isBillingLive()){
         toast("Stripe Checkout is not live on this deployment yet.");
         return;
       }
-      (async () => {
-        if(!await ensureSharedMutationAuth({silent:false})){
-          toast("Verify your email before continuing to checkout.");
+      if(!await ensureSharedMutationAuth({silent:false})){
+        toast("Verify your email before continuing to checkout.");
+        return;
+      }
+      setBusyButtonState("pay-cta", true, getPaywallCtaText(plan), "Opening checkout...");
+      try{
+        const data = await postSharedBackend({
+          action:"billing_create_checkout",
+          sessionToken: userAuthSession.sessionToken,
+          plan,
+          reason,
+          successUrl: `${getPublicBetaBaseUrl()}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${getPublicBetaBaseUrl()}?checkout=cancel`
+        });
+        if(data && data.ok && data.checkoutUrl){
+          track("checkout_started", {plan, reason, sessionId: data.sessionId || ""});
+          window.location.href = data.checkoutUrl;
           return;
         }
-        setBusyButtonState("pay-cta", true, getPaywallCtaText(plan), "Opening checkout...");
-        try{
-          const data = await postSharedBackend({
-            action:"billing_create_checkout",
-            sessionToken: userAuthSession.sessionToken,
-            plan,
-            reason,
-            successUrl: `${getPublicBetaBaseUrl()}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-            cancelUrl: `${getPublicBetaBaseUrl()}?checkout=cancel`
-          });
-          if(data && data.ok && data.checkoutUrl){
-            track("checkout_started", {plan, reason, sessionId: data.sessionId || ""});
-            window.location.href = data.checkoutUrl;
-            return;
-          }
-          toast((data && data.error) || "Couldn't open Stripe Checkout right now.");
-        }catch(e){
-          toast("Couldn't open Stripe Checkout right now.");
-        } finally {
-          setBusyButtonState("pay-cta", false, getPaywallCtaText(plan), "Opening checkout...");
-        }
-      })();
+        toast((data && data.error) || "Couldn't open Stripe Checkout right now.");
+      }catch(e){
+        toast("Couldn't open Stripe Checkout right now.");
+      } finally {
+        setBusyButtonState("pay-cta", false, getPaywallCtaText(plan), "Opening checkout...");
+      }
     }
     function renderProBadges(){
       const el = document.getElementById("current-user-label");
@@ -10032,8 +10043,16 @@ function initApp(){
       updateSettingsProStatus();
       renderAdminAuthState();
       showScreen("screen-settings");
-      if(isUserSession() && isBillingLive()){
-        refreshBillingState({refresh:false, silent:true});
+      if(isUserSession()){
+        ensureSharedBackendAvailable(true)
+          .then((available) => {
+            try{ updateSettingsProStatus(); }catch(e){}
+            if(available && isBillingLive()){
+              return refreshBillingState({refresh:false, silent:true});
+            }
+            return false;
+          })
+          .catch(() => {});
       }
       ensureAdminAuthAvailable();
       refreshAdminSession({silent:true});
@@ -10086,6 +10105,10 @@ function initApp(){
       if(planEl) planEl.textContent = plan === "weekly" ? "Weekly ($4.99/week)" : "Monthly ($14.99/month)";
     }
     async function toggleProStatus(){
+      if(isUserSession()){
+        await ensureSharedBackendAvailable(true);
+      }
+      updateSettingsProStatus();
       if(!isBillingLive()){
         toast("Billing is not live on this deployment yet.");
         return;
