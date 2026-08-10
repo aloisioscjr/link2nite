@@ -171,7 +171,7 @@ Rodar no Android Chrome e no iPhone Safari:
 - [ ] Rodar uma passada manual em mobile real.
 - [x] Decidir a copy / obrigatoriedade de telefone enquanto `supportsPhoneAuth` e `supportsSmsAuth` continuam `false` no deploy live.
 - [ ] Ligar Twilio no Apps Script publicado e validar o fluxo real de SMS/telefone.
-- [ ] Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
+- [x] Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
 - [x] Confirmar no live que bots/demo nao voltaram ao fluxo principal para visitantes externos.
 
 Nota:
@@ -182,6 +182,8 @@ Nota:
   - sem tools admin;
   - sem `Back to landing`;
   - sem sessao demo/publica herdada no browser limpo.
+- Decisao atual em `2026-08-10`: manter a copy publica neutra, sem badge/label de `closed beta` ou `prototype`.
+- Como o workspace nao tem `.openai/hosting.json`, tratar `push` no GitHub e publish live como etapas separadas ate o fluxo de deploy estar totalmente claro.
 
 ## 4. Melhorias que podem ficar para depois do launch
 
@@ -196,7 +198,7 @@ Nota:
 1. Fechar a rodada de QA manual em Android Chrome e iPhone Safari.
 2. Ligar Twilio no Apps Script publicado e validar o fluxo real de SMS/telefone.
 3. Ligar Stripe no Apps Script publicado e validar o ciclo `checkout -> retorno -> portal`.
-4. Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
+4. Manter a copy publica neutra e sem label de `closed beta / prototype`.
 5. Se a meta imediata for tracao: abrir como beta controlado / assistido.
 6. Se a meta for produto publico real: endurecer backend + auth primeiro.
 7. So entao abrir para publico amplo.
@@ -204,7 +206,7 @@ Nota:
 ## 6. Recomendacao pratica
 
 Se a meta for ganhar tracao agora, o caminho mais seguro e:
-- manter como beta fechado / prototipo assistido;
+- manter a operacao de forma assistida, mesmo com copy publica neutra;
 - limpar mais copy publica de demo;
 - validar a UX com usuarios reais;
 - e so depois investir no backend minimo para abrir ao publico.

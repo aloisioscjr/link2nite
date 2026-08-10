@@ -1,5 +1,20 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-10, decisao de copy publica + observacao de deploy)
+
+Decisao operacional consolidada:
+
+- a copy publica do app fica neutra;
+- nao vamos exibir label/badge de `closed beta` ou `prototype` para o publico neste momento;
+- as frases internas restantes do owner foram limpas para texto neutro (`team review`, `venue and promoter tools`).
+
+Observacao importante de deploy:
+
+- este workspace **nao** tem `.openai/hosting.json`;
+- portanto, nao existe configuracao local de deploy via Sites neste repo;
+- tratar `git push` e publish live como etapas separadas ate o fluxo de publicacao estar completamente mapeado;
+- sempre revalidar `https://www.link2nite.com/beta/` depois de push, porque o publicado pode nao refletir imediatamente o ultimo commit do GitHub.
+
 ## Atualizacao operacional (Codex - 2026-08-10, QA live de boot neutro + limpeza de debug publico)
 
 Validacao live feita no beta publicado em browser limpo:
