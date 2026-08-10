@@ -5553,7 +5553,7 @@ let currentUserName = null;
           }
           return false;
         }catch(e){
-          if(!options.silent) toast("Couldn't sync the shared beta right now.");
+          if(!options.silent) toast("Couldn't sync Link2Nite right now.");
           return false;
         }finally{
           syncSharedSnapshot._promise = null;
@@ -5600,7 +5600,7 @@ let currentUserName = null;
     async function ensureUserSignedInForEmail(email, options={}){
       const normalizedEmail = normalizeEmail(email);
       if(!isValidEmail(normalizedEmail)){
-        if(!options.silent) toast("Enter a valid email to sync with the shared beta.");
+        if(!options.silent) toast("Enter a valid email to sync your Link2Nite account.");
         return false;
       }
 
@@ -10291,7 +10291,7 @@ function initApp(){
 
     function changeName(){
       if(isUserSession()){
-        toast("Username changes aren't live yet on the shared beta.");
+        toast("Display name changes aren't live yet.");
         return;
       }
       const newName = prompt("New name:", currentUserName || "");

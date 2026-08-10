@@ -1,5 +1,20 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-10, limpeza final de copy publica "beta")
+
+Mudanca local aplicada para reduzir a cara de prototipo no fluxo publico:
+
+- `beta/index.html` agora remove `beta` de toasts/erros publicos que ainda apareciam em fluxo real de conta:
+  - `Couldn't sync the shared beta right now.` -> `Couldn't sync Link2Nite right now.`
+  - `Enter a valid email to sync with the shared beta.` -> `Enter a valid email to sync your Link2Nite account.`
+  - `Username changes aren't live yet on the shared beta.` -> `Display name changes aren't live yet.`
+- `link2nite-repo/beta/index.html` foi resincronizado via `sync-beta-parity.ps1`.
+
+Leitura operacional disso:
+
+- ainda existem referencias a `beta` em blocos internos/admin e no proprio path publicado `/beta/`, o que e esperado;
+- a limpeza acima foi focada apenas no que vazava para usuarios comuns no fluxo publico.
+
 ## Atualizacao operacional (Codex - 2026-08-10, UX publica de telefone + ultimo mile Twilio)
 
 Mudancas locais aplicadas para limpar a UX publica enquanto o SMS ainda nao esta live:
