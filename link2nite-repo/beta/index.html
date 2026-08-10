@@ -2335,19 +2335,19 @@
           </div>
           <div class="input-group">
             <label>Venue or event name</label>
-            <input type="text" id="prod-name" placeholder="Ex.: Sunset Rooftop Party" />
+            <input type="text" id="prod-name" placeholder="e.g., Sunset Rooftop Party" />
           </div>
           <div class="input-group">
             <label>Neighborhood</label>
-            <input type="text" id="prod-neighborhood" placeholder="Ex.: Midtown, Lower East Side..." />
+            <input type="text" id="prod-neighborhood" placeholder="e.g., Midtown, Lower East Side..." />
           </div>
           <div class="input-group">
             <label>Type / category</label>
-            <input type="text" id="prod-type" placeholder="Ex.: Rooftop · DJ · $$$" />
+            <input type="text" id="prod-type" placeholder="e.g., Rooftop · DJ · $$$" />
           </div>
           <div class="input-group">
             <label>Tags (comma separated)</label>
-            <input type="text" id="prod-tags" placeholder="Ex.: Rooftop, Latin, DJ" />
+            <input type="text" id="prod-tags" placeholder="e.g., Rooftop, Latin, DJ" />
           </div>
           <div class="input-group">
             <label>Short event description</label>
@@ -2359,11 +2359,11 @@
           </div>
           <div class="input-group">
             <label>Music / vibe (optional)</label>
-            <input type="text" id="prod-music" placeholder="Ex.: reggaeton, funk, afrobeats" />
+            <input type="text" id="prod-music" placeholder="e.g., reggaeton, funk, afrobeats" />
           </div>
           <div class="input-group">
             <label>Dress code (optional)</label>
-            <input type="text" id="prod-dresscode" placeholder="Ex.: Smart casual, no sportswear" />
+            <input type="text" id="prod-dresscode" placeholder="e.g., Smart casual, no sportswear" />
           </div>
           <div class="input-group">
             <label>Tickets / reservations link (optional)</label>
@@ -2555,48 +2555,48 @@
           <div class="profile-fields-grid">
             <div class="input-group">
               <label>Bio</label>
-              <textarea id="profile-bio" placeholder="Conte um pouco sobre você, sua vibe e o que está procurando..."></textarea>
-              <div class="small-muted">Dica: curto, específico e divertido.</div>
+              <textarea id="profile-bio" placeholder="Tell people a bit about you, your vibe, and what you are looking for..."></textarea>
+              <div class="small-muted">Tip: keep it short, specific, and fun.</div>
             </div>
 
             <div class="input-group">
-              <label>Localização (cidade / bairro)</label>
-              <input type="text" id="profile-location" placeholder="Ex.: Manhattan, Midtown, Lower East Side..." />
+              <label>Location (city / neighborhood)</label>
+              <input type="text" id="profile-location" placeholder="e.g., Manhattan, Midtown, Lower East Side..." />
             </div>
 
             <div class="input-group">
-              <label>Trabalho (cargo)</label>
-              <input type="text" id="profile-jobTitle" placeholder="ex.: Project Manager, Engineer..." />
+              <label>Work (title)</label>
+              <input type="text" id="profile-jobTitle" placeholder="e.g., Project Manager, Engineer..." />
             </div>
 
             <div class="input-group">
-              <label>Empresa</label>
-              <input type="text" id="profile-company" placeholder="Ex.: Sperry Rail, startup, etc." />
+              <label>Company</label>
+              <input type="text" id="profile-company" placeholder="e.g., Sperry Rail, startup, etc." />
             </div>
 
             <div class="input-group">
-              <label>Faculdade / escola</label>
-              <input type="text" id="profile-school" placeholder="ex.: MBA, faculdade atual..." />
+              <label>College / school</label>
+              <input type="text" id="profile-school" placeholder="e.g., MBA, current school..." />
             </div>
 
             <div class="input-group">
-              <label>Instagram (sem @)</label>
-              <input type="text" id="profile-instagram" placeholder="ex.: meuusuario" />
+              <label>Instagram (no @)</label>
+              <input type="text" id="profile-instagram" placeholder="e.g., myusername" />
             </div>
 
             <div class="input-group">
-              <label>Fotos do perfil (até 6)</label>
+              <label>Profile photos (up to 6)</label>
               <input type="file" id="profile-photo-input" accept="image/*" multiple onchange="handleProfilePhotoInput(this)" />
               <div id="profile-photos-preview" class="photo-grid"></div>
-              <p class="photo-hint">A primeira foto vira sua foto principal no card.</p>
+              <p class="photo-hint">Your first photo becomes the main photo on your card.</p>
             </div>
 
-            <button class="pill-button" id="profile-save-btn" onclick="saveProfileFromProfileScreen()">Salvar perfil</button>
+            <button class="pill-button" id="profile-save-btn" onclick="saveProfileFromProfileScreen()">Save profile</button>
             <div id="profile-save-status" class="verify-status"></div>
           </div>
 
           <p class="footer-hint">
-            A área de cima é o card do seu perfil que as pessoas veem nos venues.
+            The top area is your profile card that people see at venues.
           </p>
         </div>
 
@@ -6586,7 +6586,7 @@ function showScreen(id){
     function renderOnboardingPhotosPreview(){
       const c=$("photos-onboarding-preview");
       if(!c) return;
-      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">Nenhuma foto ainda</div>`; return; }
+      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">No photos yet</div>`; return; }
       c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="photo"/></div>`).join("");
     }
     async function finishPhotosOnboarding(){
@@ -6614,11 +6614,11 @@ function showScreen(id){
           }
         } catch(err) {
           console.error("[Onboarding Photos] Save error", err);
-          setInlineStatus("photos-onboarding-status", "Essas fotos estão grandes demais para salvar aqui.", "err");
-          toast("Essas fotos estão grandes demais para salvar aqui. Tente menos fotos ou fotos menores.");
+          setInlineStatus("photos-onboarding-status", "These photos are too large to save here.", "err");
+          toast("These photos are too large to save here. Try fewer photos or smaller files.");
           return;
         }
-        setInlineStatus("photos-onboarding-status", "Fotos salvas. Entrando...", "ok");
+        setInlineStatus("photos-onboarding-status", "Photos saved. Entering the app...", "ok");
         openHomeScreen();
       } finally {
         setBusyButtonState("photos-onboarding-save-btn", false, "Save photos and continue", "Saving...");
@@ -8104,7 +8104,7 @@ function renderGoingForPlace(placeId){
       const files=Array.from(input.files);
       const max=6;
       let remaining=max-tempPhotos.length;
-      if(remaining<=0){ alert("Você já adicionou o máximo de 6 fotos."); input.value=""; return; }
+      if(remaining<=0){ alert("You already added the maximum of 6 photos."); input.value=""; return; }
       for (const file of files.slice(0,remaining)) {
         try {
           const dataUrl = await compressImageToDataUrl(file);
@@ -8116,7 +8116,7 @@ function renderGoingForPlace(placeId){
           renderProfilePreviewCard();
         } catch(err) {
           console.error("[Profile Photos] Upload error", err);
-          toast("Erro ao processar a imagem: " + (err.message || "Erro desconhecido"));
+          toast("Error processing image: " + (err.message || "Unknown error"));
         }
       }
       input.value="";
@@ -8124,22 +8124,22 @@ function renderGoingForPlace(placeId){
 
     function renderProfilePhotosPreview(){
       const c=$("profile-photos-preview");
-      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">Nenhuma foto ainda</div>`; return; }
-      c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="foto"/></div>`).join("");
+      if(!tempPhotos.length){ c.innerHTML=`<div class="photo-thumb">No photos yet</div>`; return; }
+      c.innerHTML=tempPhotos.map(url=>`<div class="photo-thumb"><img src="${url}" alt="photo"/></div>`).join("");
     }
 
     async function saveProfileFromProfileScreen(){
       if(!currentUserName) return;
-      setBusyButtonState("profile-save-btn", true, "Salvar perfil", "Salvando...");
-      setInlineStatus("profile-save-status", "Salvando perfil...", "warn");
+      setBusyButtonState("profile-save-btn", true, "Save profile", "Saving...");
+      setInlineStatus("profile-save-status", "Saving profile...", "warn");
       await waitForUiFrame();
       const bio=$("profile-bio").value||"";
       
       // Check for links in bio
       if(containsLink(bio)){
-        alert("Links não são permitidos na bio. Remova-os antes de salvar.");
-        setBusyButtonState("profile-save-btn", false, "Salvar perfil", "Salvando...");
-        setInlineStatus("profile-save-status", "Remova os links da bio antes de salvar.", "err");
+        alert("Links are not allowed in the bio. Remove them before saving.");
+        setBusyButtonState("profile-save-btn", false, "Save profile", "Saving...");
+        setInlineStatus("profile-save-status", "Remove links from the bio before saving.", "err");
         return;
       }
       
@@ -8152,23 +8152,23 @@ function renderGoingForPlace(placeId){
         saveProfile(currentUserName,{bio,location,jobTitle,company,school,instagram,photos:tempPhotos});
       } catch(err) {
         console.error("[Profile] Save error", err);
-        alert("Essas fotos de perfil estão grandes demais para salvar. Tente menos fotos ou fotos menores.");
-        setBusyButtonState("profile-save-btn", false, "Salvar perfil", "Salvando...");
-        setInlineStatus("profile-save-status", "Não foi possível salvar com essas fotos.", "err");
+        alert("These profile photos are too large to save. Try fewer photos or smaller files.");
+        setBusyButtonState("profile-save-btn", false, "Save profile", "Saving...");
+        setInlineStatus("profile-save-status", "Couldn't save with these photos.", "err");
         return;
       }
-      setInlineStatus("profile-save-status", "Perfil salvo.", "ok");
-      alert("Perfil salvo.");
+      setInlineStatus("profile-save-status", "Profile saved.", "ok");
+      alert("Profile saved.");
       updateUserLabel();
       renderProfilePreviewCard();
-      setBusyButtonState("profile-save-btn", false, "Salvar perfil", "Salvando...");
+      setBusyButtonState("profile-save-btn", false, "Save profile", "Saving...");
       goHome();
     }
     
     function validateBioForLinks(textarea){
       if(containsLink(textarea.value)){
         textarea.style.borderColor = "#ef4444";
-        toast("Links não são permitidos na bio.");
+        toast("Links are not allowed in the bio.");
       } else {
         textarea.style.borderColor = "";
       }
@@ -8192,9 +8192,9 @@ function renderGoingForPlace(placeId){
         });
         track("verification_submitted", { userName: currentUserName });
         renderVerificationStatus();
-        toast("Selfie enviada! Nosso time vai revisar.");
+        toast("Selfie submitted! Our team will review it.");
       }).catch(err => {
-        toast("Erro ao processar a imagem: " + (err.message || "Erro desconhecido"));
+        toast("Error processing image: " + (err.message || "Unknown error"));
       });
     }
     
@@ -9418,11 +9418,11 @@ function initApp(){
       $("match-name-me").textContent = myDisplayName;
       $("match-name-other").textContent = otherDisplayName;
       $("match-modal-subtitle").textContent = place
-        ? `Vocês curtiram um ao outro em ${place.name}.`
-        : `Você e ${otherDisplayName} curtiram um ao outro.`;
+        ? `You liked each other at ${place.name}.`
+        : `You and ${otherDisplayName} liked each other.`;
       $("match-place-note").textContent = place
-        ? `Agora vocês já podem combinar o encontro em ${place.name}.`
-        : "Agora vocês já podem conversar no app.";
+        ? `Now you can plan the meetup at ${place.name}.`
+        : "Now you can start chatting in the app.";
       const primaryBtn=$("match-primary-cta");
       if(primaryBtn){
         primaryBtn.style.display = placeId ? "inline-flex" : "none";
@@ -10874,26 +10874,26 @@ document.addEventListener("DOMContentLoaded", initApp);
   <div id="match-modal" class="modal match-modal hidden" role="dialog" aria-modal="true" style="display:none;" onclick="if(event.target===this){ closeMatchCelebration(); }">
     <div class="modal-card match-card">
       <button class="pay-x match-close" onclick="closeMatchCelebration()">✕</button>
-      <div class="match-kicker">💖 Deu match</div>
-      <div class="match-title">Deu match!</div>
-      <div class="match-subtitle" id="match-modal-subtitle">Agora vocês já podem conversar.</div>
+      <div class="match-kicker">💖 It's a match</div>
+      <div class="match-title">It's a match!</div>
+      <div class="match-subtitle" id="match-modal-subtitle">You can start chatting now.</div>
 
       <div class="match-photos">
         <div class="match-photo-card">
-          <img id="match-photo-me" src="" alt="Seu perfil" />
-          <div class="match-photo-label" id="match-name-me">Você</div>
+          <img id="match-photo-me" src="" alt="Your profile" />
+          <div class="match-photo-label" id="match-name-me">You</div>
         </div>
         <div class="match-photo-card">
-          <img id="match-photo-other" src="" alt="Seu match" />
-          <div class="match-photo-label" id="match-name-other">Seu match</div>
+          <img id="match-photo-other" src="" alt="Your match" />
+          <div class="match-photo-label" id="match-name-other">Your match</div>
         </div>
       </div>
 
-      <div class="match-place-note" id="match-place-note">Agora vocês já podem combinar o encontro.</div>
+      <div class="match-place-note" id="match-place-note">Now you can plan the meetup.</div>
 
       <div class="match-actions">
-        <button class="pill-button" id="match-primary-cta" onclick="openChatFromMatchCelebration()">Mandar mensagem</button>
-        <button class="pill-button secondary" onclick="closeMatchCelebration()">Continuar</button>
+        <button class="pill-button" id="match-primary-cta" onclick="openChatFromMatchCelebration()">Send message</button>
+        <button class="pill-button secondary" onclick="closeMatchCelebration()">Keep exploring</button>
       </div>
     </div>
   </div>
