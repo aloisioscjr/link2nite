@@ -3927,14 +3927,18 @@
       return !!sharedBackendState.payments;
     }
 
+    function isBillingUiEnabled(){
+      return isBillingLive() || (isUserSession() && sharedBackendState.available === true);
+    }
+
     function getPaywallFineText(){
-      return isBillingLive()
+      return isBillingUiEnabled()
         ? "Secure checkout via Stripe. Manage or cancel anytime from billing settings."
         : "Checkout is not enabled yet on this build.";
     }
 
     function getPaywallCtaText(plan){
-      if(!isBillingLive()){
+      if(!isBillingUiEnabled()){
         return plan==="weekly" ? "Weekly PRO coming soon" : "Monthly PRO coming soon";
       }
       return plan==="weekly" ? "Continue to Weekly checkout" : "Continue to Monthly checkout";
@@ -3954,7 +3958,7 @@
         fine: getPaywallFineText(),
         badge: "🔥 Best value",
         cta: getPaywallCtaText("monthly"),
-        note: isBillingLive()
+        note: isBillingUiEnabled()
           ? "Your PRO access is activated after Stripe confirms the subscription."
           : "PRO access is temporarily available while checkout is being finalized."
       };
@@ -4046,7 +4050,7 @@
 
     async function refreshBillingState(options={}){
       if(!isUserSession()) return false;
-      if(!await ensureSharedBackendAvailable() || !isBillingLive()) return false;
+      if(!await ensureSharedBackendAvailable(options.forceBackend === true)) return false;
       try{
         const data = await postSharedBackend({
           action:"billing_status",
@@ -4054,6 +4058,9 @@
           refresh: options.refresh === true
         });
         if(data && data.ok){
+          if(data.billingLive === true){
+            sharedBackendState.payments = true;
+          }
           persistUserAuthSession({
             sessionToken: userAuthSession.sessionToken,
             email: userAuthSession.email,
@@ -4082,10 +4089,11 @@
         toast("Verify your email before managing billing.");
         return false;
       }
-      if(!await ensureSharedBackendAvailable(true) || !isBillingLive()){
+      if(!await ensureSharedBackendAvailable(true)){
         toast("Billing management is not live on this deployment yet.");
         return false;
       }
+      await refreshBillingState({refresh:false, silent:true, forceBackend:true});
       try{
         const data = await postSharedBackend({
           action:"billing_create_portal",
@@ -4140,7 +4148,7 @@
           toast("Sign in again to confirm your upgrade.");
           return true;
         }
-        if(!await ensureSharedBackendAvailable() || !isBillingLive()){
+        if(!await ensureSharedBackendAvailable(true)){
           cleanBillingQueryParams();
           toast("Checkout confirmation is not live on this deployment yet.");
           return true;
@@ -4199,7 +4207,7 @@ function openPaywall(reason){
       try{ selectPlan(getSelectedPlan()); }catch(e){}
       showScreen("screen-paywall");
       if(isUserSession()){
-        ensureSharedBackendAvailable(true)
+        refreshBillingState({refresh:false, silent:true, forceBackend:true})
           .then((available) => {
             if(!available) return;
             try{ updatePaywallForReason(paywallReason); }catch(e){}
@@ -4217,10 +4225,10 @@ function openPaywall(reason){
     async function activateProDemo(){
       const plan = getSelectedPlan();
       const reason = localStorage.getItem("paywall_prev_screen") || "unknown";
-      await ensureSharedBackendAvailable(true);
+      const billingReady = await refreshBillingState({refresh:false, silent:true, forceBackend:true});
       try{ updatePaywallForReason(reason); }catch(e){}
       try{ selectPlan(plan); }catch(e){}
-      if(!isBillingLive()){
+      if(!billingReady){
         toast("Stripe Checkout is not live on this deployment yet.");
         return;
       }
@@ -10046,11 +10054,8 @@ function initApp(){
       if(isUserSession()){
         ensureSharedBackendAvailable(true)
           .then((available) => {
-            try{ updateSettingsProStatus(); }catch(e){}
-            if(available && isBillingLive()){
-              return refreshBillingState({refresh:false, silent:true});
-            }
-            return false;
+            if(!available) return false;
+            return refreshBillingState({refresh:false, silent:true, forceBackend:true});
           })
           .catch(() => {});
       }
@@ -10076,7 +10081,7 @@ function initApp(){
     }
     function updateSettingsProStatus(){
       const pro = isPro();
-      const billingLive = isBillingLive();
+      const billingLive = isBillingUiEnabled();
       const signedIn = isUserSession();
       const sessionPlan = normalizeBillingPlan(userAuthSession && userAuthSession.proPlan ? userAuthSession.proPlan : "");
       const plan = sessionPlan || getSelectedPlan();
@@ -10106,13 +10111,9 @@ function initApp(){
     }
     async function toggleProStatus(){
       if(isUserSession()){
-        await ensureSharedBackendAvailable(true);
+        await refreshBillingState({refresh:false, silent:true, forceBackend:true});
       }
       updateSettingsProStatus();
-      if(!isBillingLive()){
-        toast("Billing is not live on this deployment yet.");
-        return;
-      }
       if(isPro()){
         await openBillingPortal();
       } else if(isUserSession()){
