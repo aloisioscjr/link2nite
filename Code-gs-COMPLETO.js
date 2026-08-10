@@ -17,6 +17,9 @@ var USER_PHONE_COOLDOWN_SECONDS = 60;
 var USER_SESSION_TTL_DAYS = 30;
 var GOING_TONIGHT_TTL_HOURS = 18;
 var GOING_TONIGHT_TTL_MS = GOING_TONIGHT_TTL_HOURS * 60 * 60 * 1000;
+var DEFAULT_STRIPE_SUCCESS_URL = "https://www.link2nite.com/beta/?checkout=success&session_id={CHECKOUT_SESSION_ID}";
+var DEFAULT_STRIPE_CANCEL_URL = "https://www.link2nite.com/beta/?checkout=cancel";
+var DEFAULT_STRIPE_PORTAL_RETURN_URL = "https://www.link2nite.com/beta/?billing=return";
 var PROFILE_JSON_PARTS = 20;
 var PROFILE_JSON_CHUNK_SIZE = 40000;
 var SHARED_ACCOUNTS_SHEET_NAME = "L2N_Accounts";
@@ -302,6 +305,165 @@ function isSmsAuthConfigured_() {
   return !!(cfg.accountSid && cfg.authToken && (cfg.fromNumber || cfg.messagingServiceSid));
 }
 
+function getStripeConfig_() {
+  var props = PropertiesService.getScriptProperties();
+  return {
+    secretKey: String(props.getProperty("STRIPE_SECRET_KEY") || "").trim(),
+    monthlyPriceId: String(props.getProperty("STRIPE_PRICE_ID_MONTHLY") || "").trim(),
+    weeklyPriceId: String(props.getProperty("STRIPE_PRICE_ID_WEEKLY") || "").trim(),
+    successUrl: String(props.getProperty("STRIPE_SUCCESS_URL") || "").trim(),
+    cancelUrl: String(props.getProperty("STRIPE_CANCEL_URL") || "").trim(),
+    portalReturnUrl: String(props.getProperty("STRIPE_PORTAL_RETURN_URL") || "").trim()
+  };
+}
+
+function isStripeCheckoutConfigured_() {
+  var cfg = getStripeConfig_();
+  return !!(cfg.secretKey && (cfg.monthlyPriceId || cfg.weeklyPriceId));
+}
+
+function normalizeBillingPlan_(value) {
+  var plan = String(value || "").trim().toLowerCase();
+  return plan === "weekly" ? "weekly" : "monthly";
+}
+
+function normalizeStripeStatus_(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeStripeId_(value) {
+  return String(value || "").trim();
+}
+
+function getStripePriceIdForPlan_(plan) {
+  var cfg = getStripeConfig_();
+  var normalizedPlan = normalizeBillingPlan_(plan);
+  return normalizedPlan === "weekly" ? cfg.weeklyPriceId : cfg.monthlyPriceId;
+}
+
+function getStripeSuccessUrl_() {
+  var cfg = getStripeConfig_();
+  return cfg.successUrl || DEFAULT_STRIPE_SUCCESS_URL;
+}
+
+function getStripeCancelUrl_() {
+  var cfg = getStripeConfig_();
+  return cfg.cancelUrl || DEFAULT_STRIPE_CANCEL_URL;
+}
+
+function getStripePortalReturnUrl_() {
+  var cfg = getStripeConfig_();
+  return cfg.portalReturnUrl || DEFAULT_STRIPE_PORTAL_RETURN_URL;
+}
+
+function buildFormUrlEncodedPayload_(pairs) {
+  return (pairs || []).map(function(pair) {
+    return encodeURIComponent(String(pair[0])) + "=" + encodeURIComponent(String(pair[1]));
+  }).join("&");
+}
+
+function stripeApiRequest_(method, path, pairs) {
+  var cfg = getStripeConfig_();
+  if (!cfg.secretKey) throw new Error("Stripe is not configured on this deployment.");
+
+  var normalizedMethod = String(method || "get").trim().toLowerCase();
+  var url = "https://api.stripe.com/v1" + String(path || "");
+  var options = {
+    method: normalizedMethod,
+    headers: {
+      Authorization: "Bearer " + cfg.secretKey
+    },
+    muteHttpExceptions: true
+  };
+
+  if (normalizedMethod === "get") {
+    if (pairs && pairs.length) {
+      url += (url.indexOf("?") === -1 ? "?" : "&") + buildFormUrlEncodedPayload_(pairs);
+    }
+  } else if (pairs && pairs.length) {
+    options.contentType = "application/x-www-form-urlencoded";
+    options.payload = buildFormUrlEncodedPayload_(pairs);
+  }
+
+  var response = UrlFetchApp.fetch(url, options);
+  var code = response.getResponseCode();
+  var text = response.getContentText();
+  var data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (_) {
+    data = {};
+  }
+  if (code < 200 || code >= 300) {
+    var errorMessage = data && data.error && data.error.message
+      ? data.error.message
+      : ("Stripe API failed: HTTP " + code);
+    throw new Error(errorMessage);
+  }
+  return data;
+}
+
+function unixSecondsToIso_(value) {
+  var n = Number(value || 0);
+  if (!isFinite(n) || n <= 0) return "";
+  return new Date(n * 1000).toISOString();
+}
+
+function isStripeSubscriptionActiveStatus_(status) {
+  var normalized = normalizeStripeStatus_(status);
+  return normalized === "active" || normalized === "trialing";
+}
+
+function createStripeCheckoutSession_(identity, plan, reason, successUrl, cancelUrl, customerId) {
+  var priceId = getStripePriceIdForPlan_(plan);
+  if (!priceId) {
+    throw new Error("That billing plan is not configured on this deployment.");
+  }
+
+  var pairs = [
+    ["mode", "subscription"],
+    ["success_url", successUrl || getStripeSuccessUrl_()],
+    ["cancel_url", cancelUrl || getStripeCancelUrl_()],
+    ["client_reference_id", identity.email],
+    ["allow_promotion_codes", "true"],
+    ["line_items[0][price]", priceId],
+    ["line_items[0][quantity]", "1"],
+    ["metadata[email]", identity.email],
+    ["metadata[username]", identity.username],
+    ["metadata[plan]", normalizeBillingPlan_(plan)],
+    ["metadata[source]", "link2nite_beta"],
+    ["metadata[reason]", String(reason || "").trim().slice(0, 80)],
+    ["subscription_data[metadata][email]", identity.email],
+    ["subscription_data[metadata][username]", identity.username],
+    ["subscription_data[metadata][plan]", normalizeBillingPlan_(plan)],
+    ["subscription_data[metadata][source]", "link2nite_beta"]
+  ];
+  var existingCustomerId = normalizeStripeId_(customerId || "");
+  if (existingCustomerId) {
+    pairs.push(["customer", existingCustomerId]);
+  } else {
+    pairs.push(["customer_email", identity.email]);
+  }
+  return stripeApiRequest_("post", "/checkout/sessions", pairs);
+}
+
+function getStripeCheckoutSession_(sessionId) {
+  return stripeApiRequest_("get", "/checkout/sessions/" + encodeURIComponent(String(sessionId || "")), [
+    ["expand[]", "subscription"]
+  ]);
+}
+
+function getStripeSubscription_(subscriptionId) {
+  return stripeApiRequest_("get", "/subscriptions/" + encodeURIComponent(String(subscriptionId || "")));
+}
+
+function createStripeBillingPortalSession_(customerId, returnUrl) {
+  return stripeApiRequest_("post", "/billing_portal/sessions", [
+    ["customer", String(customerId || "").trim()],
+    ["return_url", returnUrl || getStripePortalReturnUrl_()]
+  ]);
+}
+
 function sendSmsMessage_(to, body) {
   var cfg = getSmsConfig_();
   if (!isSmsAuthConfigured_()) {
@@ -423,7 +585,16 @@ function getOrCreateSheet_(name, headers) {
     sheet.appendRow(headers);
   } else {
     var existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    if (String(existingHeaders[0] || "") !== String(headers[0] || "")) {
+    var sameHeaders = existingHeaders.length >= headers.length;
+    if (sameHeaders) {
+      for (var i = 0; i < headers.length; i++) {
+        if (String(existingHeaders[i] || "") !== String(headers[i] || "")) {
+          sameHeaders = false;
+          break;
+        }
+      }
+    }
+    if (!sameHeaders) {
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }
   }
@@ -456,7 +627,22 @@ function withScriptLock_(callback) {
 }
 
 function getAccountsSheetHeaders_() {
-  return ["email", "username", "phone", "phone_verified", "created_at", "updated_at"];
+  return [
+    "email",
+    "username",
+    "phone",
+    "phone_verified",
+    "pro_active",
+    "pro_plan",
+    "pro_status",
+    "stripe_customer_id",
+    "stripe_subscription_id",
+    "stripe_checkout_session_id",
+    "pro_expires_at",
+    "pro_updated_at",
+    "created_at",
+    "updated_at"
+  ];
 }
 
 function getProfilesSheetHeaders_() {
@@ -488,6 +674,14 @@ function parseAccountRecord_(row) {
     username: String(row.username || "").trim(),
     phone: normalizePhoneE164_(row.phone),
     phoneVerified: String(row.phone_verified || "").toLowerCase() === "true",
+    proActive: String(row.pro_active || "").toLowerCase() === "true",
+    proPlan: normalizeBillingPlan_(row.pro_plan || ""),
+    proStatus: normalizeStripeStatus_(row.pro_status || ""),
+    stripeCustomerId: normalizeStripeId_(row.stripe_customer_id || ""),
+    stripeSubscriptionId: normalizeStripeId_(row.stripe_subscription_id || ""),
+    stripeCheckoutSessionId: normalizeStripeId_(row.stripe_checkout_session_id || ""),
+    proExpiresAt: String(row.pro_expires_at || "").trim(),
+    proUpdatedAt: String(row.pro_updated_at || "").trim(),
     createdAt: String(row.created_at || ""),
     updatedAt: String(row.updated_at || "")
   };
@@ -525,12 +719,44 @@ function findAccountRecordByPhone_(records, phone) {
   return null;
 }
 
-function writeAccountRecord_(sheet, rowNumber, email, username, phone, phoneVerified, createdAt, updatedAt) {
+function mergeAccountBillingState_(existingRecord, extra) {
+  var merged = {
+    proActive: existingRecord ? existingRecord.proActive === true : false,
+    proPlan: existingRecord ? normalizeBillingPlan_(existingRecord.proPlan) : "",
+    proStatus: existingRecord ? normalizeStripeStatus_(existingRecord.proStatus) : "",
+    stripeCustomerId: existingRecord ? normalizeStripeId_(existingRecord.stripeCustomerId) : "",
+    stripeSubscriptionId: existingRecord ? normalizeStripeId_(existingRecord.stripeSubscriptionId) : "",
+    stripeCheckoutSessionId: existingRecord ? normalizeStripeId_(existingRecord.stripeCheckoutSessionId) : "",
+    proExpiresAt: existingRecord ? String(existingRecord.proExpiresAt || "").trim() : "",
+    proUpdatedAt: existingRecord ? String(existingRecord.proUpdatedAt || "").trim() : ""
+  };
+  var source = extra || {};
+  if (Object.prototype.hasOwnProperty.call(source, "proActive")) merged.proActive = source.proActive === true;
+  if (Object.prototype.hasOwnProperty.call(source, "proPlan")) merged.proPlan = normalizeBillingPlan_(source.proPlan);
+  if (Object.prototype.hasOwnProperty.call(source, "proStatus")) merged.proStatus = normalizeStripeStatus_(source.proStatus);
+  if (Object.prototype.hasOwnProperty.call(source, "stripeCustomerId")) merged.stripeCustomerId = normalizeStripeId_(source.stripeCustomerId);
+  if (Object.prototype.hasOwnProperty.call(source, "stripeSubscriptionId")) merged.stripeSubscriptionId = normalizeStripeId_(source.stripeSubscriptionId);
+  if (Object.prototype.hasOwnProperty.call(source, "stripeCheckoutSessionId")) merged.stripeCheckoutSessionId = normalizeStripeId_(source.stripeCheckoutSessionId);
+  if (Object.prototype.hasOwnProperty.call(source, "proExpiresAt")) merged.proExpiresAt = String(source.proExpiresAt || "").trim();
+  if (Object.prototype.hasOwnProperty.call(source, "proUpdatedAt")) merged.proUpdatedAt = String(source.proUpdatedAt || "").trim();
+  return merged;
+}
+
+function writeAccountRecord_(sheet, rowNumber, email, username, phone, phoneVerified, createdAt, updatedAt, billingState) {
+  var state = mergeAccountBillingState_(null, billingState || {});
   var row = [
     normalizeEmail_(email),
     String(username || "").trim(),
     normalizePhoneE164_(phone),
     phoneVerified === true ? "true" : "false",
+    state.proActive === true ? "true" : "false",
+    state.proPlan || "",
+    state.proStatus || "",
+    state.stripeCustomerId || "",
+    state.stripeSubscriptionId || "",
+    state.stripeCheckoutSessionId || "",
+    state.proExpiresAt || "",
+    state.proUpdatedAt || "",
     createdAt || "",
     updatedAt || ""
   ];
@@ -541,7 +767,8 @@ function writeAccountRecord_(sheet, rowNumber, email, username, phone, phoneVeri
   }
 }
 
-function upsertAccountRecord_(sheet, existingRecord, email, username, phone, phoneVerified, createdAt, updatedAt) {
+function upsertAccountRecord_(sheet, existingRecord, email, username, phone, phoneVerified, createdAt, updatedAt, billingState) {
+  var mergedBillingState = mergeAccountBillingState_(existingRecord, billingState || {});
   writeAccountRecord_(
     sheet,
     existingRecord ? existingRecord.rowNumber : 0,
@@ -550,7 +777,8 @@ function upsertAccountRecord_(sheet, existingRecord, email, username, phone, pho
     phone,
     phoneVerified,
     createdAt,
-    updatedAt
+    updatedAt,
+    mergedBillingState
   );
   return findAccountRecordByEmail_(getAccountRecords_(sheet), email);
 }
@@ -734,6 +962,10 @@ function getResolvedUserSessionIdentity_(sessionRecord, sessionToken) {
       username: "",
       phone: "",
       phoneVerified: false,
+      proActive: false,
+      proPlan: "",
+      proStatus: "",
+      proExpiresAt: "",
       expiresAt: ""
     };
   }
@@ -758,6 +990,10 @@ function getResolvedUserSessionIdentity_(sessionRecord, sessionToken) {
     username: currentUsername,
     phone: currentPhone,
     phoneVerified: currentPhoneVerified,
+    proActive: false,
+    proPlan: "",
+    proStatus: "",
+    proExpiresAt: "",
     expiresAt: currentExpiresAt
   };
 
@@ -765,6 +1001,10 @@ function getResolvedUserSessionIdentity_(sessionRecord, sessionToken) {
     if (accountRecord.username) identity.username = accountRecord.username;
     if (accountRecord.phone) identity.phone = accountRecord.phone;
     identity.phoneVerified = accountRecord.phoneVerified === true;
+    identity.proActive = accountRecord.proActive === true;
+    identity.proPlan = normalizeBillingPlan_(accountRecord.proPlan || "");
+    identity.proStatus = normalizeStripeStatus_(accountRecord.proStatus || "");
+    identity.proExpiresAt = String(accountRecord.proExpiresAt || "").trim();
   }
 
   if (
@@ -783,6 +1023,10 @@ function getResolvedUserSessionIdentity_(sessionRecord, sessionToken) {
   sessionRecord.username = identity.username;
   sessionRecord.phone = identity.phone;
   sessionRecord.phoneVerified = identity.phoneVerified;
+  sessionRecord.proActive = identity.proActive;
+  sessionRecord.proPlan = identity.proPlan;
+  sessionRecord.proStatus = identity.proStatus;
+  sessionRecord.proExpiresAt = identity.proExpiresAt;
   return identity;
 }
 
@@ -955,6 +1199,10 @@ function handleUserVerifyCode_(data) {
       username: username,
       phone: phone,
       phoneVerified: phoneVerified,
+      proActive: accountRecord ? accountRecord.proActive === true : false,
+      proPlan: accountRecord ? accountRecord.proPlan : "",
+      proStatus: accountRecord ? accountRecord.proStatus : "",
+      proExpiresAt: accountRecord ? String(accountRecord.proExpiresAt || "") : "",
       sessionToken: sessionToken,
       expiresAt: expiresAt
     };
@@ -975,6 +1223,10 @@ function handleUserSessionStatus_(data) {
     username: identity.username,
     phone: identity.phone,
     phoneVerified: identity.phoneVerified,
+    proActive: identity.proActive === true,
+    proPlan: identity.proPlan || "",
+    proStatus: identity.proStatus || "",
+    proExpiresAt: identity.proExpiresAt || "",
     expiresAt: record.expiresAt
   };
 }
@@ -997,6 +1249,10 @@ function handleSharedSnapshot_(data) {
       username: identity.username,
       phone: identity.phone,
       phoneVerified: identity.phoneVerified,
+      proActive: identity.proActive === true,
+      proPlan: identity.proPlan || "",
+      proStatus: identity.proStatus || "",
+      proExpiresAt: identity.proExpiresAt || "",
       expiresAt: sessionRecord.expiresAt
     };
   }
@@ -1007,6 +1263,8 @@ function handleSharedSnapshot_(data) {
     supportsUserAuth: true,
     supportsPhoneAuth: isSmsAuthConfigured_(),
     supportsSmsAuth: isSmsAuthConfigured_(),
+    supportsPayments: isStripeCheckoutConfigured_(),
+    supportsStripeCheckout: isStripeCheckoutConfigured_(),
     viewer: viewer,
     snapshot: buildSharedSnapshot_()
   };
@@ -1098,6 +1356,283 @@ function handleSharedProfileUpsert_(data) {
       phoneVerified: updatedAccount ? updatedAccount.phoneVerified === true : sessionRecord.phoneVerified === true,
       updatedAt: nowIso,
       profile: sanitizeProfileForPublic_(nextProfile)
+    };
+  });
+}
+
+function buildStripeBillingState_(checkoutSession, subscription, fallbackPlan) {
+  var session = checkoutSession || {};
+  var sub = subscription || null;
+  var plan = normalizeBillingPlan_(
+    (session.metadata && session.metadata.plan) ||
+    (sub && sub.metadata && sub.metadata.plan) ||
+    fallbackPlan ||
+    ""
+  );
+  var status = normalizeStripeStatus_(sub ? sub.status : (session.payment_status || session.status || ""));
+  return {
+    proActive: sub ? isStripeSubscriptionActiveStatus_(sub.status) : (String(session.status || "") === "complete" && String(session.payment_status || "") === "paid"),
+    proPlan: plan,
+    proStatus: status,
+    stripeCustomerId: normalizeStripeId_((session.customer || (sub && sub.customer) || "")),
+    stripeSubscriptionId: normalizeStripeId_((sub && sub.id) || session.subscription || ""),
+    stripeCheckoutSessionId: normalizeStripeId_(session.id || ""),
+    proExpiresAt: sub ? unixSecondsToIso_(sub.current_period_end) : "",
+    proUpdatedAt: new Date().toISOString()
+  };
+}
+
+function refreshAccountBillingFromStripe_(accountsSheet, accountRecord) {
+  if (!accountRecord || !isStripeCheckoutConfigured_()) {
+    return accountRecord;
+  }
+
+  var nowIso = new Date().toISOString();
+  if (accountRecord.stripeSubscriptionId) {
+    var subscription = getStripeSubscription_(accountRecord.stripeSubscriptionId);
+    return upsertAccountRecord_(
+      accountsSheet,
+      accountRecord,
+      accountRecord.email,
+      accountRecord.username,
+      accountRecord.phone,
+      accountRecord.phoneVerified === true,
+      accountRecord.createdAt || nowIso,
+      nowIso,
+      {
+        proActive: isStripeSubscriptionActiveStatus_(subscription.status),
+        proPlan: accountRecord.proPlan || ((subscription.metadata && subscription.metadata.plan) || ""),
+        proStatus: normalizeStripeStatus_(subscription.status),
+        stripeCustomerId: normalizeStripeId_(subscription.customer || accountRecord.stripeCustomerId),
+        stripeSubscriptionId: normalizeStripeId_(subscription.id || accountRecord.stripeSubscriptionId),
+        stripeCheckoutSessionId: accountRecord.stripeCheckoutSessionId,
+        proExpiresAt: unixSecondsToIso_(subscription.current_period_end),
+        proUpdatedAt: nowIso
+      }
+    );
+  }
+
+  if (accountRecord.stripeCheckoutSessionId) {
+    var checkoutSession = getStripeCheckoutSession_(accountRecord.stripeCheckoutSessionId);
+    var checkoutSubscription = null;
+    if (checkoutSession.subscription && typeof checkoutSession.subscription === "object") {
+      checkoutSubscription = checkoutSession.subscription;
+    } else if (checkoutSession.subscription) {
+      checkoutSubscription = getStripeSubscription_(checkoutSession.subscription);
+    }
+    return upsertAccountRecord_(
+      accountsSheet,
+      accountRecord,
+      accountRecord.email,
+      accountRecord.username,
+      accountRecord.phone,
+      accountRecord.phoneVerified === true,
+      accountRecord.createdAt || nowIso,
+      nowIso,
+      buildStripeBillingState_(checkoutSession, checkoutSubscription, accountRecord.proPlan || "")
+    );
+  }
+
+  return accountRecord;
+}
+
+function handleBillingCreateCheckout_(data) {
+  if (!isStripeCheckoutConfigured_()) {
+    return { ok: false, error: "Stripe Checkout is not configured on this deployment.", code: "billing_not_configured" };
+  }
+
+  return withScriptLock_(function() {
+    var token = String(data.sessionToken || "");
+    var sessionRecord = getUserSessionRecord_(token);
+    if (!sessionRecord) return { ok: false, error: "Sign in again before upgrading to PRO.", code: "user_session_required" };
+
+    var identity = getResolvedUserSessionIdentity_(sessionRecord, token);
+    if (!identity.email) return { ok: false, error: "Add a valid email before upgrading.", code: "missing_email" };
+    if (!identity.username) return { ok: false, error: "Create your profile before upgrading.", code: "missing_profile" };
+
+    var plan = normalizeBillingPlan_(data.plan || "monthly");
+    var priceId = getStripePriceIdForPlan_(plan);
+    if (!priceId) return { ok: false, error: "That plan is not live on this deployment yet.", code: "plan_not_available" };
+
+    var reason = String(data.reason || "").trim().slice(0, 80);
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, identity.email, {
+      createIfMissing: true,
+      username: identity.username,
+      phone: identity.phone,
+      phoneVerified: identity.phoneVerified === true
+    });
+    var successUrl = String(data.successUrl || getStripeSuccessUrl_()).trim() || getStripeSuccessUrl_();
+    var cancelUrl = String(data.cancelUrl || getStripeCancelUrl_()).trim() || getStripeCancelUrl_();
+    var checkoutSession = createStripeCheckoutSession_(
+      identity,
+      plan,
+      reason,
+      successUrl,
+      cancelUrl,
+      accountRecord ? accountRecord.stripeCustomerId : ""
+    );
+    var nowIso = new Date().toISOString();
+    upsertAccountRecord_(
+      accountsSheet,
+      accountRecord,
+      identity.email,
+      identity.username,
+      identity.phone,
+      identity.phoneVerified === true,
+      accountRecord ? (accountRecord.createdAt || nowIso) : nowIso,
+      nowIso,
+      {
+        proPlan: plan,
+        proStatus: "checkout_created",
+        stripeCustomerId: normalizeStripeId_(checkoutSession.customer || (accountRecord && accountRecord.stripeCustomerId) || ""),
+        stripeCheckoutSessionId: normalizeStripeId_(checkoutSession.id || ""),
+        proUpdatedAt: nowIso
+      }
+    );
+
+    return {
+      ok: true,
+      sessionId: String(checkoutSession.id || ""),
+      checkoutUrl: String(checkoutSession.url || ""),
+      plan: plan
+    };
+  });
+}
+
+function handleBillingCheckoutStatus_(data) {
+  if (!isStripeCheckoutConfigured_()) {
+    return { ok: false, error: "Stripe Checkout is not configured on this deployment.", code: "billing_not_configured" };
+  }
+
+  return withScriptLock_(function() {
+    var token = String(data.sessionToken || "");
+    var sessionRecord = getUserSessionRecord_(token);
+    if (!sessionRecord) return { ok: false, error: "Sign in again before confirming your upgrade.", code: "user_session_required" };
+
+    var identity = getResolvedUserSessionIdentity_(sessionRecord, token);
+    var sessionId = normalizeStripeId_(data.sessionId || "");
+    if (!sessionId) return { ok: false, error: "Missing Stripe checkout session.", code: "missing_checkout_session" };
+
+    var checkoutSession = getStripeCheckoutSession_(sessionId);
+    var checkoutEmail = normalizeEmail_(
+      (checkoutSession.customer_details && checkoutSession.customer_details.email) ||
+      checkoutSession.customer_email ||
+      (checkoutSession.metadata && checkoutSession.metadata.email) ||
+      ""
+    );
+    if (checkoutEmail && checkoutEmail !== identity.email) {
+      return { ok: false, error: "This checkout belongs to a different Link2Nite account.", code: "checkout_account_mismatch" };
+    }
+
+    var subscription = null;
+    if (checkoutSession.subscription && typeof checkoutSession.subscription === "object") {
+      subscription = checkoutSession.subscription;
+    } else if (checkoutSession.subscription) {
+      subscription = getStripeSubscription_(checkoutSession.subscription);
+    }
+
+    var billingState = buildStripeBillingState_(checkoutSession, subscription, data.plan || "");
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, identity.email, {
+      createIfMissing: true,
+      username: identity.username,
+      phone: identity.phone,
+      phoneVerified: identity.phoneVerified === true
+    });
+    var nowIso = new Date().toISOString();
+    var updatedAccount = upsertAccountRecord_(
+      accountsSheet,
+      accountRecord,
+      identity.email,
+      identity.username,
+      identity.phone,
+      identity.phoneVerified === true,
+      accountRecord ? (accountRecord.createdAt || nowIso) : nowIso,
+      nowIso,
+      billingState
+    );
+
+    return {
+      ok: true,
+      checkoutStatus: String(checkoutSession.status || ""),
+      paymentStatus: String(checkoutSession.payment_status || ""),
+      proActive: updatedAccount ? updatedAccount.proActive === true : billingState.proActive === true,
+      proPlan: updatedAccount ? updatedAccount.proPlan : billingState.proPlan,
+      proStatus: updatedAccount ? updatedAccount.proStatus : billingState.proStatus,
+      proExpiresAt: updatedAccount ? updatedAccount.proExpiresAt : billingState.proExpiresAt
+    };
+  });
+}
+
+function handleBillingStatus_(data) {
+  var token = String(data.sessionToken || "");
+  var sessionRecord = getUserSessionRecord_(token);
+  if (!sessionRecord) return { ok: false, error: "Sign in again to load billing.", code: "user_session_required" };
+
+  return withScriptLock_(function() {
+    var identity = getResolvedUserSessionIdentity_(sessionRecord, token);
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, identity.email, {
+      createIfMissing: true,
+      username: identity.username,
+      phone: identity.phone,
+      phoneVerified: identity.phoneVerified === true
+    });
+
+    if (data && (data.refresh === true || String(data.refresh || "").toLowerCase() === "true")) {
+      accountRecord = refreshAccountBillingFromStripe_(accountsSheet, accountRecord);
+    }
+
+    accountRecord = accountRecord || {};
+    return {
+      ok: true,
+      billingLive: isStripeCheckoutConfigured_(),
+      proActive: accountRecord.proActive === true,
+      proPlan: accountRecord.proPlan || "",
+      proStatus: accountRecord.proStatus || "",
+      proExpiresAt: String(accountRecord.proExpiresAt || ""),
+      stripeCustomerId: normalizeStripeId_(accountRecord.stripeCustomerId || ""),
+      stripeSubscriptionId: normalizeStripeId_(accountRecord.stripeSubscriptionId || "")
+    };
+  });
+}
+
+function handleBillingCreatePortal_(data) {
+  if (!isStripeCheckoutConfigured_()) {
+    return { ok: false, error: "Stripe billing is not configured on this deployment.", code: "billing_not_configured" };
+  }
+
+  return withScriptLock_(function() {
+    var token = String(data.sessionToken || "");
+    var sessionRecord = getUserSessionRecord_(token);
+    if (!sessionRecord) return { ok: false, error: "Sign in again before managing billing.", code: "user_session_required" };
+
+    var identity = getResolvedUserSessionIdentity_(sessionRecord, token);
+    var accountsSheet = getOrCreateSheet_(SHARED_ACCOUNTS_SHEET_NAME, getAccountsSheetHeaders_());
+    var profilesSheet = getOrCreateSheet_(SHARED_PROFILES_SHEET_NAME, getProfilesSheetHeaders_());
+    var accountRecord = ensureAccountRecordForEmail_(accountsSheet, profilesSheet, identity.email, {
+      createIfMissing: true,
+      username: identity.username,
+      phone: identity.phone,
+      phoneVerified: identity.phoneVerified === true
+    });
+    accountRecord = refreshAccountBillingFromStripe_(accountsSheet, accountRecord);
+    var customerId = accountRecord ? normalizeStripeId_(accountRecord.stripeCustomerId || "") : "";
+    if (!customerId) {
+      return { ok: false, error: "No Stripe customer is linked to this account yet.", code: "missing_stripe_customer" };
+    }
+
+    var portal = createStripeBillingPortalSession_(
+      customerId,
+      String(data.returnUrl || getStripePortalReturnUrl_()).trim() || getStripePortalReturnUrl_()
+    );
+    return {
+      ok: true,
+      url: String(portal.url || "")
     };
   });
 }
@@ -1475,6 +2010,10 @@ function doPost(e) {
     if (action === "user_logout") return jsonResponse_(handleUserLogout_(data));
     if (action === "shared_snapshot") return jsonResponse_(handleSharedSnapshot_(data));
     if (action === "shared_profile_upsert") return jsonResponse_(handleSharedProfileUpsert_(data));
+    if (action === "billing_create_checkout") return jsonResponse_(handleBillingCreateCheckout_(data));
+    if (action === "billing_checkout_status") return jsonResponse_(handleBillingCheckoutStatus_(data));
+    if (action === "billing_status") return jsonResponse_(handleBillingStatus_(data));
+    if (action === "billing_create_portal") return jsonResponse_(handleBillingCreatePortal_(data));
     if (action === "shared_presence_set") return jsonResponse_(handleSharedPresenceSet_(data));
     if (action === "shared_like_set") return jsonResponse_(handleSharedLikeSet_(data));
     if (action === "shared_message_add") return jsonResponse_(handleSharedMessageAdd_(data));
@@ -1571,6 +2110,8 @@ function doGet(e) {
       supportsAppBackend: true,
       supportsPhoneAuth: isSmsAuthConfigured_(),
       supportsSmsAuth: isSmsAuthConfigured_(),
+      supportsPayments: isStripeCheckoutConfigured_(),
+      supportsStripeCheckout: isStripeCheckoutConfigured_(),
       feature: String((e && e.parameter && e.parameter.feature) || "app_backend")
     });
   }

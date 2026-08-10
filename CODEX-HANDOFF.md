@@ -1,5 +1,38 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-10, Stripe checkout preparado no codigo)
+
+Mudancas locais aplicadas para tirar o `PRO` do modo demo e preparar checkout real:
+
+- `beta/index.html` agora:
+  - abre Stripe Checkout real pelo paywall;
+  - confirma retorno `?checkout=success&session_id=...`;
+  - abre Stripe Billing Portal em `Settings` para contas `PRO`;
+  - mostra status de billing nas settings sem desligar `PRO` localmente.
+- `Code-gs-COMPLETO.js` agora:
+  - cria Checkout Session (`billing_create_checkout`);
+  - confirma checkout (`billing_checkout_status`);
+  - consulta billing atual (`billing_status`);
+  - abre Billing Portal (`billing_create_portal`);
+  - persiste campos de billing na sheet de contas.
+- O refresh de billing no Apps Script foi reforcado para recuperar o estado tambem pela `checkout_session` salva, nao apenas pela subscription. Isso reduz o risco de o usuario pagar e o browser falhar antes de confirmar o retorno.
+- Guia operacional novo: `STRIPE-CHECKOUT-DEPLOY.md`
+
+Leitura operacional disso:
+
+- o checkout real ja esta preparado no codigo local;
+- o beta live so vai expor `supportsPayments = true` depois que o Apps Script publicado receber:
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_PRICE_ID_MONTHLY`
+  - `STRIPE_PRICE_ID_WEEKLY`
+- esta versao ainda nao usa webhook assinado do Stripe; para beta controlado e aceitavel, para publico amplo o ideal e migrar a confirmacao final para backend com webhook validado.
+
+Lembrar a regra de paridade descrita mais abaixo em **Duas árvores**:
+
+- editar `beta/index.html` na raiz;
+- tratar `link2nite-repo/beta/index.html` como espelho por copia/script;
+- apos qualquer mudanca no beta, sincronizar tambem o espelho antes de push.
+
 ## Atualizacao operacional (Codex - 2026-08-10, verificacao live de launch readiness)
 
 Checagem objetiva feita no estado publicado e no workspace local antes de seguir para abertura publica maior:

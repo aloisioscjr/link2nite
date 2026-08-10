@@ -62,9 +62,13 @@ Nota:
 - [ ] Revisar metricas e moderacao locais que hoje vivem so no navegador.
 
 ### 1.4 Pagamentos e PRO
-- [ ] Implementar checkout real.
-- [ ] Revisar toda a copy de PRO para nao prometer funcionalidade nao entregue.
+- [x] Implementar no codigo o fluxo de Stripe Checkout + Billing Portal.
+- [ ] Configurar chaves reais do Stripe e `price_id` no Apps Script publicado.
+- [ ] Rodar QA end-to-end no beta live com checkout cancelado, checkout aprovado e retorno do Billing Portal.
 - [ ] Definir o que e FREE e o que e PRO no produto real.
+
+Nota:
+- O guia operacional desta etapa ficou em `STRIPE-CHECKOUT-DEPLOY.md`.
 
 ### 1.5 Seguranca e operacao
 - [ ] Definir politica de abuso, bloqueio, denuncia e verificacao com backend.
@@ -79,7 +83,7 @@ Nota:
 
 - O app ainda usa `localStorage` extensivamente para sessao, perfis, likes, mensagens, eventos, moderacao e fotos.
 - Existem funcoes de distancia/status falsos no cliente.
-- O fluxo de paywall ainda usa linguagem de demo e partes "coming soon".
+- O fluxo de paywall ja aponta para Checkout real no codigo local, mas o deploy live ainda depende de configuracao Stripe no Apps Script.
 - O fluxo de venue producer e essencialmente uma simulacao local.
 
 ## 3. Testes obrigatorios antes de abrir ao publico
@@ -167,9 +171,10 @@ Rodar no Android Chrome e no iPhone Safari:
 
 1. Fechar a rodada de QA manual em Android Chrome e iPhone Safari.
 2. Decidir a UX/copy de telefone enquanto SMS ainda nao esta live.
-3. Se a meta imediata for tracao: abrir como beta controlado / assistido.
-4. Se a meta for produto publico real: endurecer backend + auth primeiro.
-5. So entao abrir para publico amplo.
+3. Ligar Stripe no Apps Script publicado e validar o ciclo `checkout -> retorno -> portal`.
+4. Se a meta imediata for tracao: abrir como beta controlado / assistido.
+5. Se a meta for produto publico real: endurecer backend + auth primeiro.
+6. So entao abrir para publico amplo.
 
 ## 6. Recomendacao pratica
 

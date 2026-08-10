@@ -3667,24 +3667,39 @@
         return raw ? JSON.parse(raw) : null;
       }catch(e){ return null; }
     }
+    function normalizeBillingPlan(plan){
+      return String(plan || "").trim().toLowerCase() === "weekly" ? "weekly" : "monthly";
+    }
     function setL2nUser(user){
       localStorage.setItem("l2n_user", JSON.stringify(user||{}));
     }
     function getL2nIsPro(){
+      if(PUBLIC_REAL_LAUNCH_MODE){
+        return !!(isUserSession() && userAuthSession && userAuthSession.proActive === true);
+      }
       const val = localStorage.getItem("l2n_isPro");
       if(val === null) return false; // default false if not set
       return val === "true" || val === true;
     }
     function setL2nIsPro(v){
+      if(userAuthSession){
+        userAuthSession.proActive = (v === true || v === "true");
+        localStorage.setItem(USER_AUTH_SESSION_KEY, JSON.stringify(userAuthSession));
+      }
       localStorage.setItem("l2n_isPro", String(v === true || v === "true"));
       try{ renderProBadges(); }catch(e){}
       try{ updateProUi(); }catch(e){}
     }
     function getL2nSelectedPlan(){
-      return localStorage.getItem("l2n_selectedPlan") || "monthly";
+      if(isUserSession() && userAuthSession && userAuthSession.proPlan){
+        return normalizeBillingPlan(userAuthSession.proPlan);
+      }
+      return normalizeBillingPlan(localStorage.getItem("l2n_selectedPlan") || "monthly");
     }
     function setL2nSelectedPlan(plan){
-      localStorage.setItem("l2n_selectedPlan", plan);
+      const normalized = normalizeBillingPlan(plan);
+      if(userAuthSession) userAuthSession.proPlan = normalized;
+      localStorage.setItem("l2n_selectedPlan", normalized);
     }
     function getL2nDailyLikesUsed(){
       return parseInt(localStorage.getItem("l2n_dailyLikesUsed") || "0", 10);
@@ -3907,6 +3922,23 @@
     function setPro(v){
       setTimIsPro(v);
     }
+
+    function isBillingLive(){
+      return !!sharedBackendState.payments;
+    }
+
+    function getPaywallFineText(){
+      return isBillingLive()
+        ? "Secure checkout via Stripe. Manage or cancel anytime from billing settings."
+        : "Checkout is not enabled yet on this build.";
+    }
+
+    function getPaywallCtaText(plan){
+      if(!isBillingLive()){
+        return plan==="weekly" ? "Weekly PRO coming soon" : "Monthly PRO coming soon";
+      }
+      return plan==="weekly" ? "Continue to Weekly checkout" : "Continue to Monthly checkout";
+    }
     
     function updatePaywallForReason(reason){
       const title = document.getElementById("pay-title");
@@ -3919,10 +3951,12 @@
 
       const base = {
         plan: "Link2Nite PRO Monthly — <span style='color:#fde68a;'>$14.99/month</span>",
-        fine: "Checkout is not enabled yet on this build.",
+        fine: getPaywallFineText(),
         badge: "🔥 Best value",
-        cta: "Unlock PRO access",
-        note: "PRO access is temporarily available while checkout is being finalized."
+        cta: getPaywallCtaText("monthly"),
+        note: isBillingLive()
+          ? "Your PRO access is activated after Stripe confirms the subscription."
+          : "PRO access is temporarily available while checkout is being finalized."
       };
 
       let t = "Unlock Link2Nite PRO";
@@ -3982,16 +4016,176 @@
           : "Link2Nite PRO Monthly — <span style='color:#fde68a;'>$14.99/month</span>";
       }
       if(fineEl){
-        fineEl.textContent = (plan==="weekly")
-          ? "Checkout is not enabled yet on this build."
-          : "Checkout is not enabled yet on this build.";
+        fineEl.textContent = getPaywallFineText();
       }
       if(badge){
         badge.textContent = (plan==="weekly") ? "Flexible" : "🔥 Best value";
       }
       if(cta){
-        cta.textContent = (plan==="weekly") ? "Unlock Weekly PRO access" : "Unlock Monthly PRO access";
+        cta.textContent = getPaywallCtaText(plan);
       }
+    }
+
+    function getPublicBetaBaseUrl(){
+      try{
+        const url = new URL(window.location.href);
+        return `${url.origin}/beta/`;
+      }catch(_){
+        return "https://www.link2nite.com/beta/";
+      }
+    }
+
+    function cleanBillingQueryParams(){
+      try{
+        const url = new URL(window.location.href);
+        ["checkout","session_id","billing"].forEach(key => url.searchParams.delete(key));
+        const next = url.pathname + (url.search ? url.search : "") + (url.hash || "");
+        window.history.replaceState({}, document.title, next);
+      }catch(_){}
+    }
+
+    async function refreshBillingState(options={}){
+      if(!isUserSession()) return false;
+      if(!await ensureSharedBackendAvailable() || !isBillingLive()) return false;
+      try{
+        const data = await postSharedBackend({
+          action:"billing_status",
+          sessionToken: userAuthSession.sessionToken,
+          refresh: options.refresh === true
+        });
+        if(data && data.ok){
+          persistUserAuthSession({
+            sessionToken: userAuthSession.sessionToken,
+            email: userAuthSession.email,
+            username: userAuthSession.username || "",
+            phone: userAuthSession.phone || "",
+            phoneVerified: userAuthSession.phoneVerified === true,
+            proActive: data.proActive === true,
+            proPlan: data.proPlan || userAuthSession.proPlan || getSelectedPlan(),
+            proStatus: data.proStatus || "",
+            proExpiresAt: data.proExpiresAt || "",
+            expiresAt: userAuthSession.expiresAt || "",
+            signedInAt: userAuthSession.signedInAt || new Date().toISOString()
+          });
+          try{ updateSettingsProStatus(); }catch(e){}
+          try{ renderProBadges(); }catch(e){}
+          return true;
+        }
+      }catch(e){
+        if(!options.silent) toast("Couldn't load billing right now.");
+      }
+      return false;
+    }
+
+    async function openBillingPortal(){
+      if(!await ensureSharedMutationAuth({silent:false})){
+        toast("Verify your email before managing billing.");
+        return false;
+      }
+      if(!await ensureSharedBackendAvailable() || !isBillingLive()){
+        toast("Billing management is not live on this deployment yet.");
+        return false;
+      }
+      try{
+        const data = await postSharedBackend({
+          action:"billing_create_portal",
+          sessionToken: userAuthSession.sessionToken,
+          returnUrl: `${getPublicBetaBaseUrl()}?billing=return`
+        });
+        if(data && data.ok && data.url){
+          window.location.href = data.url;
+          return true;
+        }
+        toast((data && data.error) || "Couldn't open billing right now.");
+      }catch(e){
+        toast("Couldn't open billing right now.");
+      }
+      return false;
+    }
+
+    async function maybeHandleBillingReturn(){
+      let url = null;
+      try{ url = new URL(window.location.href); }catch(_){ return false; }
+      const checkoutState = String(url.searchParams.get("checkout") || "").trim();
+      const sessionId = String(url.searchParams.get("session_id") || "").trim();
+      const billingState = String(url.searchParams.get("billing") || "").trim();
+
+      if(!checkoutState && !billingState) return false;
+
+      if(billingState === "return"){
+        await refreshBillingState({refresh:true, silent:true});
+        cleanBillingQueryParams();
+        toast(isPro() ? "Billing updated. Your PRO access is active." : "Billing updated.");
+        return true;
+      }
+
+      if(checkoutState === "cancel"){
+        cleanBillingQueryParams();
+        toast("Checkout canceled.");
+        return true;
+      }
+
+      if(checkoutState === "success"){
+        if(!sessionId){
+          cleanBillingQueryParams();
+          toast("We couldn't confirm the Stripe session.");
+          return true;
+        }
+        if(sessionStorage.getItem("l2n_last_confirmed_checkout_session") === sessionId){
+          cleanBillingQueryParams();
+          return true;
+        }
+        if(!await ensureSharedMutationAuth({silent:true})){
+          cleanBillingQueryParams();
+          toast("Sign in again to confirm your upgrade.");
+          return true;
+        }
+        if(!await ensureSharedBackendAvailable() || !isBillingLive()){
+          cleanBillingQueryParams();
+          toast("Checkout confirmation is not live on this deployment yet.");
+          return true;
+        }
+        try{
+          const data = await postSharedBackend({
+            action:"billing_checkout_status",
+            sessionToken: userAuthSession.sessionToken,
+            sessionId,
+            plan: getSelectedPlan()
+          });
+          if(data && data.ok){
+            persistUserAuthSession({
+              sessionToken: userAuthSession.sessionToken,
+              email: userAuthSession.email,
+              username: userAuthSession.username || "",
+              phone: userAuthSession.phone || "",
+              phoneVerified: userAuthSession.phoneVerified === true,
+              proActive: data.proActive === true,
+              proPlan: data.proPlan || getSelectedPlan(),
+              proStatus: data.proStatus || "",
+              proExpiresAt: data.proExpiresAt || "",
+              expiresAt: userAuthSession.expiresAt || "",
+              signedInAt: userAuthSession.signedInAt || new Date().toISOString()
+            });
+            sessionStorage.setItem("l2n_last_confirmed_checkout_session", sessionId);
+            await syncSharedSnapshot({silent:true});
+            try{ updateSettingsProStatus(); }catch(e){}
+            if(data.proActive === true){
+              track("pro_activated", {plan: data.proPlan || getSelectedPlan(), source: "stripe_checkout"});
+              toast("✅ Link2Nite PRO activated.");
+            } else {
+              toast("Checkout completed, but PRO is not active yet. Please try again in a moment.");
+            }
+          } else {
+            toast((data && data.error) || "Couldn't confirm your Stripe checkout right now.");
+          }
+        }catch(e){
+          toast("Couldn't confirm your Stripe checkout right now.");
+        }
+        cleanBillingQueryParams();
+        return true;
+      }
+
+      return false;
     }
 
 
@@ -4013,15 +4207,37 @@ function openPaywall(reason){
     function activateProDemo(){
       const plan = getSelectedPlan();
       const reason = localStorage.getItem("paywall_prev_screen") || "unknown";
-      setPro(true);
-      track("purchase_demo", {plan, reason});
-      closePaywall();
-      toast("✅ Link2Nite PRO enabled. Full who's going + unlimited swipes unlocked.");
-      try{
-        if(currentPlaceId && currentScreenId==="screen-goinglist"){
-          renderGoingList(currentPlaceId);
+      if(!isBillingLive()){
+        toast("Stripe Checkout is not live on this deployment yet.");
+        return;
+      }
+      (async () => {
+        if(!await ensureSharedMutationAuth({silent:false})){
+          toast("Verify your email before continuing to checkout.");
+          return;
         }
-      }catch(e){}
+        setBusyButtonState("pay-cta", true, getPaywallCtaText(plan), "Opening checkout...");
+        try{
+          const data = await postSharedBackend({
+            action:"billing_create_checkout",
+            sessionToken: userAuthSession.sessionToken,
+            plan,
+            reason,
+            successUrl: `${getPublicBetaBaseUrl()}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancelUrl: `${getPublicBetaBaseUrl()}?checkout=cancel`
+          });
+          if(data && data.ok && data.checkoutUrl){
+            track("checkout_started", {plan, reason, sessionId: data.sessionId || ""});
+            window.location.href = data.checkoutUrl;
+            return;
+          }
+          toast((data && data.error) || "Couldn't open Stripe Checkout right now.");
+        }catch(e){
+          toast("Couldn't open Stripe Checkout right now.");
+        } finally {
+          setBusyButtonState("pay-cta", false, getPaywallCtaText(plan), "Opening checkout...");
+        }
+      })();
     }
     function renderProBadges(){
       const el = document.getElementById("current-user-label");
@@ -4032,7 +4248,7 @@ function openPaywall(reason){
     }
     function updateProUi(){
       const t = document.getElementById("pro-btn-text");
-      if(t) t.textContent = isPro() ? "Deactivate" : "Upgrade";
+      if(t) t.textContent = isPro() ? "Manage billing" : "Upgrade to PRO";
     }
 
 
@@ -4636,7 +4852,7 @@ let currentUserName = null;
     let sharedPollingHandle = null;
     let sharedAuthPromptBusy = false;
     const authSupportState = { checked:false, available:false, checking:false, error:"" };
-    const sharedBackendState = { checked:false, available:false, userAuth:false, shared:false, phoneAuth:false, checking:false, error:"" };
+    const sharedBackendState = { checked:false, available:false, userAuth:false, shared:false, phoneAuth:false, payments:false, checking:false, error:"" };
     const onboardingVerificationState = { emailRequestedFor:"", phoneRequestedFor:"" };
     function sanitizeDisplayNameValue(value){
       return String(value||"").trim().slice(0,80);
@@ -5094,6 +5310,10 @@ let currentUserName = null;
           username: String(parsed.username || "").trim(),
           phone: String(parsed.phone || "").trim(),
           phoneVerified: parsed.phoneVerified === true,
+          proActive: parsed.proActive === true,
+          proPlan: normalizeBillingPlan(parsed.proPlan || localStorage.getItem("l2n_selectedPlan") || "monthly"),
+          proStatus: String(parsed.proStatus || "").trim(),
+          proExpiresAt: String(parsed.proExpiresAt || "").trim(),
           expiresAt: expiresAt,
           signedInAt: parsed.signedInAt || ""
         };
@@ -5104,20 +5324,34 @@ let currentUserName = null;
     }
 
     function persistUserAuthSession(session){
+      const previous = userAuthSession || {};
+      const hasProActive = Object.prototype.hasOwnProperty.call(session || {}, "proActive");
+      const hasProPlan = Object.prototype.hasOwnProperty.call(session || {}, "proPlan");
+      const hasProStatus = Object.prototype.hasOwnProperty.call(session || {}, "proStatus");
+      const hasProExpiresAt = Object.prototype.hasOwnProperty.call(session || {}, "proExpiresAt");
       userAuthSession = {
         sessionToken: String(session.sessionToken || ""),
         email: normalizeEmail(session.email),
         username: String(session.username || "").trim(),
         phone: String(session.phone || "").trim(),
         phoneVerified: session.phoneVerified === true,
+        proActive: hasProActive ? session.proActive === true : previous.proActive === true,
+        proPlan: hasProPlan
+          ? normalizeBillingPlan(session.proPlan || "")
+          : normalizeBillingPlan(previous.proPlan || localStorage.getItem("l2n_selectedPlan") || "monthly"),
+        proStatus: hasProStatus ? String(session.proStatus || "").trim() : String(previous.proStatus || ""),
+        proExpiresAt: hasProExpiresAt ? String(session.proExpiresAt || "").trim() : String(previous.proExpiresAt || ""),
         expiresAt: session.expiresAt || "",
         signedInAt: session.signedInAt || new Date().toISOString()
       };
+      localStorage.setItem("l2n_isPro", String(userAuthSession.proActive === true));
+      localStorage.setItem("l2n_selectedPlan", normalizeBillingPlan(userAuthSession.proPlan || "monthly"));
       localStorage.setItem(USER_AUTH_SESSION_KEY, JSON.stringify(userAuthSession));
     }
 
     function clearUserAuthSession(){
       userAuthSession = null;
+      localStorage.setItem("l2n_isPro", "false");
       localStorage.removeItem(USER_AUTH_SESSION_KEY);
     }
 
@@ -5149,6 +5383,7 @@ let currentUserName = null;
         sharedBackendState.userAuth = false;
         sharedBackendState.shared = false;
         sharedBackendState.phoneAuth = false;
+        sharedBackendState.payments = false;
         sharedBackendState.checking = false;
         sharedBackendState.error = "missing_endpoint";
         return false;
@@ -5168,12 +5403,14 @@ let currentUserName = null;
         sharedBackendState.userAuth = !!(data && data.ok && data.supportsUserAuth);
         sharedBackendState.shared = !!(data && data.ok && data.supportsSharedState);
         sharedBackendState.phoneAuth = !!(data && data.ok && (data.supportsPhoneAuth || data.supportsSmsAuth));
+        sharedBackendState.payments = !!(data && data.ok && (data.supportsPayments || data.supportsStripeCheckout));
         sharedBackendState.error = sharedBackendState.available ? "" : "not_deployed";
       }catch(e){
         sharedBackendState.available = false;
         sharedBackendState.userAuth = false;
         sharedBackendState.shared = false;
         sharedBackendState.phoneAuth = false;
+        sharedBackendState.payments = false;
         sharedBackendState.error = "network";
       }
 
@@ -5241,6 +5478,10 @@ let currentUserName = null;
           username: viewer.username || (userAuthSession && userAuthSession.username) || "",
           phone: viewer.phone || (userAuthSession && userAuthSession.phone) || "",
           phoneVerified: viewer.phoneVerified === true || (userAuthSession && userAuthSession.phoneVerified === true),
+          proActive: viewer.proActive === true,
+          proPlan: viewer.proPlan || (userAuthSession && userAuthSession.proPlan) || "",
+          proStatus: viewer.proStatus || (userAuthSession && userAuthSession.proStatus) || "",
+          proExpiresAt: viewer.proExpiresAt || (userAuthSession && userAuthSession.proExpiresAt) || "",
           expiresAt: viewer.expiresAt || (userAuthSession && userAuthSession.expiresAt) || "",
           signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
         });
@@ -5319,6 +5560,10 @@ let currentUserName = null;
             username: data.username || userAuthSession.username || "",
             phone: data.phone || userAuthSession.phone || "",
             phoneVerified: data.phoneVerified === true || userAuthSession.phoneVerified === true,
+            proActive: data.proActive === true,
+            proPlan: data.proPlan || userAuthSession.proPlan || "",
+            proStatus: data.proStatus || userAuthSession.proStatus || "",
+            proExpiresAt: data.proExpiresAt || userAuthSession.proExpiresAt || "",
             expiresAt: data.expiresAt || userAuthSession.expiresAt || "",
             signedInAt: userAuthSession.signedInAt || new Date().toISOString()
           });
@@ -5377,6 +5622,12 @@ let currentUserName = null;
             sessionToken: data.sessionToken,
             email: data.email || normalizedEmail,
             username: data.username || "",
+            phone: data.phone || "",
+            phoneVerified: data.phoneVerified === true,
+            proActive: data.proActive === true,
+            proPlan: data.proPlan || "",
+            proStatus: data.proStatus || "",
+            proExpiresAt: data.proExpiresAt || "",
             expiresAt: data.expiresAt || "",
             signedInAt: new Date().toISOString()
           });
@@ -5442,6 +5693,10 @@ let currentUserName = null;
           username: data.username || name,
           phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || "",
           phoneVerified: data && data.phoneVerified === true,
+          proActive: userAuthSession && userAuthSession.proActive === true,
+          proPlan: (userAuthSession && userAuthSession.proPlan) || "",
+          proStatus: (userAuthSession && userAuthSession.proStatus) || "",
+          proExpiresAt: (userAuthSession && userAuthSession.proExpiresAt) || "",
           expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
           signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
         });
@@ -5760,6 +6015,10 @@ let currentUserName = null;
             username: data.username || "",
             phone: data.phone || "",
             phoneVerified: data.phoneVerified === true,
+            proActive: data.proActive === true,
+            proPlan: data.proPlan || "",
+            proStatus: data.proStatus || "",
+            proExpiresAt: data.proExpiresAt || "",
             expiresAt: data.expiresAt || "",
             signedInAt: new Date().toISOString()
           });
@@ -5863,6 +6122,10 @@ let currentUserName = null;
             username: userAuthSession.username || "",
             phone: data.phone || phone,
             phoneVerified: data.phoneVerified === true,
+            proActive: userAuthSession && userAuthSession.proActive === true,
+            proPlan: (userAuthSession && userAuthSession.proPlan) || "",
+            proStatus: (userAuthSession && userAuthSession.proStatus) || "",
+            proExpiresAt: (userAuthSession && userAuthSession.proExpiresAt) || "",
             expiresAt: userAuthSession.expiresAt || "",
             signedInAt: userAuthSession.signedInAt || new Date().toISOString()
           });
@@ -6150,6 +6413,10 @@ function showScreen(id){
                   username: resolvedName,
                   phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
                   phoneVerified: data ? data.phoneVerified === true : userAuthSession && userAuthSession.phoneVerified === true,
+                  proActive: data ? data.proActive === true : userAuthSession && userAuthSession.proActive === true,
+                  proPlan: (data && data.proPlan) || (userAuthSession && userAuthSession.proPlan) || "",
+                  proStatus: (data && data.proStatus) || (userAuthSession && userAuthSession.proStatus) || "",
+                  proExpiresAt: (data && data.proExpiresAt) || (userAuthSession && userAuthSession.proExpiresAt) || "",
                   expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
                   signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
                 });
@@ -6174,6 +6441,10 @@ function showScreen(id){
               username: resolvedName,
               phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
               phoneVerified: data && data.phoneVerified === true,
+              proActive: data && data.proActive === true,
+              proPlan: (data && data.proPlan) || (userAuthSession && userAuthSession.proPlan) || "",
+              proStatus: (data && data.proStatus) || (userAuthSession && userAuthSession.proStatus) || "",
+              proExpiresAt: (data && data.proExpiresAt) || (userAuthSession && userAuthSession.proExpiresAt) || "",
               expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
               signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
             });
@@ -9004,7 +9275,10 @@ function initApp(){
       ensureSharedBackendAvailable(true)
         .then(() => refreshUserSession({silent:true}))
         .then(() => syncSharedSnapshot({silent:true}))
-        .catch(() => {});
+        .then(() => maybeHandleBillingReturn())
+        .catch(() => {
+          try{ maybeHandleBillingReturn(); }catch(_){}
+        });
       startSharedPolling();
       const onboardingDone=localStorage.getItem("tonightly_onboarding_done");
       if(!onboardingDone){
@@ -9758,6 +10032,9 @@ function initApp(){
       updateSettingsProStatus();
       renderAdminAuthState();
       showScreen("screen-settings");
+      if(isUserSession() && isBillingLive()){
+        refreshBillingState({refresh:false, silent:true});
+      }
       ensureAdminAuthAvailable();
       refreshAdminSession({silent:true});
     }
@@ -9780,26 +10057,45 @@ function initApp(){
     }
     function updateSettingsProStatus(){
       const pro = isPro();
-      const plan = getTimSelectedPlan();
+      const billingLive = isBillingLive();
+      const signedIn = isUserSession();
+      const sessionPlan = normalizeBillingPlan(userAuthSession && userAuthSession.proPlan ? userAuthSession.proPlan : "");
+      const plan = sessionPlan || getSelectedPlan();
+      const status = String((userAuthSession && userAuthSession.proStatus) || "").trim().toLowerCase();
       const statusEl = document.getElementById("settings-pro-status");
       const badgeEl = document.getElementById("settings-pro-badge");
       const toggleEl = document.getElementById("settings-pro-toggle");
       const planEl = document.getElementById("settings-plan-display");
       
-      if(statusEl) statusEl.textContent = pro ? "Active" : "Inactive";
+      let statusLabel = pro ? "Active" : "Inactive";
+      if(!pro && status === "checkout_created") statusLabel = "Checkout started";
+      else if(!pro && status === "incomplete") statusLabel = "Payment pending";
+      else if(!pro && status === "past_due") statusLabel = "Payment issue";
+      else if(!pro && status === "canceled") statusLabel = "Canceled";
+
+      if(statusEl) statusEl.textContent = statusLabel;
       if(badgeEl) badgeEl.textContent = pro ? "PRO" : "FREE";
       if(toggleEl) {
-        toggleEl.textContent = pro ? "Deactivate" : "Activate";
-        toggleEl.style.display = pro ? "block" : "none";
+        if(!billingLive){
+          toggleEl.style.display = "none";
+        } else {
+          toggleEl.style.display = "block";
+          toggleEl.textContent = pro ? "Manage billing" : (signedIn ? "Upgrade to PRO" : "Sign in to upgrade");
+        }
       }
       if(planEl) planEl.textContent = plan === "weekly" ? "Weekly ($4.99/week)" : "Monthly ($14.99/month)";
     }
-    function toggleProStatus(){
+    async function toggleProStatus(){
+      if(!isBillingLive()){
+        toast("Billing is not live on this deployment yet.");
+        return;
+      }
       if(isPro()){
-        setPro(false);
-        toast("✅ PRO deactivated. You're back on the FREE plan.");
-      } else {
+        await openBillingPortal();
+      } else if(isUserSession()){
         openPaywall("settings");
+      } else {
+        toast("Sign in before upgrading to PRO.");
       }
       updateSettingsProStatus();
     }
@@ -10485,7 +10781,7 @@ document.addEventListener("DOMContentLoaded", initApp);
       <div class="pay-price" style="margin-top:12px;">
         <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
           <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/month</span></div>
-          <div class="fine" id="pay-fine">Checkout is not enabled yet on this build.</div>
+          <div class="fine" id="pay-fine">Secure checkout via Stripe. Manage or cancel anytime from billing settings.</div>
         </div>
         <div class="std-badge" id="pay-badge">🔥 Best value</div>
       </div>
@@ -10495,9 +10791,7 @@ document.addEventListener("DOMContentLoaded", initApp);
         <button class="pill-button secondary" onclick="closePaywall()">Not now</button>
       </div>
 
-      <div class="pay-note" id="pay-note">
-        PRO access is temporarily available while checkout is being finalized.
-      </div>
+      <div class="pay-note" id="pay-note">Your PRO access is activated after Stripe confirms the subscription.</div>
     </div>
   </section>
 
@@ -10537,7 +10831,7 @@ document.addEventListener("DOMContentLoaded", initApp);
       <div class="pay-price" style="margin-top:12px;">
         <div class="left" style="display:flex;flex-direction:column;gap:4px;min-width:0;">
           <div class="plan" id="pay-plan">Link2Nite PRO Monthly — <span style="color:#fde68a;">$14.99/month</span></div>
-          <div class="fine" id="pay-fine">Checkout is not enabled yet on this build.</div>
+          <div class="fine" id="pay-fine">Secure checkout via Stripe. Manage or cancel anytime from billing settings.</div>
         </div>
         <div class="std-badge" id="pay-badge">🔥 Best value</div>
       </div>
