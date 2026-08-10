@@ -2112,18 +2112,18 @@
           <div class="input-group">
             <label>Phone <span style="color:#f97373;">(required)</span></label>
             <input type="tel" id="phone-input" placeholder="e.g., (917) 555-0123" oninput="handleOnboardingIdentityInputChange()" />
-            <div class="verify-actions">
+            <div class="verify-actions" id="phone-send-actions">
               <button class="pill-button secondary small" id="onboarding-phone-send-btn" type="button" onclick="requestOnboardingPhoneCode()">Send SMS code</button>
             </div>
-            <div id="phone-verify-hint" class="verify-inline-hint">Phone is required for safety. SMS verification is not live on this beta yet, so we will save your number now and turn on SMS validation as soon as it is available.</div>
+            <div id="phone-verify-hint" class="verify-inline-hint">Phone is required for safety. SMS verification is not live on this deployment yet, so we will save your number now and turn on SMS validation as soon as it is available.</div>
           </div>
-          <div class="input-group">
+          <div class="input-group" id="phone-code-group">
             <label id="phone-code-label">SMS verification code (coming soon)</label>
             <input type="text" id="phone-code-input" inputmode="numeric" maxlength="6" placeholder="6-digit SMS code" />
             <div class="verify-actions">
               <button class="pill-button secondary small" id="onboarding-phone-verify-btn" type="button" onclick="verifyOnboardingPhoneCode()">Verify phone</button>
             </div>
-            <div id="phone-verify-status" class="verify-status">Phone is required for safety. SMS verification will appear here as soon as it is live on this beta.</div>
+            <div id="phone-verify-status" class="verify-status">Phone is required for safety. SMS verification will appear here as soon as it is live on this deployment.</div>
           </div>
           <div class="input-group">
             <label>Age <span style="color:#f97373;">(required)</span></label>
@@ -2165,7 +2165,7 @@
           <button class="pill-button" id="onboarding-continue-btn" onclick="saveUsername()">Continue</button>
           <div id="onboarding-submit-status" class="verify-status"></div>
           <p class="footer-hint">
-            Email must be verified before the account can be created. Phone is required for safety, and SMS verification will appear here as soon as it is live on this beta.<br />
+            Email must be verified before the account can be created. Phone is required for safety and will be saved now. SMS verification will appear automatically here as soon as it is live on this deployment.<br />
             Age, gender, and preferences are required for the app logic.
           </p>
         </div>
@@ -5846,17 +5846,27 @@ let currentUserName = null;
     }
 
     function renderOnboardingPhoneVerificationUi(){
+      const phoneSendActions = document.getElementById("phone-send-actions");
       const phoneSendBtn = document.getElementById("onboarding-phone-send-btn");
       const phoneVerifyBtn = document.getElementById("onboarding-phone-verify-btn");
       const phoneCodeInput = document.getElementById("phone-code-input");
       const phoneCodeLabel = document.getElementById("phone-code-label");
       const phoneHint = document.getElementById("phone-verify-hint");
+      const phoneCodeGroup = document.getElementById("phone-code-group");
       const phoneVerificationLive = isOnboardingPhoneVerificationRequired();
 
       if(phoneHint){
         phoneHint.textContent = phoneVerificationLive
           ? "Phone is required for safety. We text a 6-digit SMS code to validate it before the profile is fully verified."
-          : "Phone is required for safety. SMS verification is not live on this beta yet, so we will save your number now and turn on SMS validation as soon as it is available.";
+          : "Phone is required for safety. SMS verification is not live on this deployment yet, so we will save your number now and turn on SMS validation as soon as it is available.";
+      }
+
+      if(phoneSendActions){
+        phoneSendActions.style.display = phoneVerificationLive ? "" : "none";
+      }
+
+      if(phoneCodeGroup){
+        phoneCodeGroup.style.display = phoneVerificationLive ? "" : "none";
       }
 
       if(phoneCodeLabel){
@@ -5941,14 +5951,14 @@ let currentUserName = null;
             phoneStatus.textContent = "Enter your phone first.";
           } else {
             phoneStatus.classList.add("warn");
-            phoneStatus.textContent = "Enter your phone number. We will save it now, and SMS verification will unlock here when it goes live.";
+            phoneStatus.textContent = "Enter your phone number. We will save it now, and SMS verification will appear here automatically when it goes live.";
           }
         } else if(!isOnboardingPhoneVerificationRequired()){
           phoneStatus.classList.add("warn");
           if(isOnboardingEmailVerified()){
-            phoneStatus.textContent = `Phone ${maskPhone(phone)} will be saved now. SMS verification is not live on this beta yet.`;
+            phoneStatus.textContent = `Phone ${maskPhone(phone)} will be saved now. SMS verification is not live on this deployment yet.`;
           } else {
-            phoneStatus.textContent = "Verify your email first. Your phone will still be saved now, and SMS verification will be added here when it goes live.";
+            phoneStatus.textContent = "Verify your email first. Your phone will still be saved now, and SMS verification will appear here when it goes live.";
           }
         } else if(!isOnboardingEmailVerified()){
           phoneStatus.textContent = "Verify your email before requesting the SMS code.";

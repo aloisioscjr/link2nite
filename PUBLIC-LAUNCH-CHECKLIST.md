@@ -155,9 +155,13 @@ Rodar no Android Chrome e no iPhone Safari:
 
 - [ ] Validar no live que o boot limpa estado local de demo (`Launch Smoke 1`, `PRO`, etc.) e abre o beta em estado neutro.
 - [ ] Rodar uma passada manual em mobile real.
-- [ ] Decidir a copy / obrigatoriedade de telefone enquanto `supportsPhoneAuth` e `supportsSmsAuth` continuam `false` no deploy live.
+- [x] Decidir a copy / obrigatoriedade de telefone enquanto `supportsPhoneAuth` e `supportsSmsAuth` continuam `false` no deploy live.
+- [ ] Ligar Twilio no Apps Script publicado e validar o fluxo real de SMS/telefone.
 - [ ] Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
 - [x] Confirmar no live que bots/demo nao voltaram ao fluxo principal para visitantes externos.
+
+Nota:
+- Decisao atual em `2026-08-10`: telefone continua obrigatorio por seguranca, mas quando `supportsPhoneAuth = false` e `supportsSmsAuth = false` o app oculta os controles de SMS e salva o numero agora. O ultimo mile operacional ficou documentado em `SMS-TWILIO-DEPLOY.md`.
 
 ## 4. Melhorias que podem ficar para depois do launch
 
@@ -170,11 +174,12 @@ Rodar no Android Chrome e no iPhone Safari:
 ## 5. Ordem recomendada
 
 1. Fechar a rodada de QA manual em Android Chrome e iPhone Safari.
-2. Decidir a UX/copy de telefone enquanto SMS ainda nao esta live.
+2. Ligar Twilio no Apps Script publicado e validar o fluxo real de SMS/telefone.
 3. Ligar Stripe no Apps Script publicado e validar o ciclo `checkout -> retorno -> portal`.
-4. Se a meta imediata for tracao: abrir como beta controlado / assistido.
-5. Se a meta for produto publico real: endurecer backend + auth primeiro.
-6. So entao abrir para publico amplo.
+4. Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
+5. Se a meta imediata for tracao: abrir como beta controlado / assistido.
+6. Se a meta for produto publico real: endurecer backend + auth primeiro.
+7. So entao abrir para publico amplo.
 
 ## 6. Recomendacao pratica
 

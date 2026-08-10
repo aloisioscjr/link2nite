@@ -1,5 +1,24 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-10, UX publica de telefone + ultimo mile Twilio)
+
+Mudancas locais aplicadas para limpar a UX publica enquanto o SMS ainda nao esta live:
+
+- `beta/index.html` agora:
+  - esconde os botoes de `Send SMS code` / `Verify phone` quando `supportsPhoneAuth` e `supportsSmsAuth` estao `false`;
+  - esconde o campo de codigo SMS enquanto o provider nao estiver ativo;
+  - continua exigindo telefone no onboarding, mas com copy alinhada ao comportamento real: o numero e salvo agora e a verificacao por SMS aparece automaticamente quando estiver live.
+- Guia operacional novo: `SMS-TWILIO-DEPLOY.md`
+
+Leitura operacional disso:
+
+- o backend de SMS ja esta pronto no `Code-gs-COMPLETO.js`;
+- o beta live so vai expor `supportsPhoneAuth = true` e `supportsSmsAuth = true` depois que o Apps Script publicado receber:
+  - `TWILIO_ACCOUNT_SID`
+  - `TWILIO_AUTH_TOKEN`
+  - `TWILIO_FROM_NUMBER` **ou** `TWILIO_MESSAGING_SERVICE_SID`
+- depois de definir essas Script Properties, ainda e necessario republicar o Apps Script e revalidar o endpoint de capabilities.
+
 ## Atualizacao operacional (Codex - 2026-08-10, Stripe checkout preparado no codigo)
 
 Mudancas locais aplicadas para tirar o `PRO` do modo demo e preparar checkout real:
