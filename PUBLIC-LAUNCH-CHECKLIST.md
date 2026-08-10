@@ -1,6 +1,6 @@
 # Link2Nite - Public Launch Checklist
 
-Status em 2026-07-30: beta live revalidado apos publish; hardening do fluxo publico confirmado no live, mas ainda nao pronto para lancamento publico real.
+Status em 2026-08-10: beta live rechecado no ar; frontend publicado esta no build novo, backend live continua compativel com admin/user/shared state, mas ainda nao pronto para lancamento publico real.
 
 ## 0. Snapshot atual
 
@@ -14,6 +14,20 @@ Ja confirmado no beta live em `https://www.link2nite.com/beta/`:
 - `Sign out` volta corretamente para `Public mode` e esconde `Team access` de novo;
 - onboarding publico com foto real funciona em contas consecutivas sem herdar slot antigo nem estourar `localStorage`;
 - swipe real, match e chat basico tambem foram revalidados no live com duas contas locais no mesmo browser.
+- Rechecado em `2026-08-10` no HTML publicado:
+  - onboarding em ingles presente;
+  - onboarding antigo em portugues ausente;
+  - modal full-screen de match presente;
+  - inbox/lista de matches presente;
+  - `PUBLIC_REAL_LAUNCH_MODE = true`;
+  - `Back to landing` ausente no HTML publicado.
+- Rechecado em `2026-08-10` no endpoint de capabilities do Apps Script:
+  - `supportsAdminAuth = true`
+  - `supportsUserAuth = true`
+  - `supportsSharedState = true`
+  - `supportsAppBackend = true`
+  - `supportsPhoneAuth = false`
+  - `supportsSmsAuth = false`
 
 Ainda bloqueia um lancamento publico real:
 - sessao, dados de usuario, likes, matches, chats e moderacao continuam majoritariamente locais no navegador;
@@ -35,6 +49,10 @@ Nota:
 - [ ] Mover perfis, likes, matches, mensagens e presenca em venues para backend.
 - [ ] Criar identificador real de usuario.
 - [ ] Garantir sincronizacao entre dispositivos e sessoes.
+
+Nota:
+- O deploy live atual ja responde com `supportsSharedState = true`, entao existe base funcional para beta controlado.
+- O que falta aqui e endurecimento/escala/consistencia de produto real, nao ausencia total de backend.
 
 ### 1.3 Remocao de comportamento de prototipo/demo
 - [ ] Remover ou substituir textos publicos de demo no app.
@@ -133,6 +151,7 @@ Rodar no Android Chrome e no iPhone Safari:
 
 - [ ] Validar no live que o boot limpa estado local de demo (`Launch Smoke 1`, `PRO`, etc.) e abre o beta em estado neutro.
 - [ ] Rodar uma passada manual em mobile real.
+- [ ] Decidir a copy / obrigatoriedade de telefone enquanto `supportsPhoneAuth` e `supportsSmsAuth` continuam `false` no deploy live.
 - [ ] Decidir se o beta vai ficar explicitamente como `closed beta / prototype` na copy publica.
 - [x] Confirmar no live que bots/demo nao voltaram ao fluxo principal para visitantes externos.
 
@@ -146,10 +165,10 @@ Rodar no Android Chrome e no iPhone Safari:
 
 ## 5. Ordem recomendada
 
-1. Decidir se o proximo passo e "beta fechado com disclaimer" ou "produto publico real".
-2. Se for publico real: backend + auth primeiro.
-3. Depois: remover comportamento demo do fluxo principal.
-4. Depois: smoke tests automatizados e rodada manual no beta live.
+1. Fechar a rodada de QA manual em Android Chrome e iPhone Safari.
+2. Decidir a UX/copy de telefone enquanto SMS ainda nao esta live.
+3. Se a meta imediata for tracao: abrir como beta controlado / assistido.
+4. Se a meta for produto publico real: endurecer backend + auth primeiro.
 5. So entao abrir para publico amplo.
 
 ## 6. Recomendacao pratica

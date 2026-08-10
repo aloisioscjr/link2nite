@@ -9,6 +9,21 @@ O beta agora separa:
 
 As ferramentas admin só aparecem quando existe uma sessão válida de `team access`.
 
+## Status live confirmado em 2026-08-10
+
+O endpoint publicado hoje respondeu:
+
+```json
+{"ok":true,"supportsAdminAuth":true,"supportsUserAuth":true,"supportsSharedState":true,"supportsAppBackend":true,"supportsPhoneAuth":false,"supportsSmsAuth":false,"feature":"admin_auth"}
+```
+
+Leitura prática:
+
+- `team access` por email está live;
+- `user auth` por email está live;
+- `shared state` para o beta está live;
+- verificação de telefone / SMS ainda não está live nesse deploy.
+
 ## Arquivos envolvidos
 
 - `beta/index.html`
@@ -28,10 +43,16 @@ As ferramentas admin só aparecem quando existe uma sessão válida de `team acc
 https://script.google.com/macros/s/AKfycbxnPAbUdYLuTL4dN0x0Z0nJIVjmqZECNfiP-o3OVqy7ThzgGCLG9Gf_mr-FJZKOLVDp0g/exec?action=capabilities&feature=admin_auth
 ```
 
-Resposta esperada:
+Resposta mínima esperada:
 
 ```json
 {"ok":true,"supportsAdminAuth":true,"feature":"admin_auth"}
+```
+
+Resposta completa hoje no live:
+
+```json
+{"ok":true,"supportsAdminAuth":true,"supportsUserAuth":true,"supportsSharedState":true,"supportsAppBackend":true,"supportsPhoneAuth":false,"supportsSmsAuth":false,"feature":"admin_auth"}
 ```
 
 6. No beta, abra `Settings`.
@@ -40,4 +61,6 @@ Resposta esperada:
 
 ## Observação importante
 
-Até o Apps Script ser redeployado, o beta mostra `Team sign-in is not live on this deployment yet.` e as ferramentas admin continuam escondidas.
+Se o Apps Script publicado ficar atrás do `Code-gs-COMPLETO.js`, o beta pode mostrar `Team sign-in is not live on this deployment yet.` e as ferramentas admin ficam escondidas.
+
+No estado validado em 2026-08-10, isso não está acontecendo para admin/email auth; o ponto ainda pendente no deploy live é o suporte a phone/SMS auth.

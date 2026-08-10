@@ -1,5 +1,50 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-10, verificacao live de launch readiness)
+
+Checagem objetiva feita no estado publicado e no workspace local antes de seguir para abertura publica maior:
+
+- `git status --short --branch` estava limpo em `main`.
+- `git log --oneline -5` local:
+  - `9516d50` - Translate onboarding flow to English
+  - `f12c2af` - Improve match inbox and mobile chat UX
+  - `b721fd3` - Add full-screen match celebration modal
+  - `a094714` - Fix-duplicate-display-names-and-hide-internal-ids
+  - `f9efb10` - Fix-PT-onboarding-copy-and-photo-step-resume-flow
+- `check-beta-parity.ps1` confirmou paridade total:
+  - `beta/index.html` = `link2nite-repo/beta/index.html`
+  - **9907** linhas em cada copia
+  - **29** JPGs em `beta/images/venues/` e no espelho
+- O HTML live em `https://www.link2nite.com/beta/` respondeu `200` e confirmou marcadores do build novo:
+  - onboarding em ingles presente;
+  - strings antigas de onboarding em portugues ausentes;
+  - `PUBLIC_REAL_LAUNCH_MODE = true`;
+  - inbox de matches presente (`match-inbox`, `match-thread-row`, `nav-matches-badge`);
+  - modal full-screen de match presente (`match-modal`, `openChatFromMatchCelebration`);
+  - service worker presente;
+  - string `Back to landing` ausente no HTML publicado.
+- O endpoint live de capabilities do Apps Script respondeu `200` com:
+  - `{"ok":true,"supportsAdminAuth":true,"supportsUserAuth":true,"supportsSharedState":true,"supportsAppBackend":true,"supportsPhoneAuth":false,"supportsSmsAuth":false,"feature":"admin_auth"}`
+
+Leitura operacional disso:
+
+- O frontend publicado e o backend publicado estao alinhados para:
+  - admin auth por email;
+  - user auth por email;
+  - shared state de perfis / likes / matches / chat.
+- A verificacao por telefone / SMS **ainda nao esta live** no deploy atual do Apps Script.
+- O beta esta muito mais perto de um **beta publico controlado**, mas ainda nao de um "produto publico real".
+
+Proximo passo recomendado apos esta verificacao:
+
+1. Rodar QA manual em **device real**:
+   - Android Chrome
+   - iPhone Safari
+2. Decidir a UX/copy do onboarding enquanto `supportsPhoneAuth = false`:
+   - manter telefone como campo obrigatorio com mensagem clara de que SMS ainda nao valida nesta versao; ou
+   - aliviar a copy publica ate o SMS realmente entrar no backend live.
+3. So depois abrir para mais testers externos.
+
 ## Atualizacao publicada (Codex - 2026-07-30, hardening para public launch)
 
 Mudancas aplicadas em `beta/index.html`, sincronizadas para o espelho e validadas no beta live:
