@@ -1,5 +1,20 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-10, QA live de boot neutro + limpeza de debug publico)
+
+Validacao live feita no beta publicado em browser limpo:
+
+- no in-app browser limpo, `https://www.link2nite.com/beta/` abriu em onboarding neutro em ingles;
+- nao apareceu `Team access`;
+- nao apareceram tools admin;
+- `Back to landing` continuou ausente;
+- isso fecha o item do checklist sobre boot neutro sem herdar estado demo no browser limpo.
+
+Mudanca local aplicada em seguida:
+
+- `beta/index.html` agora suprime `console.log` de debug de imagem quando `PUBLIC_REAL_LAUNCH_MODE = true`;
+- objetivo: reduzir ruido de producao no console publico, sem perder `console.error` reais.
+
 ## Atualizacao operacional (Codex - 2026-08-10, preflight automatizado + fallback publico do paywall)
 
 Mudancas locais aplicadas para endurecer a checagem antes de cada publish:

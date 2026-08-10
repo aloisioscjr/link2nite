@@ -3132,13 +3132,20 @@
       return `${url}${separator}v=${PLACE_IMAGE_VERSION}`;
     }
 
+    function logImageDebug(){
+      if(typeof PUBLIC_REAL_LAUNCH_MODE !== "undefined" && PUBLIC_REAL_LAUNCH_MODE) return;
+      try{
+        console.log.apply(console, arguments);
+      }catch(e){}
+    }
+
     function resolvePlaceImage(url, placeId = null, placeName = null){
       // PRIORITY 1: Check for manual photo in localStorage first
       if(placeId){
         const manualPhoto = getManualPlacePhoto(placeId);
         if(manualPhoto){
           const manualUrl = addLocalAssetVersion(manualPhoto);
-          console.log("[Image] Using manual photo for", placeId);
+          logImageDebug("[Image] Using manual photo for", placeId);
           return {
             direct: manualUrl,
             proxy: manualUrl, // Same URL or data URL
@@ -3157,7 +3164,7 @@
             directUrl = directUrl.replace(/ /g, '%20');
           }
           directUrl = addLocalAssetVersion(directUrl);
-          console.log("[Image] Using direct mapped URL for", placeId, directUrl.substring(0, 80));
+          logImageDebug("[Image] Using direct mapped URL for", placeId, directUrl.substring(0, 80));
           return {
             direct: directUrl,
             proxy: directUrl, // Same URL as fallback
@@ -3168,7 +3175,7 @@
         // Try fallback map
         if(PLACE_IMAGE_FALLBACK_MAP[placeId]){
           const fallbackUrl = PLACE_IMAGE_FALLBACK_MAP[placeId];
-          console.log("[Image] Using fallback mapped URL for", placeId, fallbackUrl.substring(0, 80));
+          logImageDebug("[Image] Using fallback mapped URL for", placeId, fallbackUrl.substring(0, 80));
           return {
             direct: fallbackUrl,
             proxy: fallbackUrl,
@@ -3199,7 +3206,7 @@
       
       // Check for local relative paths (./images/, /images/, or images/)
       if(normalized.startsWith("./") || normalized.startsWith("/") || normalized.startsWith("images/")){
-        console.log("[Image] Local path detected:", normalized);
+        logImageDebug("[Image] Local path detected:", normalized);
         // Encode the path properly for URLs (spaces become %20)
         // Only encode if not already encoded
         let encodedPath = normalized;
@@ -3232,7 +3239,7 @@
         normalized = `https://source.unsplash.com/800x450/?${encodeURIComponent(finalSearchTerms)}`;
         
         useProxyFirst = true;
-        console.log("[Image] Unsplash Source URL detected, using search terms:", finalSearchTerms);
+        logImageDebug("[Image] Unsplash Source URL detected, using search terms:", finalSearchTerms);
       }
       
       // Normalize URL
@@ -3257,7 +3264,7 @@
       // Alternative: use a CORS proxy
       const proxy2 = `https://corsproxy.io/?${encodeURIComponent(normalized)}`;
       
-      console.log("[Image] Resolved", normalized.substring(0, 50), "useProxyFirst:", useProxyFirst);
+      logImageDebug("[Image] Resolved", normalized.substring(0, 50), "useProxyFirst:", useProxyFirst);
       
       // If it's an Unsplash Source URL, try proxy first since direct won't work
       // The proxy may have cached the old Unsplash Source images
@@ -3449,7 +3456,7 @@
       const proxy2UrlEscaped = escapeAttr(proxy2Url);
       const placeholderUrlEscaped = escapeAttr(placeholderUrl);
       
-      console.log("[Image] Creating image element for", place.name, "src:", directUrl);
+      logImageDebug("[Image] Creating image element for", place.name, "src:", directUrl);
       
       // Use simpler inline handlers
       return `<img 
@@ -3491,11 +3498,11 @@
         const attempt = parseInt(img.getAttribute("data-attempt") || "0");
         const isLocal = img.getAttribute("data-is-local") === "true";
         
-        console.log("[Image Error]", placeName, "Attempt:", attempt, "Current:", currentSrc.substring(0, 50), "IsLocal:", isLocal);
+        logImageDebug("[Image Error]", placeName, "Attempt:", attempt, "Current:", currentSrc.substring(0, 50), "IsLocal:", isLocal);
         
         // If it's a local path and failed, go straight to placeholder (no proxy for local files)
         if(isLocal){
-          console.log("[Image] Local path failed, using placeholder for", placeName);
+          logImageDebug("[Image] Local path failed, using placeholder for", placeName);
           img.src = placeholderUrl;
           img.setAttribute("data-attempt", "999");
           stats.statusByPlace[placeId] = "failed";
@@ -3515,7 +3522,7 @@
         
         if(attempt === 0){
           // Try proxy 1
-          console.log("[Image] Trying proxy 1 for", placeName);
+          logImageDebug("[Image] Trying proxy 1 for", placeName);
           img.setAttribute("data-attempt", "1");
           img.src = proxyUrl;
           stats.statusByPlace[placeId] = "failed";
@@ -3530,7 +3537,7 @@
           else stats.failed.push(failedEntry);
         } else if(attempt === 1 && proxy2Url){
           // Try proxy 2
-          console.log("[Image] Trying proxy 2 for", placeName);
+          logImageDebug("[Image] Trying proxy 2 for", placeName);
           img.setAttribute("data-attempt", "2");
           img.src = proxy2Url;
           stats.statusByPlace[placeId] = "failed";
@@ -3538,7 +3545,7 @@
           if(idx >= 0) stats.failed[idx].fallback = "proxy2";
         } else {
           // Use placeholder
-          console.log("[Image] Using placeholder for", placeName);
+          logImageDebug("[Image] Using placeholder for", placeName);
           img.src = placeholderUrl;
           stats.statusByPlace[placeId] = "failed";
           const idx = stats.failed.findIndex(f => f.placeId === placeId);

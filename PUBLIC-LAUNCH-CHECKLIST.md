@@ -167,7 +167,7 @@ Rodar no Android Chrome e no iPhone Safari:
 
 ## 3.5 Pendencias curtas antes de uma demo publica mais limpa
 
-- [ ] Validar no live que o boot limpa estado local de demo (`Launch Smoke 1`, `PRO`, etc.) e abre o beta em estado neutro.
+- [x] Validar no live que o boot limpa estado local de demo (`Launch Smoke 1`, `PRO`, etc.) e abre o beta em estado neutro.
 - [ ] Rodar uma passada manual em mobile real.
 - [x] Decidir a copy / obrigatoriedade de telefone enquanto `supportsPhoneAuth` e `supportsSmsAuth` continuam `false` no deploy live.
 - [ ] Ligar Twilio no Apps Script publicado e validar o fluxo real de SMS/telefone.
@@ -176,6 +176,12 @@ Rodar no Android Chrome e no iPhone Safari:
 
 Nota:
 - Decisao atual em `2026-08-10`: telefone continua obrigatorio por seguranca, mas quando `supportsPhoneAuth = false` e `supportsSmsAuth = false` o app oculta os controles de SMS e salva o numero agora. O ultimo mile operacional ficou documentado em `SMS-TWILIO-DEPLOY.md`.
+- Revalidado em `2026-08-10` no in-app browser limpo:
+  - home abriu em onboarding neutro em ingles;
+  - sem `Team access`;
+  - sem tools admin;
+  - sem `Back to landing`;
+  - sem sessao demo/publica herdada no browser limpo.
 
 ## 4. Melhorias que podem ficar para depois do launch
 
