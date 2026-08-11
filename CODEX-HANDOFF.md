@@ -1,6 +1,46 @@
 # Link2Nite - Codex Handoff
 
-## Atualizacao operacional (Codex - 2026-08-11, frontend live validado + backend local ainda pendente de publish)
+## Atualizacao operacional (Codex - 2026-08-11, Apps Script republicado com sucesso)
+
+Publicacao manual feita no projeto `Link2NiteWaitlistAPI` em `2026-08-11`:
+
+- projeto aberto no Google Apps Script:
+  - `https://script.google.com/home/projects/11UJ8qPuhWH1SNpXfTvzze-jiXupfj6iHPDrT94bCae60hJSJTBo4BK8s/edit`
+- o `Codigo.gs` remoto foi alinhado ao `Code-gs-COMPLETO.js` local;
+- durante a primeira tentativa de publish, o editor do Apps Script deixou duas linhas espurias no fim do arquivo:
+  - `800`
+  - `data.displayName || data.username`
+- isso quebrou o endpoint live com:
+  - `ReferenceError: data is not defined (line 2192, file "Codigo")`
+- o arquivo remoto foi corrigido em seguida, salvo novamente, e o deployment foi republicado com sucesso como:
+  - `Versao 10 em 11 de ago. de 2026, 11:14`
+
+Validacao live feita apos a `Versao 10`:
+
+- endpoint consultado com cache-buster:
+  - `https://script.google.com/macros/s/AKfycbxnPAbUdYLuTL4dN0x0Z0nJIVjmqZECNfiP-o3OVqy7ThzgGCLG9Gf_mr-FJZKOLVDp0g/exec?action=capabilities&feature=shared_state&cb=...`
+- resposta recebida:
+  - `{"ok":true,"supportsAdminAuth":true,"supportsUserAuth":true,"supportsSharedState":true,"supportsAppBackend":true,"supportsPhoneAuth":false,"supportsSmsAuth":false,"supportsPayments":true,"supportsStripeCheckout":true,"feature":"shared_state"}`
+
+Leitura operacional disso:
+
+- o backend live voltou a responder normalmente;
+- auth por email, shared state e pagamentos continuam live;
+- phone/SMS continuam desligados no deploy atual (`supportsPhoneAuth = false`, `supportsSmsAuth = false`);
+- o hotfix publicado no Apps Script agora inclui:
+  - prioridade de `displayName` publico sobre `username` interno em `handleSharedProfileUpsert_`;
+  - fallback limpo em `ensureAccountRecordForEmail_`, sem reaproveitar `opts.username` quando nao existe profile legado para o email.
+
+Proximo passo recomendado depois desta publicacao:
+
+1. QA manual em device real:
+   - criar/entrar em duas contas;
+   - confirmar nome publico correto;
+   - confirmar match reciproco no `Who's going`;
+   - confirmar bottom nav sem cortar conteudo no iPhone Safari.
+2. So depois decidir se abrimos mais testers externos.
+
+## Atualizacao operacional (Codex - 2026-08-11, frontend live validado + backend local ainda pendente de publish - historico antes da republicacao)
 
 Validacao feita depois do commit `7efb32a` (`Fix public names, venue likes, and mobile safe area`):
 
