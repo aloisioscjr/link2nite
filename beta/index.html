@@ -5488,6 +5488,32 @@ let currentUserName = null;
       return postSharedBackendDirect(payload);
     }
 
+    function canDeferDuplicatePhoneForNow(){
+      return sharedBackendState.phoneAuth !== true;
+    }
+
+    async function postSharedProfileUpsert(payload, options={}){
+      const first = await postSharedBackend(payload, options);
+      if(
+        first &&
+        !first.ok &&
+        first.code === "phone_in_use" &&
+        payload &&
+        payload.phone &&
+        canDeferDuplicatePhoneForNow()
+      ){
+        const retried = await postSharedBackend({
+          ...payload,
+          phone: ""
+        }, options);
+        if(retried && retried.ok){
+          retried.phoneDeferredForLater = true;
+        }
+        return retried;
+      }
+      return first;
+    }
+
     function getPublicProfilePayload(profile){
       const source = profile && typeof profile === "object" ? profile : {};
       const payload = {};
@@ -5731,7 +5757,7 @@ let currentUserName = null;
       if(name !== currentUserName) return false;
       if(!await ensureSharedMutationAuth({silent:true})) return false;
 
-      const data = await postSharedBackend({
+      const data = await postSharedProfileUpsert({
         action:"shared_profile_upsert",
         sessionToken: userAuthSession.sessionToken,
         username: name,
@@ -5739,11 +5765,14 @@ let currentUserName = null;
         profile: getPublicProfilePayload(profile)
       });
       if(data && data.ok){
+        const resolvedPhone = data.phoneDeferredForLater
+          ? ""
+          : ((data && data.phone) || (userAuthSession && userAuthSession.phone) || "");
         persistUserAuthSession({
           sessionToken: userAuthSession.sessionToken,
           email: (userAuthSession && userAuthSession.email) || getCurrentUserEmail(),
           username: data.username || name,
-          phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || "",
+          phone: resolvedPhone,
           phoneVerified: data && data.phoneVerified === true,
           proActive: userAuthSession && userAuthSession.proActive === true,
           proPlan: (userAuthSession && userAuthSession.proPlan) || "",
@@ -6474,7 +6503,7 @@ function showScreen(id){
 
         if(canAttemptSharedAccount){
           try{
-            const data = await postSharedBackend({
+            const data = await postSharedProfileUpsert({
               action:"shared_profile_upsert",
               sessionToken: userAuthSession.sessionToken,
               username: name,
@@ -6516,11 +6545,14 @@ function showScreen(id){
 
             resolvedName = String(data.username || name).trim() || name;
             markSharedBackendCapabilities({ available:true, userAuth:true, shared:true });
+            const resolvedSessionPhone = data.phoneDeferredForLater
+              ? ""
+              : ((data && data.phone) || (userAuthSession && userAuthSession.phone) || phone);
             persistUserAuthSession({
               sessionToken: userAuthSession.sessionToken,
               email: email,
               username: resolvedName,
-              phone: (data && data.phone) || (userAuthSession && userAuthSession.phone) || phone,
+              phone: resolvedSessionPhone,
               phoneVerified: data && data.phoneVerified === true,
               proActive: data && data.proActive === true,
               proPlan: (data && data.proPlan) || (userAuthSession && userAuthSession.proPlan) || "",
@@ -6529,6 +6561,10 @@ function showScreen(id){
               expiresAt: (userAuthSession && userAuthSession.expiresAt) || "",
               signedInAt: (userAuthSession && userAuthSession.signedInAt) || new Date().toISOString()
             });
+            if(data.phoneDeferredForLater){
+              setInlineStatus("onboarding-submit-status", "Profile created. This phone stays unlinked for now because it is already used on another account.", "warn");
+              toast("Profile created. This phone will stay unlinked for now because it is already used on another account.");
+            }
           }catch(e){
             setInlineStatus("onboarding-submit-status", "Couldn't create the profile right now.", "err");
             toast("Couldn't create this shared profile right now.");
