@@ -1,5 +1,43 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-11, frontend live validado + backend local ainda pendente de publish)
+
+Validacao feita depois do commit `7efb32a` (`Fix public names, venue likes, and mobile safe area`):
+
+- o HTML publicado em `https://www.link2nite.com/beta/` ja contem os marcadores do frontend novo:
+  - `function togglePlaceLike(`
+  - `function getPublicNameFallback(`
+  - `safe-area-inset-bottom) + 168px`
+- leitura pratica disso:
+  - o hotfix do fluxo `Who's going` -> like -> match por venue ja entrou no frontend publicado;
+  - o fallback de nome publico para nao expor sufixos tecnicos tipo `Nina 2` ja entrou no frontend publicado;
+  - o aumento de safe-area / espaco do bottom nav no mobile ja entrou no frontend publicado.
+
+Capabilities live revalidadas no Apps Script publicado:
+
+- endpoint consultado:
+  - `https://script.google.com/macros/s/AKfycbxnPAbUdYLuTL4dN0x0Z0nJIVjmqZECNfiP-o3OVqy7ThzgGCLG9Gf_mr-FJZKOLVDp0g/exec?action=capabilities&feature=shared_state`
+- resposta em `2026-08-11`:
+  - `{"ok":true,"supportsAdminAuth":true,"supportsUserAuth":true,"supportsSharedState":true,"supportsAppBackend":true,"supportsPhoneAuth":false,"supportsSmsAuth":false,"supportsPayments":true,"supportsStripeCheckout":true,"feature":"shared_state"}`
+
+Leitura operacional disso:
+
+- checkout / pagamentos ja estao live no backend publicado (`supportsPayments = true`);
+- auth por email e shared state seguem live;
+- telefone / SMS ainda **nao** estao live (`supportsPhoneAuth = false`, `supportsSmsAuth = false`);
+- as mudancas locais recentes em `Code-gs-COMPLETO.js` ainda **dependem de republicar o Apps Script** para refletirem no backend publicado, principalmente:
+  - priorizar `displayName` publico sobre `username` interno;
+  - impedir que um email/conta novo herde `username` interno stale do device quando nao existe profile legado para esse email.
+
+Proximo passo operacional recomendado depois desta validacao:
+
+1. republicar o Apps Script com o `Code-gs-COMPLETO.js` atual;
+2. revalidar o endpoint live de capabilities;
+3. so depois rodar QA manual em device real para confirmar:
+   - nome publico correto;
+   - match reciproco no `Who's going`;
+   - bottom nav sem cortar o conteudo no iPhone Safari.
+
 ## Atualizacao operacional (Codex - 2026-08-10, decisao de copy publica + observacao de deploy)
 
 Decisao operacional consolidada:
