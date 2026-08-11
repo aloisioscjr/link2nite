@@ -5446,9 +5446,24 @@ let currentUserName = null;
       return sharedBackendState.available;
     }
 
-    async function postSharedBackend(payload){
-      const ready = await ensureSharedBackendAvailable();
-      if(!ready) throw new Error("shared_backend_unavailable");
+    function hasSharedBackendEndpoint(){
+      return !!getSharedBackendEndpoint();
+    }
+
+    function markSharedBackendCapabilities(capabilities={}){
+      sharedBackendState.checked = true;
+      if(capabilities.available !== undefined) sharedBackendState.available = !!capabilities.available;
+      if(capabilities.userAuth !== undefined) sharedBackendState.userAuth = !!capabilities.userAuth;
+      if(capabilities.shared !== undefined) sharedBackendState.shared = !!capabilities.shared;
+      if(capabilities.phoneAuth !== undefined) sharedBackendState.phoneAuth = !!capabilities.phoneAuth;
+      if(capabilities.payments !== undefined) sharedBackendState.payments = !!capabilities.payments;
+      if(sharedBackendState.available) sharedBackendState.error = "";
+      try{ renderOnboardingVerificationState(); }catch(_){}
+    }
+
+    async function postSharedBackendDirect(payload){
+      const endpoint = getSharedBackendEndpoint();
+      if(!endpoint) throw new Error("shared_backend_missing_endpoint");
       const response = await fetch(getSharedBackendEndpoint(), {
         method:"POST",
         headers:{ "Content-Type":"text/plain;charset=utf-8" },
@@ -5460,6 +5475,17 @@ let currentUserName = null;
       }catch(e){
         throw new Error("invalid_shared_response");
       }
+    }
+
+    async function postSharedBackend(payload, options={}){
+      const skipAvailabilityCheck = !!(options && options.skipAvailabilityCheck);
+      if(!skipAvailabilityCheck){
+        const ready = await ensureSharedBackendAvailable();
+        if(!ready) throw new Error("shared_backend_unavailable");
+      } else if(!hasSharedBackendEndpoint()){
+        throw new Error("shared_backend_missing_endpoint");
+      }
+      return postSharedBackendDirect(payload);
     }
 
     function getPublicProfilePayload(profile){
@@ -5994,7 +6020,8 @@ let currentUserName = null;
       }
       setBusyButtonState("onboarding-email-send-btn", true, "Send email code", "Sending...");
       setInlineStatus("email-verify-status", `Sending code to ${email}...`, "warn");
-      if(!await ensureSharedBackendAvailable() || !sharedBackendState.userAuth || !sharedBackendState.shared){
+      const sharedReady = await ensureSharedBackendAvailable();
+      if(!hasSharedBackendEndpoint()){
         toast("Account verification is not live on this build yet.");
         renderOnboardingVerificationState();
         setBusyButtonState("onboarding-email-send-btn", false, "Send email code", "Sending...");
@@ -6005,16 +6032,20 @@ let currentUserName = null;
         const data = await postSharedBackend({
           action:"user_auth_request_code",
           email
+        }, {
+          skipAvailabilityCheck: !sharedReady || !sharedBackendState.userAuth
         });
         if(!data || !data.ok){
           toast((data && data.error) || "Couldn't send the email code right now.");
           renderOnboardingVerificationState();
           return;
         }
+        markSharedBackendCapabilities({ available:true, userAuth:true });
         onboardingVerificationState.emailRequestedFor = email;
         renderOnboardingVerificationState();
         toast((data && data.message) || `Code sent to ${email}.`);
       }catch(e){
+        await ensureSharedBackendAvailable(true);
         toast("Couldn't send the email code right now.");
         renderOnboardingVerificationState();
       } finally {
@@ -6034,17 +6065,26 @@ let currentUserName = null;
         toast("Enter the 6-digit email code.");
         return;
       }
+      if(!hasSharedBackendEndpoint()){
+        toast("Account verification is not live on this build yet.");
+        renderOnboardingVerificationState();
+        return;
+      }
       setBusyButtonState("onboarding-email-verify-btn", true, "Verify email", "Verifying...");
       setInlineStatus("email-verify-status", `Verifying ${email}...`, "warn");
       await waitForUiFrame();
+      const sharedReady = await ensureSharedBackendAvailable();
 
       try{
         const data = await postSharedBackend({
           action:"user_auth_verify_code",
           email,
           code
+        }, {
+          skipAvailabilityCheck: !sharedReady || !sharedBackendState.userAuth
         });
         if(data && data.ok && data.authenticated && data.sessionToken){
+          markSharedBackendCapabilities({ available:true, userAuth:true });
           persistUserAuthSession({
             sessionToken: data.sessionToken,
             email: data.email || email,
@@ -6071,6 +6111,7 @@ let currentUserName = null;
         toast((data && data.error) || "Invalid or expired email code.");
         renderOnboardingVerificationState();
       }catch(e){
+        await ensureSharedBackendAvailable(true);
         toast("Couldn't verify the email code right now.");
         renderOnboardingVerificationState();
       } finally {
@@ -6399,9 +6440,10 @@ function showScreen(id){
         const baseProfile = {displayName: name, age, email, vibe, gender, showAge, showMe};
         let resolvedName = name;
         const sharedReady = await ensureSharedBackendAvailable();
+        const canAttemptSharedAccount = hasSharedBackendEndpoint() && isUserSession();
 
         if(PUBLIC_REAL_LAUNCH_MODE){
-          if(!sharedReady || !sharedBackendState.userAuth || !sharedBackendState.shared){
+          if(!canAttemptSharedAccount){
             setInlineStatus("onboarding-submit-status", "Account verification is not live on this build yet.", "err");
             toast("This build still does not have live account verification. Redeploy the backend first.");
             renderOnboardingVerificationState();
@@ -6430,7 +6472,7 @@ function showScreen(id){
           return;
         }
 
-        if(sharedReady && sharedBackendState.userAuth && sharedBackendState.shared){
+        if(canAttemptSharedAccount){
           try{
             const data = await postSharedBackend({
               action:"shared_profile_upsert",
@@ -6438,6 +6480,8 @@ function showScreen(id){
               username: name,
               phone,
               profile: getPublicProfilePayload(baseProfile)
+            }, {
+              skipAvailabilityCheck: !sharedReady || !sharedBackendState.userAuth || !sharedBackendState.shared
             });
 
             if(!data || !data.ok){
@@ -6471,6 +6515,7 @@ function showScreen(id){
             }
 
             resolvedName = String(data.username || name).trim() || name;
+            markSharedBackendCapabilities({ available:true, userAuth:true, shared:true });
             persistUserAuthSession({
               sessionToken: userAuthSession.sessionToken,
               email: email,
