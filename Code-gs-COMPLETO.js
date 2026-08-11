@@ -800,7 +800,7 @@ function ensureAccountRecordForEmail_(accountsSheet, profilesSheet, email, optio
     accountsSheet,
     null,
     normalizedEmail,
-    legacyProfile ? legacyProfile.username : String(opts.username || "").trim(),
+    legacyProfile ? legacyProfile.username : "",
     opts.phone,
     opts.phoneVerified === true,
     createdAt,
@@ -1276,7 +1276,7 @@ function handleSharedProfileUpsert_(data) {
     var sessionRecord = getUserSessionRecord_(token);
     if (!sessionRecord) return { ok: false, error: "Sign in again to sync this profile.", code: "user_session_required" };
 
-    var desiredDisplayName = sanitizeDisplayName_(data.username || data.displayName);
+    var desiredDisplayName = sanitizeDisplayName_(data.displayName || data.username);
     if (!desiredDisplayName) return { ok: false, error: "Choose a display name first.", code: "missing_username" };
     var rawRequestedPhone = String(data.phone || "").trim();
     var requestedPhone = rawRequestedPhone ? normalizePhoneE164_(rawRequestedPhone) : "";

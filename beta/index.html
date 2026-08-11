@@ -50,12 +50,15 @@
     .app{
       max-width: var(--max);
       margin: 0 auto;
-      padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 124px);
+      padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 168px);
     }
     .screen{ animation: fadeUp .18s ease both; }
     #screen-profile,
-    #screen-settings{
-      padding-bottom: calc(env(safe-area-inset-bottom) + 36px);
+    #screen-settings,
+    #screen-place,
+    #screen-goinglist,
+    #screen-public-profile{
+      padding-bottom: calc(env(safe-area-inset-bottom) + 168px);
     }
     @keyframes fadeUp{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
 
@@ -137,7 +140,7 @@
       position: fixed;
       left: 50%;
       transform: translateX(-50%);
-      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      bottom: calc(env(safe-area-inset-bottom) + 18px);
       width: min(var(--max), calc(100% - 24px));
       border-radius: 999px;
       border: 1px solid rgba(148,163,184,.22);
@@ -4909,10 +4912,25 @@ let currentUserName = null;
       return profileWithName;
     }
 
+    function getPublicNameFallback(name){
+      const rawName = String(name || "").trim();
+      if(!rawName) return "";
+      const unsuffixed = rawName.replace(/\s+\d+$/, "").trim();
+      return sanitizeDisplayNameValue(unsuffixed || rawName) || rawName;
+    }
+
     function getProfileDisplayName(name){
       if(!name) return "";
       const profile=getProfile(name);
-      return sanitizeDisplayNameValue((profile && profile.displayName) || name) || String(name||"").trim();
+      const rawName = String(name || "").trim();
+      const displayName = sanitizeDisplayNameValue(profile && profile.displayName);
+      if(displayName){
+        if(displayName === rawName && /\s+\d+$/.test(rawName)){
+          return getPublicNameFallback(rawName) || displayName;
+        }
+        return displayName;
+      }
+      return getPublicNameFallback(rawName) || rawName;
     }
 
     function getCurrentUserDisplayName(){
@@ -5756,11 +5774,13 @@ let currentUserName = null;
       if(getProfile(name).isBot === true) return false;
       if(name !== currentUserName) return false;
       if(!await ensureSharedMutationAuth({silent:true})) return false;
+      const displayName = sanitizeDisplayNameValue(profile.displayName || getProfileDisplayName(name) || name);
 
       const data = await postSharedProfileUpsert({
         action:"shared_profile_upsert",
         sessionToken: userAuthSession.sessionToken,
         username: name,
+        displayName,
         phone: (userAuthSession && userAuthSession.phone) || "",
         profile: getPublicProfilePayload(profile)
       });
@@ -6507,6 +6527,7 @@ function showScreen(id){
               action:"shared_profile_upsert",
               sessionToken: userAuthSession.sessionToken,
               username: name,
+              displayName: name,
               phone,
               profile: getPublicProfilePayload(baseProfile)
             }, {
@@ -7514,7 +7535,8 @@ let extraHtml=extraParts.join(" · ");
       }catch(e){}
 
       const liked=getLikesData()||{};
-      const myLikes = new Set(liked[currentUserName||""]||[]);
+      const byPlaceLikes = liked[placeId] || {};
+      const myLikes = new Set(Array.isArray(byPlaceLikes[currentUserName||""]) ? byPlaceLikes[currentUserName||""] : []);
 
       if(totalCount===0){
         grid.innerHTML = `<div class="card"><div class="section-title">Empty for now</div><div class="section-sub">Be the first to mark “Going tonight”.</div></div>`;
@@ -7566,7 +7588,7 @@ let extraHtml=extraParts.join(" · ");
             <div class="profile-mini-main">
               <div class="profile-mini-top">
                 <div class="profile-mini-name">${escapeHtml(displayName)}${ageText}${verifiedBadge}</div>
-                <div class="profile-like ${likedClass}" onclick="event.stopPropagation(); toggleLike('${escapeAttr(name)}', this)">♥</div>
+                <div class="profile-like ${likedClass}" onclick="event.stopPropagation(); togglePlaceLike('${escapeAttr(placeId)}','${encodeURIComponent(name)}', this)">♥</div>
               </div>
               <div class="profile-mini-sub">${sub}</div>
               <div class="profile-mini-tags">${tagPills}</div>
@@ -7587,75 +7609,16 @@ let extraHtml=extraParts.join(" · ");
 
 
     function toggleLike(targetName, el){
-      if(!currentUserName){ toast("Create your profile first"); showScreen("screen-username"); return; }
-      if(targetName===currentUserName){ toast("You can't like yourself 😄"); return; }
-
-      // Check like limit for FREE users
-      const likes=getLikesData()||{};
-      if(!likes[currentUserName]) likes[currentUserName]=[];
-      const arr=likes[currentUserName];
-      const idx=arr.indexOf(targetName);
-      const isLiking = idx === -1; // adding a like
-      
-      if(isLiking && !checkAndIncrementLikes()){
-        openPaywall("like_limit");
-        toast("🔒 Daily FREE like limit. Unlock Link2Nite PRO.");
-        return;
+      if(!currentPlaceId){
+        toast("Open a venue first to like who's going.");
+        return null;
       }
-      
-      if(isLiking) track("like", {profileId: targetName});
-      let likedNow=false;
-      if(idx>=0){ arr.splice(idx,1); likedNow=false; }
-      else { arr.push(targetName); likedNow=true; }
-      likes[currentUserName]=arr;
-      setLikesData(likes);
-
-      if(el) el.classList.toggle("liked", likedNow);
-
-      // Match if mutual
-      const otherLikes = (likes[targetName]||[]);
-      if(likedNow && otherLikes.includes(currentUserName)){
-        renderMatches();
-        showMatchCelebration(currentPlaceId || (publicProfileContext && publicProfileContext.placeId) || swipePlaceId || null, targetName);
-      } else {
-        // Simulate bot like/match (5% chance when user likes a bot)
-        if(!PUBLIC_REAL_LAUNCH_MODE && likedNow && currentUserName){
-          const targetProfile = getProfile(targetName);
-          if(targetProfile && targetProfile.isBot === true){
-            const matchChance = Math.random();
-            if(matchChance < 0.05){ // 5% chance
-              // Bot likes back and creates match
-              if(!likes[targetName]) likes[targetName] = [];
-              if(!likes[targetName].includes(currentUserName)){
-                likes[targetName].push(currentUserName);
-                setLikesData(likes);
-                track("bot_match_simulated", {botName: targetName, user: currentUserName});
-                renderMatches();
-                showMatchCelebration(currentPlaceId || (publicProfileContext && publicProfileContext.placeId) || swipePlaceId || null, targetName);
-              } else {
-                toast("Liked ❤️");
-              }
-            } else {
-              track("bot_like", {botName: targetName, user: currentUserName});
-              toast("Liked ❤️");
-            }
-      } else {
-        toast(likedNow ? "Liked ❤️" : "Like removed");
-          }
-        } else {
-          toast(likedNow ? "Liked ❤️" : "Like removed");
-        }
+      const likedNow = togglePlaceLike(currentPlaceId, encodeURIComponent(String(targetName || "")));
+      if(el && likedNow !== null){
+        el.classList.toggle("liked", likedNow);
       }
-      try{ renderMatchesList(); }catch(e){}
-    
-      try{
-        if(currentScreenId==="screen-matches"){ renderLikesYou(); }
-      }catch(e){}
-
-      try{
-        track("like", {from: currentUserName||"", to: name||"", placeId: currentPlaceId||"", liked: true});
-      }catch(e){}
-}
+      return likedNow;
+    }
 
 function renderGoingForPlace(placeId){
       const goingData=getGoingData();
@@ -7700,7 +7663,7 @@ function renderGoingForPlace(placeId){
           else{
             const encoded=encodeURIComponent(name);
             const label=likedByCurrent ? "💗 Liked" : "🤍 Like";
-            rightHtml=`<button class="pill-button small secondary" onclick="toggleLike('${placeId}','${encoded}')">${label}</button>`;
+            rightHtml=`<button class="pill-button small secondary" onclick="togglePlaceLike('${placeId}','${encoded}')">${label}</button>`;
           }
         }
 
@@ -7777,10 +7740,11 @@ function renderGoingForPlace(placeId){
       return matchesShowMe(pA,pB) && matchesShowMe(pB,pA);
     }
 
-    function toggleLike(placeId, encodedName){
-      if(!currentUserName){ alert("Set up your profile first."); showScreen("screen-username"); return; }
-      const targetName=decodeURIComponent(encodedName);
-      if(targetName===currentUserName) return;
+    function togglePlaceLike(placeId, encodedName){
+      if(!currentUserName){ alert("Set up your profile first."); showScreen("screen-username"); return null; }
+      const targetName=decodeURIComponent(String(encodedName || ""));
+      if(!placeId || !targetName) return null;
+      if(targetName===currentUserName) return null;
 
       const likesData=getLikesData();
       if(!likesData[placeId]) likesData[placeId]={};
@@ -7806,10 +7770,12 @@ function renderGoingForPlace(placeId){
       const isMatch = nowLiked && likedBack && areProfilesCompatible(currentUserName, targetName);
 
       if(currentPlaceId===placeId) renderGoingForPlace(placeId);
+      if(currentScreenId==="screen-goinglist" && currentPlaceId===placeId) renderGoingList(placeId);
       renderMatches();
       if(isMatch){
         showMatchCelebration(placeId, targetName);
       }
+      return nowLiked;
     }
 
     function computeMatchesForUser(userName, likesSource){
@@ -9135,14 +9101,19 @@ function renderGoingForPlace(placeId){
 
       const likes = getLikesData()||{};
       const profiles = getProfilesData()||{};
-      const who = [];
+      const whoSet = new Set();
 
-      // find users that liked currentUserName
-      Object.keys(likes).forEach(user=>{
-        if(user===currentUserName) return;
-        const arr=likes[user]||[];
-        if(arr.includes(currentUserName)) who.push(user);
+      // find users that liked currentUserName at any venue
+      Object.keys(likes).forEach(placeId=>{
+        const byPlace = likes[placeId];
+        if(!byPlace || typeof byPlace !== "object") return;
+        Object.keys(byPlace).forEach(user=>{
+          if(user===currentUserName) return;
+          const arr = Array.isArray(byPlace[user]) ? byPlace[user] : [];
+          if(arr.includes(currentUserName)) whoSet.add(user);
+        });
       });
+      const who = Array.from(whoSet);
 
       if(who.length===0){
         sub.textContent = "No one has liked you yet. Check back after more people join tonight.";
@@ -10377,13 +10348,27 @@ function initApp(){
       toast("Settings saved ✅");
     }
 
-    function changeName(){
+    async function changeName(){
+      const currentDisplayName = getCurrentUserDisplayName() || currentUserName || "";
+      const newName = sanitizeDisplayNameValue(prompt(isUserSession() ? "Display name:" : "New name:", currentDisplayName));
+      if(!newName || newName===currentDisplayName) return;
+
       if(isUserSession()){
-        toast("Display name changes aren't live yet.");
+        const profiles = getProfilesData();
+        const currentProfile = {...(profiles[currentUserName] || getProfile(currentUserName) || {}), displayName: newName};
+        profiles[currentUserName] = currentProfile;
+        setProfilesDataLocal(profiles);
+        updateUserLabel();
+        try{
+          await pushCurrentProfileToShared(currentUserName, currentProfile);
+          await syncSharedSnapshot({silent:true});
+          toast("Display name updated ✅");
+        }catch(e){
+          toast("Couldn't update your display name right now.");
+        }
+        openSettings();
         return;
       }
-      const newName = prompt("New name:", currentUserName || "");
-      if(!newName) return;
 
       const profiles=getProfilesData();
       profiles[newName]=profiles[currentUserName] || getProfile(currentUserName) || {};
