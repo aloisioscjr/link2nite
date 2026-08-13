@@ -1,5 +1,29 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-13, Apps Script Versao 11 publicado + bug de status validado no live)
+
+Depois do commit `e0e7525` (`Fix stale Stripe checkout status for free users`), o Apps Script foi republicado manualmente no projeto `Link2NiteWaitlistAPI`:
+
+- deployment ativo atualizado com sucesso para:
+  - `Versao 11 em 13 de ago. de 2026, 15:16`
+- URL publicada permaneceu a mesma:
+  - `https://script.google.com/macros/s/AKfycbxnPAbUdYLuTL4dN0x0Z0nJIVjmqZECNfiP-o3OVqy7ThzgGCLG9Gf_mr-FJZKOLVDp0g/exec`
+
+Validacoes feitas logo apos a publicacao:
+
+- endpoint live de capabilities continuou saudavel:
+  - `{"ok":true,"supportsAdminAuth":true,"supportsUserAuth":true,"supportsSharedState":true,"supportsAppBackend":true,"supportsPhoneAuth":false,"supportsSmsAuth":false,"supportsPayments":true,"supportsStripeCheckout":true,"feature":"shared_state"}`
+- beta live reaberto em conta `AJ`:
+  - `Settings` passou de `PRO status = Checkout started` para `PRO status = Inactive`
+  - badge permaneceu `FREE`
+
+Leitura operacional disso:
+
+- o fix do backend para limpar / migrar rows antigas presas em `checkout_created` ja esta publicado no live;
+- o fix de frontend para nao exibir mais `Checkout started` em conta `FREE` tambem foi validado no beta live;
+- pagamentos e Stripe Checkout seguem ativos no deploy atual;
+- phone/SMS continuam desligados.
+
 ## Atualizacao operacional (Codex - 2026-08-13, fix local para status travado "Checkout started")
 
 Bug observado no beta live em conta `FREE`:
