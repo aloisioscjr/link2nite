@@ -4138,6 +4138,26 @@
       }
 
       if(checkoutState === "cancel"){
+        if(isUserSession()){
+          try{
+            await refreshBillingState({refresh:true, silent:true, forceBackend:true});
+          }catch(_){}
+          if(userAuthSession && userAuthSession.proActive !== true && String(userAuthSession.proStatus || "").trim().toLowerCase() === "checkout_created"){
+            persistUserAuthSession({
+              sessionToken: userAuthSession.sessionToken,
+              email: userAuthSession.email,
+              username: userAuthSession.username || "",
+              phone: userAuthSession.phone || "",
+              phoneVerified: userAuthSession.phoneVerified === true,
+              proActive: false,
+              proPlan: userAuthSession.proPlan || getSelectedPlan(),
+              proStatus: "",
+              proExpiresAt: userAuthSession.proExpiresAt || "",
+              expiresAt: userAuthSession.expiresAt || "",
+              signedInAt: userAuthSession.signedInAt || new Date().toISOString()
+            });
+          }
+        }
         cleanBillingQueryParams();
         toast("Checkout canceled.");
         return true;
@@ -10161,8 +10181,7 @@ function initApp(){
       const planEl = document.getElementById("settings-plan-display");
       
       let statusLabel = pro ? "Active" : "Inactive";
-      if(!pro && status === "checkout_created") statusLabel = "Checkout started";
-      else if(!pro && status === "incomplete") statusLabel = "Payment pending";
+      if(!pro && status === "incomplete") statusLabel = "Payment pending";
       else if(!pro && status === "past_due") statusLabel = "Payment issue";
       else if(!pro && status === "canceled") statusLabel = "Canceled";
 

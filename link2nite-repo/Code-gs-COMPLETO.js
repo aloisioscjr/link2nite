@@ -1485,7 +1485,7 @@ function handleBillingCreateCheckout_(data) {
       nowIso,
       {
         proPlan: plan,
-        proStatus: "checkout_created",
+        proStatus: normalizeStripeStatus_(checkoutSession.payment_status || checkoutSession.status || ""),
         stripeCustomerId: normalizeStripeId_(checkoutSession.customer || (accountRecord && accountRecord.stripeCustomerId) || ""),
         stripeCheckoutSessionId: normalizeStripeId_(checkoutSession.id || ""),
         proUpdatedAt: nowIso
@@ -1583,7 +1583,13 @@ function handleBillingStatus_(data) {
       phoneVerified: identity.phoneVerified === true
     });
 
-    if (data && (data.refresh === true || String(data.refresh || "").toLowerCase() === "true")) {
+    var shouldRefreshPendingCheckout =
+      accountRecord &&
+      accountRecord.proActive !== true &&
+      normalizeStripeStatus_(accountRecord.proStatus || "") === "checkout_created" &&
+      normalizeStripeId_(accountRecord.stripeCheckoutSessionId || "") !== "";
+
+    if (data && (data.refresh === true || String(data.refresh || "").toLowerCase() === "true" || shouldRefreshPendingCheckout)) {
       accountRecord = refreshAccountBillingFromStripe_(accountsSheet, accountRecord);
     }
 

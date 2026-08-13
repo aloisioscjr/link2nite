@@ -1,5 +1,27 @@
 # Link2Nite - Codex Handoff
 
+## Atualizacao operacional (Codex - 2026-08-13, fix local para status travado "Checkout started")
+
+Bug observado no beta live em conta `FREE`:
+
+- depois de abrir o Stripe Checkout e voltar sem concluir pagamento, `Settings` podia continuar mostrando `PRO status = Checkout started`;
+- isso era confuso porque a conta seguia `FREE` e a cobranca nao tinha sido concluida.
+
+Correcao aplicada localmente nas duas arvores (`beta/` raiz + `link2nite-repo/`):
+
+- `beta/index.html` / `link2nite-repo/beta/index.html`
+  - `checkout=cancel` agora tenta `refreshBillingState({refresh:true})` ao voltar do Stripe;
+  - se ainda houver `proStatus = checkout_created` local numa conta nao-PRO, o frontend limpa esse estado do `userAuthSession`;
+  - `Settings` nao exibe mais o label literal `Checkout started`; contas nao-PRO voltam para `Inactive` por padrao.
+- `Code-gs-COMPLETO.js` / `link2nite-repo/Code-gs-COMPLETO.js`
+  - `billing_create_checkout` para de persistir o status sintetico `checkout_created` e passa a salvar o status real retornado pela sessao Stripe (`payment_status` / `status`);
+  - `billing_status` agora auto-refresh legacy rows que ainda estejam com `checkout_created` + `stripeCheckoutSessionId`, para migrar contas antigas presas nesse estado.
+
+Estado operacional desta correcao:
+
+- o fix foi aplicado localmente e deve ser commitado/pushado para GitHub;
+- para a parte de backend valer no live, ainda e necessario republicar o Apps Script depois do push.
+
 ## Atualizacao operacional (Codex - 2026-08-11, Apps Script republicado com sucesso)
 
 Publicacao manual feita no projeto `Link2NiteWaitlistAPI` em `2026-08-11`:
