@@ -4103,7 +4103,7 @@
         toast("Billing management is not live on this deployment yet.");
         return false;
       }
-      await refreshBillingState({refresh:false, silent:true, forceBackend:true});
+      await refreshBillingState({refresh:true, silent:true, forceBackend:true});
       try{
         const data = await postSharedBackend({
           action:"billing_create_portal",
@@ -4237,7 +4237,7 @@ function openPaywall(reason){
       try{ selectPlan(getSelectedPlan()); }catch(e){}
       showScreen("screen-paywall");
       if(isUserSession()){
-        refreshBillingState({refresh:false, silent:true, forceBackend:true})
+        refreshBillingState({refresh:true, silent:true, forceBackend:true})
           .then((available) => {
             if(!available) return;
             try{ updatePaywallForReason(paywallReason); }catch(e){}
@@ -4255,7 +4255,7 @@ function openPaywall(reason){
     async function activateProDemo(){
       const plan = getSelectedPlan();
       const reason = localStorage.getItem("paywall_prev_screen") || "unknown";
-      const billingReady = await refreshBillingState({refresh:false, silent:true, forceBackend:true});
+      const billingReady = await refreshBillingState({refresh:true, silent:true, forceBackend:true});
       try{ updatePaywallForReason(reason); }catch(e){}
       try{ selectPlan(plan); }catch(e){}
       if(!billingReady){
@@ -9382,6 +9382,10 @@ function initApp(){
       refreshAdminSession({silent:true});
       ensureSharedBackendAvailable(true)
         .then(() => refreshUserSession({silent:true}))
+        .then(() => {
+          if(!isUserSession()) return false;
+          return refreshBillingState({refresh:true, silent:true, forceBackend:true});
+        })
         .then(() => syncSharedSnapshot({silent:true}))
         .then(() => maybeHandleBillingReturn())
         .catch(() => {
@@ -10144,7 +10148,7 @@ function initApp(){
         ensureSharedBackendAvailable(true)
           .then((available) => {
             if(!available) return false;
-            return refreshBillingState({refresh:false, silent:true, forceBackend:true});
+            return refreshBillingState({refresh:true, silent:true, forceBackend:true});
           })
           .catch(() => {});
       }
@@ -10199,7 +10203,7 @@ function initApp(){
     }
     async function toggleProStatus(){
       if(isUserSession()){
-        await refreshBillingState({refresh:false, silent:true, forceBackend:true});
+        await refreshBillingState({refresh:true, silent:true, forceBackend:true});
       }
       updateSettingsProStatus();
       if(isPro()){

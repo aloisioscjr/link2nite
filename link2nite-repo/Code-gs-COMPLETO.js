@@ -20,6 +20,7 @@ var GOING_TONIGHT_TTL_MS = GOING_TONIGHT_TTL_HOURS * 60 * 60 * 1000;
 var DEFAULT_STRIPE_SUCCESS_URL = "https://www.link2nite.com/beta/?checkout=success&session_id={CHECKOUT_SESSION_ID}";
 var DEFAULT_STRIPE_CANCEL_URL = "https://www.link2nite.com/beta/?checkout=cancel";
 var DEFAULT_STRIPE_PORTAL_RETURN_URL = "https://www.link2nite.com/beta/?billing=return";
+var STRIPE_BILLING_CACHE_TTL_MS = 5 * 60 * 1000;
 var PROFILE_JSON_PARTS = 20;
 var PROFILE_JSON_CHUNK_SIZE = 40000;
 var SHARED_ACCOUNTS_SHEET_NAME = "L2N_Accounts";
@@ -412,6 +413,27 @@ function unixSecondsToIso_(value) {
 function isStripeSubscriptionActiveStatus_(status) {
   var normalized = normalizeStripeStatus_(status);
   return normalized === "active" || normalized === "trialing";
+}
+
+function hasStripeBillingLink_(accountRecord) {
+  if (!accountRecord) return false;
+  return !!(
+    normalizeStripeId_(accountRecord.stripeSubscriptionId || "") ||
+    normalizeStripeId_(accountRecord.stripeCheckoutSessionId || "") ||
+    normalizeStripeId_(accountRecord.stripeCustomerId || "")
+  );
+}
+
+function shouldRefreshStripeBillingCache_(accountRecord, options) {
+  if (!accountRecord || !isStripeCheckoutConfigured_() || !hasStripeBillingLink_(accountRecord)) {
+    return false;
+  }
+  if (options && options.force === true) return true;
+
+  // Keep Stripe billing fresh without revalidating on every 30s snapshot poll.
+  var updatedAtMs = Date.parse(String(accountRecord.proUpdatedAt || "").trim());
+  if (!isFinite(updatedAtMs)) return true;
+  return (Date.now() - updatedAtMs) >= STRIPE_BILLING_CACHE_TTL_MS;
 }
 
 function createStripeCheckoutSession_(identity, plan, reason, successUrl, cancelUrl, customerId) {
@@ -984,6 +1006,9 @@ function getResolvedUserSessionIdentity_(sessionRecord, sessionToken) {
     phone: currentPhone,
     phoneVerified: currentPhoneVerified
   });
+  if (shouldRefreshStripeBillingCache_(accountRecord, { force: false })) {
+    accountRecord = refreshAccountBillingFromStripe_(accountsSheet, accountRecord);
+  }
 
   var identity = {
     email: currentEmail,
@@ -1583,13 +1608,16 @@ function handleBillingStatus_(data) {
       phoneVerified: identity.phoneVerified === true
     });
 
+    var forceRefresh =
+      data && (data.refresh === true || String(data.refresh || "").toLowerCase() === "true");
+
     var shouldRefreshPendingCheckout =
       accountRecord &&
       accountRecord.proActive !== true &&
       normalizeStripeStatus_(accountRecord.proStatus || "") === "checkout_created" &&
       normalizeStripeId_(accountRecord.stripeCheckoutSessionId || "") !== "";
 
-    if (data && (data.refresh === true || String(data.refresh || "").toLowerCase() === "true" || shouldRefreshPendingCheckout)) {
+    if (forceRefresh || shouldRefreshPendingCheckout || shouldRefreshStripeBillingCache_(accountRecord, { force: false })) {
       accountRecord = refreshAccountBillingFromStripe_(accountsSheet, accountRecord);
     }
 
